@@ -1,19 +1,27 @@
 import { useEffect, useMemo, useState } from "react";
 import type { ProjectSummary } from "../domain/project/types";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
-import type { SpectrumFrame } from "../domain/audio/types";
+import type { ProjectAudioFacade } from "../domain/audio/interfaces";
+import type { PlaybackState, SpectrumFrame } from "../domain/audio/types";
 
 interface WorkbenchShellProps {
   project: ProjectSummary;
+  audioFacade?: ProjectAudioFacade;
 }
 
-export function WorkbenchShell({ project }: WorkbenchShellProps) {
+export function WorkbenchShell({
+  project,
+  audioFacade = mockProjectAudioFacade
+}: WorkbenchShellProps) {
   const [appVersion, setAppVersion] = useState<string>("...");
   const [spectrumFrames, setSpectrumFrames] = useState<SpectrumFrame[]>([]);
+  const [playbackState, setPlaybackState] = useState<PlaybackState>(() =>
+    audioFacade.playback.getState()
+  );
 
   useEffect(() => {
     void window.ziqiApp.getVersion().then(setAppVersion);
-    void mockProjectAudioFacade.analysis
+    void audioFacade.analysis
       .getSpectrum({
         startMs: 0,
         endMs: 12000,
@@ -22,15 +30,43 @@ export function WorkbenchShell({ project }: WorkbenchShellProps) {
         channelMode: "merged"
       })
       .then(setSpectrumFrames);
-  }, []);
+  }, [audioFacade]);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setPlaybackState(audioFacade.playback.getState());
+    }, 100);
+
+    return () => window.clearInterval(intervalId);
+  }, [audioFacade]);
 
   const currentPositionLabel = useMemo(() => {
-    const ms = mockProjectAudioFacade.playback.getState().currentTimeMs;
+    const ms = playbackState.currentTimeMs;
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
     const remainder = seconds % 60;
     return `${minutes}:${String(remainder).padStart(2, "0")}`;
-  }, []);
+  }, [playbackState.currentTimeMs]);
+
+  async function handlePlayFromCursor() {
+    await audioFacade.playback.play(playbackState.currentTimeMs);
+    setPlaybackState(audioFacade.playback.getState());
+  }
+
+  async function handlePause() {
+    await audioFacade.playback.pause();
+    setPlaybackState(audioFacade.playback.getState());
+  }
+
+  async function handleSeek(nextTimeMs: number) {
+    await audioFacade.playback.seek(nextTimeMs);
+    setPlaybackState(audioFacade.playback.getState());
+  }
+
+  const progressPercent = Math.min(
+    100,
+    Math.max(0, (playbackState.currentTimeMs / project.sourceAudio.durationMs) * 100)
+  );
 
   return (
     <div className="app-shell">
@@ -48,7 +84,7 @@ export function WorkbenchShell({ project }: WorkbenchShellProps) {
       <section className="command-strip">
         <button>Open Project</button>
         <button>Import Audio</button>
-        <button>Play from Cursor</button>
+        <button onClick={handlePlayFromCursor}>Play from Cursor</button>
         <button>Toggle Grid</button>
         <button>Run Stem Provider</button>
         <button>Run Analysis</button>
@@ -94,7 +130,7 @@ export function WorkbenchShell({ project }: WorkbenchShellProps) {
               <div className="spectrum-meta">
                 <span>Cursor {currentPositionLabel}</span>
                 <span>{project.workspace.bpm} BPM</span>
-                <span>{project.workspace.playbackRate.toFixed(2)}x</span>
+                <span>{playbackState.playbackRate.toFixed(2)}x</span>
               </div>
             </div>
 
@@ -168,8 +204,22 @@ export function WorkbenchShell({ project }: WorkbenchShellProps) {
               <span>Beat offset: {project.workspace.beatOffsetMs}ms</span>
               <span>Channel mode: stereo</span>
             </div>
+            <div className="transport-controls">
+              <button onClick={handlePlayFromCursor}>Play</button>
+              <button onClick={handlePause}>Pause</button>
+              <input
+                aria-label="Seek position"
+                className="transport-seek"
+                max={project.sourceAudio.durationMs}
+                min={0}
+                onChange={(event) => void handleSeek(Number(event.currentTarget.value))}
+                step={100}
+                type="range"
+                value={playbackState.currentTimeMs}
+              />
+            </div>
             <div className="transport-bar">
-              <div className="transport-progress" style={{ width: "33%" }} />
+              <div className="transport-progress" style={{ width: `${progressPercent}%` }} />
             </div>
           </footer>
         </section>
@@ -177,4 +227,3 @@ export function WorkbenchShell({ project }: WorkbenchShellProps) {
     </div>
   );
 }
-
