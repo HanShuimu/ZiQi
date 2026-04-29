@@ -1,0 +1,255 @@
+:root {
+  color: #1f1a17;
+  background:
+    radial-gradient(circle at top left, rgba(247, 231, 205, 0.9), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(231, 214, 195, 0.85), transparent 26%),
+    #f3efe8;
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+button {
+  border: 1px solid #d1b997;
+  background: #fff7ed;
+  color: #8b4a14;
+  border-radius: 999px;
+  padding: 0.65rem 1rem;
+  font: inherit;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.topbar,
+.panel,
+.command-strip {
+  border: 1px solid rgba(209, 185, 151, 0.9);
+  background: rgba(255, 250, 243, 0.93);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px rgba(94, 63, 31, 0.09);
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  padding: 1.25rem 1.5rem;
+}
+
+.topbar h1,
+.left-rail h2,
+.spectrum-head h2 {
+  margin: 0.2rem 0 0;
+}
+
+.eyebrow,
+.section-label {
+  color: #b96a30;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.topbar-meta {
+  display: flex;
+  gap: 1rem;
+  color: #6e6256;
+  font-size: 0.94rem;
+}
+
+.command-strip {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.workspace-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1rem;
+}
+
+.left-rail,
+.main-column,
+.dock-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.left-rail {
+  align-content: start;
+  padding: 1.2rem;
+}
+
+.left-rail section {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 16px;
+  background: #fff7ef;
+  color: #6e6256;
+}
+
+.main-column {
+  min-width: 0;
+}
+
+.spectrum-panel {
+  padding: 1rem;
+}
+
+.spectrum-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: start;
+}
+
+.spectrum-meta,
+.transport-summary {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  color: #6e6256;
+  font-size: 0.95rem;
+}
+
+.spectrum-canvas {
+  position: relative;
+  margin-top: 1rem;
+  height: 420px;
+  padding: 1rem;
+  border-radius: 22px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(117, 61, 21, 0.12), transparent),
+    #fff7ef;
+  border: 1px solid #d8c8b3;
+}
+
+.spectrum-grid {
+  display: grid;
+  grid-template-columns: repeat(72, minmax(0, 1fr));
+  gap: 0.18rem;
+  align-items: end;
+  height: 100%;
+}
+
+.spectrum-column {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.12rem;
+  height: 100%;
+}
+
+.spectrum-bin {
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f4b36e, #c86f2c);
+  min-height: 2px;
+}
+
+.cursor-line,
+.grid-overlay {
+  position: absolute;
+  pointer-events: none;
+}
+
+.cursor-line-vertical {
+  top: 0;
+  bottom: 0;
+  left: 38%;
+  width: 2px;
+  background: rgba(53, 34, 18, 0.58);
+}
+
+.cursor-line-horizontal {
+  left: 0;
+  right: 0;
+  top: 44%;
+  height: 2px;
+  background: rgba(53, 34, 18, 0.42);
+}
+
+.grid-overlay {
+  inset: 0;
+  background-image: linear-gradient(
+    90deg,
+    rgba(99, 58, 26, 0.12) 1px,
+    transparent 1px
+  );
+  background-size: calc(100% / 16) 100%;
+}
+
+.dock-tabs {
+  display: flex;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  color: #7b6c61;
+}
+
+.dock-tabs .active {
+  color: #b96a30;
+  font-weight: 700;
+}
+
+.dock-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dock-grid .panel,
+.transport {
+  padding: 1rem;
+}
+
+.panel-copy {
+  color: #6e6256;
+  line-height: 1.65;
+}
+
+.transport-bar {
+  margin-top: 0.8rem;
+  width: 100%;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(201, 174, 145, 0.45);
+  overflow: hidden;
+}
+
+.transport-progress {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f2b06c, #b96a30);
+}
+
+@media (max-width: 1200px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dock-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .spectrum-head {
+    flex-direction: column;
+  }
+}

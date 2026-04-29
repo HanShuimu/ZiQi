@@ -1,0 +1,27 @@
+{
+  "name": "ziqi-transcription-workbench",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A transcription workbench for spectrum-first music analysis.",
+  "main": "dist-electron/main.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.electron.json && vite build",
+    "start": "electron dist-electron/main.js"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/react": "^19.1.2",
+    "@types/react-dom": "^19.1.2",
+    "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^37.2.0",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  }
+}
+
