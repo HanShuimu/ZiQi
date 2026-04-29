@@ -220,6 +220,19 @@ button {
   padding: 1rem;
 }
 
+.transport-controls {
+  display: grid;
+  grid-template-columns: auto auto minmax(180px, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+  margin-top: 0.8rem;
+}
+
+.transport-seek {
+  width: 100%;
+  accent-color: #b96a30;
+}
+
 .panel-copy {
   color: #6e6256;
   line-height: 1.65;
@@ -251,5 +264,13 @@ button {
 
   .spectrum-head {
     flex-direction: column;
+  }
+
+  .transport-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .transport-seek {
+    grid-column: 1 / -1;
   }
 }
