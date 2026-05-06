@@ -34,3 +34,4 @@ export interface EqBandSetting {
   q: number;
 }
 
+export type { WaveformOverview, WaveformPoint } from "./waveform";
