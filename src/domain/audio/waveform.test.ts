@@ -46,12 +46,31 @@ describe("createWaveformOverviewFromBuffer", () => {
     ]);
   });
 
+  it("averages signed channel samples before calculating peak", () => {
+    const left = new Float32Array([1, 1]);
+    const right = new Float32Array([-1, -1]);
+    const buffer = new FakeAudioBuffer([left, right], 2);
+
+    const overview = createWaveformOverviewFromBuffer(buffer, { pointsPerSecond: 1 });
+
+    expect(overview.points).toEqual([{ startMs: 0, endMs: 1000, peak: 0 }]);
+  });
+
   it("clamps peaks into the 0..1 range", () => {
     const buffer = new FakeAudioBuffer([new Float32Array([0, 2, -3, 0])], 4);
 
     const overview = createWaveformOverviewFromBuffer(buffer, { pointsPerSecond: 2 });
 
     expect(overview.points.map((point) => point.peak)).toEqual([1, 1]);
+  });
+
+  it("uses 50 points per second by default", () => {
+    const buffer = new FakeAudioBuffer([new Float32Array(44_100)], 44_100);
+
+    const overview = createWaveformOverviewFromBuffer(buffer);
+
+    expect(overview.pointsPerSecond).toBe(50);
+    expect(overview.points).toHaveLength(50);
   });
 
   it("returns an empty overview for empty audio", () => {
