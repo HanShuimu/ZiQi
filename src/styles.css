@@ -24,6 +24,11 @@ button {
   font: inherit;
 }
 
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .app-shell {
   min-height: 100vh;
   padding: 1.5rem;
@@ -236,6 +241,24 @@ button {
 .panel-copy {
   color: #6e6256;
   line-height: 1.65;
+}
+
+.empty-workspace {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  min-height: 260px;
+  padding: 1.5rem;
+}
+
+.empty-workspace h2 {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.error-copy {
+  color: #a23b2a;
+  margin: 0.75rem 0 0;
 }
 
 .transport-bar {

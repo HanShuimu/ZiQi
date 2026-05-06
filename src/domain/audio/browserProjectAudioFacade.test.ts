@@ -16,6 +16,27 @@ class FakeMediaElement implements BrowserPlaybackMedia {
   load() {}
 }
 
+class FakeMetadataLoadingMediaElement extends FakeMediaElement {
+  override duration = Number.NaN;
+  private listeners = new Map<string, Set<() => void>>();
+
+  addEventListener(type: string, listener: () => void) {
+    const listeners = this.listeners.get(type) ?? new Set<() => void>();
+    listeners.add(listener);
+    this.listeners.set(type, listeners);
+  }
+
+  removeEventListener(type: string, listener: () => void) {
+    this.listeners.get(type)?.delete(listener);
+  }
+
+  emit(type: string) {
+    for (const listener of this.listeners.get(type) ?? []) {
+      listener();
+    }
+  }
+}
+
 describe("createBrowserProjectAudioFacade", () => {
   it("uses browser playback and loads local file paths into the backing media element", async () => {
     const media = new FakeMediaElement();
@@ -29,6 +50,21 @@ describe("createBrowserProjectAudioFacade", () => {
     expect(media.preservesPitch).toBe(true);
     expect(metadata).toEqual({
       durationMs: 123_000,
+      sampleRate: 0,
+      channelCount: 2
+    });
+  });
+
+  it("waits for browser metadata before returning duration", async () => {
+    const media = new FakeMetadataLoadingMediaElement();
+    const facade = createBrowserProjectAudioFacade(media);
+
+    const metadataPromise = facade.source.load("D:\\Music Library\\demo track.wav");
+    media.duration = 242;
+    media.emit("loadedmetadata");
+
+    await expect(metadataPromise).resolves.toEqual({
+      durationMs: 242_000,
       sampleRate: 0,
       channelCount: 2
     });

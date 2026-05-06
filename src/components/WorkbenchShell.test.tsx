@@ -62,4 +62,17 @@ describe("WorkbenchShell transport controls", () => {
     expect(pause).toHaveBeenCalledOnce();
     expect(seek).toHaveBeenCalledWith(64_000);
   });
+
+  it("shows an empty state and starts audio import from the command strip", async () => {
+    const user = userEvent.setup();
+    const onImportAudio = vi.fn().mockResolvedValue(undefined);
+
+    render(<WorkbenchShell project={null} onImportAudio={onImportAudio} />);
+
+    expect(screen.getByText("No project loaded")).toBeTruthy();
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    expect(onImportAudio).toHaveBeenCalledOnce();
+  });
 });
