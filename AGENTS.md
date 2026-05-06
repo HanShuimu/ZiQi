@@ -62,6 +62,25 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Superpowers Approval Gates
+
+**Brainstorming and writing-plans have hard user approval gates. Do not skip them.**
+
+When `superpowers:brainstorming` is used:
+- Stay in brainstorming only: explore context, ask clarifying questions one at a time, propose approaches, and present the design.
+- Do not write code, scaffold files, invoke implementation skills, or start implementation work during brainstorming.
+- Stop after presenting the design and wait for explicit user approval.
+- Only after the user approves the design, write the design spec.
+- After writing the spec, stop again and ask the user to review and approve it.
+- Only after the user approves the written spec, invoke `superpowers:writing-plans`.
+
+When `superpowers:writing-plans` is used:
+- Write the implementation plan and run the plan self-review only.
+- Do not start implementation, modify product code, or invoke execution skills while writing the plan.
+- After the plan is complete, stop and ask the user whether to execute it.
+- Present the available execution options and wait for explicit user approval.
+- Only after the user approves execution, invoke the chosen execution workflow such as `superpowers:subagent-driven-development` or `superpowers:executing-plans`.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
