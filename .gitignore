@@ -5,3 +5,4 @@ dist-electron/
 .worktrees
 .worktrees/
 brainstorm-*.html
+runtime-diagnostics.log

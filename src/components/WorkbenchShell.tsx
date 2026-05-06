@@ -5,13 +5,19 @@ import type { ProjectAudioFacade } from "../domain/audio/interfaces";
 import type { PlaybackState, SpectrumFrame } from "../domain/audio/types";
 
 interface WorkbenchShellProps {
-  project: ProjectSummary;
+  project: ProjectSummary | null;
   audioFacade?: ProjectAudioFacade;
+  importError?: string | null;
+  isImporting?: boolean;
+  onImportAudio?: () => Promise<void> | void;
 }
 
 export function WorkbenchShell({
   project,
-  audioFacade = mockProjectAudioFacade
+  audioFacade = mockProjectAudioFacade,
+  importError,
+  isImporting = false,
+  onImportAudio
 }: WorkbenchShellProps) {
   const [appVersion, setAppVersion] = useState<string>("...");
   const [spectrumFrames, setSpectrumFrames] = useState<SpectrumFrame[]>([]);
@@ -20,7 +26,12 @@ export function WorkbenchShell({
   );
 
   useEffect(() => {
-    void window.ziqiApp.getVersion().then(setAppVersion);
+    if (typeof window.ziqiApp?.getVersion === "function") {
+      void window.ziqiApp.getVersion().then(setAppVersion);
+    } else {
+      setAppVersion("bridge-missing");
+    }
+
     void audioFacade.analysis
       .getSpectrum({
         startMs: 0,
@@ -63,10 +74,12 @@ export function WorkbenchShell({
     setPlaybackState(audioFacade.playback.getState());
   }
 
-  const progressPercent = Math.min(
-    100,
-    Math.max(0, (playbackState.currentTimeMs / project.sourceAudio.durationMs) * 100)
-  );
+  const durationMs = project?.sourceAudio.durationMs ?? 0;
+  const progressPercent =
+    durationMs > 0
+      ? Math.min(100, Math.max(0, (playbackState.currentTimeMs / durationMs) * 100))
+      : 0;
+  const importButtonLabel = isImporting ? "Importing..." : "Import Audio";
 
   return (
     <div className="app-shell">
@@ -76,20 +89,37 @@ export function WorkbenchShell({
           <h1>Transcription Workbench</h1>
         </div>
         <div className="topbar-meta">
-          <span>Preset: {project.workspace.preset}</span>
+          <span>Preset: {project?.workspace.preset ?? "none"}</span>
           <span>App {appVersion}</span>
         </div>
       </header>
 
       <section className="command-strip">
         <button>Open Project</button>
-        <button>Import Audio</button>
-        <button onClick={handlePlayFromCursor}>Play from Cursor</button>
+        <button disabled={isImporting} onClick={onImportAudio}>
+          {importButtonLabel}
+        </button>
+        <button disabled={!project} onClick={handlePlayFromCursor}>Play from Cursor</button>
         <button>Toggle Grid</button>
         <button>Run Stem Provider</button>
         <button>Run Analysis</button>
       </section>
 
+      {!project ? (
+        <main className="empty-workspace panel">
+          <div>
+            <div className="section-label">Project</div>
+            <h2>No project loaded</h2>
+            <p className="panel-copy">
+              Import a local audio file to create a project and open the spectrum workspace.
+            </p>
+            {importError ? <p className="error-copy">{importError}</p> : null}
+          </div>
+          <button disabled={isImporting} onClick={onImportAudio}>
+            {importButtonLabel}
+          </button>
+        </main>
+      ) : (
       <main className="workspace-grid">
         <aside className="left-rail panel">
           <section>
@@ -210,7 +240,7 @@ export function WorkbenchShell({
               <input
                 aria-label="Seek position"
                 className="transport-seek"
-                max={project.sourceAudio.durationMs}
+                max={durationMs}
                 min={0}
                 onChange={(event) => void handleSeek(Number(event.currentTarget.value))}
                 step={100}
@@ -224,6 +254,7 @@ export function WorkbenchShell({
           </footer>
         </section>
       </main>
+      )}
     </div>
   );
 }

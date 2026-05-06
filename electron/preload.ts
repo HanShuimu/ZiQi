@@ -1,8 +1,9 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 const api = {
-  getVersion: () => ipcRenderer.invoke("app:get-version") as Promise<string>
+  getVersion: () => ipcRenderer.invoke("app:get-version") as Promise<string>,
+  selectAudioFile: () =>
+    ipcRenderer.invoke("audio:select-file") as Promise<{ filePath: string } | null>
 };
 
 contextBridge.exposeInMainWorld("ziqiApp", api);
-
