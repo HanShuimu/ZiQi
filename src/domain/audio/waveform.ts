@@ -64,20 +64,13 @@ function calculateMonoPeak(buffer: DecodedAudioBuffer, startSample: number, endS
   let peak = 0;
 
   for (let sampleIndex = startSample; sampleIndex < endSample; sampleIndex += 1) {
-    let activeChannelCount = 0;
     let mixedSample = 0;
 
     for (let channel = 0; channel < buffer.numberOfChannels; channel += 1) {
-      const channelSample = buffer.getChannelData(channel)[sampleIndex] ?? 0;
-
-      if (channelSample !== 0) {
-        activeChannelCount += 1;
-      }
-
-      mixedSample += channelSample;
+      mixedSample += buffer.getChannelData(channel)[sampleIndex] ?? 0;
     }
 
-    mixedSample /= activeChannelCount || buffer.numberOfChannels;
+    mixedSample /= buffer.numberOfChannels;
     peak = Math.max(peak, Math.abs(mixedSample));
   }
 

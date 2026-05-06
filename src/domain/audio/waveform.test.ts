@@ -42,7 +42,7 @@ describe("createWaveformOverviewFromBuffer", () => {
 
     expect(overview.points).toEqual([
       { startMs: 0, endMs: 500, peak: 0.6 },
-      { startMs: 500, endMs: 1000, peak: 0.2 }
+      { startMs: 500, endMs: 1000, peak: 0.1 }
     ]);
   });
 
