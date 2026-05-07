@@ -92,6 +92,35 @@ describe("App local audio import", () => {
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
   });
 
+  it("creates the playback blob before waveform decoding can detach the audio data", async () => {
+    const audioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockImplementation(async (receivedAudioData) => {
+        structuredClone(receivedAudioData, { transfer: [receivedAudioData] });
+        return {
+          pointsPerSecond: 50,
+          durationMs: 12_000,
+          points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+        };
+      })
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+    expect(URL.createObjectURL).toHaveBeenCalledWith(expect.objectContaining({ size: 8 }));
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
+  });
+
   it("does nothing when file selection is canceled", async () => {
     window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue(null);
     const waveformService = {
@@ -193,7 +222,8 @@ describe("App local audio import", () => {
     expect(screen.getByText("demo track")).toBeTruthy();
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(secondAudioData);
-    expect(URL.createObjectURL).toHaveBeenCalledOnce();
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(2);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
   });
 
   it("keeps the current project and shows a stable error when a later selected file cannot be loaded", async () => {

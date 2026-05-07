@@ -38,28 +38,27 @@ export function App({ waveformService }: AppProps) {
         return;
       }
 
-      const nextWaveformOverview =
-        await activeWaveformService.buildOverviewFromAudioData(selectedFile.audioData);
       const nextPlaybackUrl = URL.createObjectURL(new Blob([selectedFile.audioData]));
-      let metadata;
       try {
-        metadata = await audioFacade.source.load(selectedFile.filePath, nextPlaybackUrl);
+        const nextWaveformOverview =
+          await activeWaveformService.buildOverviewFromAudioData(selectedFile.audioData);
+        const metadata = await audioFacade.source.load(selectedFile.filePath, nextPlaybackUrl);
+        await audioFacade.playback.seek(0);
+        setProject(
+          createProjectFromAudio({
+            filePath: selectedFile.filePath,
+            metadata
+          })
+        );
+        setWaveformOverview(nextWaveformOverview);
+        if (activePlaybackUrl.current) {
+          URL.revokeObjectURL(activePlaybackUrl.current);
+        }
+        activePlaybackUrl.current = nextPlaybackUrl;
       } catch (error) {
         URL.revokeObjectURL(nextPlaybackUrl);
         throw error;
       }
-      await audioFacade.playback.seek(0);
-      setProject(
-        createProjectFromAudio({
-          filePath: selectedFile.filePath,
-          metadata
-        })
-      );
-      setWaveformOverview(nextWaveformOverview);
-      if (activePlaybackUrl.current) {
-        URL.revokeObjectURL(activePlaybackUrl.current);
-      }
-      activePlaybackUrl.current = nextPlaybackUrl;
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Failed to import audio.");
     } finally {
