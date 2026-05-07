@@ -81,6 +81,16 @@ When `superpowers:writing-plans` is used:
 - Present the available execution options and wait for explicit user approval.
 - Only after the user approves execution, invoke the chosen execution workflow such as `superpowers:subagent-driven-development` or `superpowers:executing-plans`.
 
+## 6. Project-Specific Audio/Electron Principles
+
+**Cross-boundary behavior must be verified in the real runtime.**
+
+- Electron preload/main/renderer boundaries need a real app smoke test before being treated as working. At minimum, verify exposed APIs such as `window.ziqiApp` exist in the running Electron renderer.
+- The renderer should not depend on direct local file path reads for audio playback or analysis. Use Electron main/preload as the controlled local-file boundary, and treat file paths as project metadata in the renderer.
+- Audio binary data ownership must be explicit. Browser audio APIs such as `decodeAudioData` may consume or detach buffers, so create independent data views or playback blobs before handing data to APIs that may mutate lifecycle state.
+- Keep analysis data separate from UI rendering samples. Waveform analysis should produce stable time-based data; the UI may aggregate for display, but display size should not force re-analysis or change source analysis values.
+- Playback services should coordinate real media elements, not simulate browser playback. Only write `currentTime` for explicit seek or loop jumps; normal playback time should be read from the media element and synchronized into app state.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
