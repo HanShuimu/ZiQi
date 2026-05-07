@@ -87,13 +87,17 @@ app.whenReady().then(() => {
       return null;
     }
 
-    return {
-      filePath: result.filePaths[0]
-    };
-  });
-  ipcMain.handle("audio:read-file", async (_event, filePath: string) => {
-    const file = await fs.readFile(filePath);
-    return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+    const filePath = result.filePaths[0];
+
+    try {
+      const file = await fs.readFile(filePath);
+      return {
+        audioData: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength),
+        filePath
+      };
+    } catch {
+      throw new Error("Failed to load audio file.");
+    }
   });
   createWindow();
 

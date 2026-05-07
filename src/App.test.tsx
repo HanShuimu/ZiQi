@@ -32,8 +32,8 @@ describe("App local audio import", () => {
       configurable: true,
       value: {
         getVersion: vi.fn().mockResolvedValue("test-version"),
-        readAudioFile: vi.fn().mockResolvedValue(audioData),
         selectAudioFile: vi.fn().mockResolvedValue({
+          audioData,
           filePath: "D:\\Music Library\\demo track.wav"
         })
       }
@@ -52,9 +52,11 @@ describe("App local audio import", () => {
 
   it("creates a project and shows waveform data after importing audio", async () => {
     const audioData = new ArrayBuffer(8);
-    window.ziqiApp.readAudioFile = vi.fn().mockResolvedValue(audioData);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
     const waveformService = {
-      buildOverview: vi.fn(),
       buildOverviewFromAudioData: vi.fn().mockResolvedValue({
         pointsPerSecond: 50,
         durationMs: 12_000,
@@ -74,17 +76,12 @@ describe("App local audio import", () => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
-    expect(window.ziqiApp.readAudioFile).toHaveBeenCalledWith(
-      "D:\\Music Library\\demo track.wav"
-    );
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(audioData);
-    expect(waveformService.buildOverview).not.toHaveBeenCalled();
   });
 
   it("does nothing when file selection is canceled", async () => {
     window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue(null);
     const waveformService = {
-      buildOverview: vi.fn(),
       buildOverviewFromAudioData: vi.fn()
     };
     const user = userEvent.setup();
@@ -94,13 +91,32 @@ describe("App local audio import", () => {
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
     expect(screen.getByText("No project loaded")).toBeTruthy();
-    expect(window.ziqiApp.readAudioFile).not.toHaveBeenCalled();
     expect(waveformService.buildOverviewFromAudioData).not.toHaveBeenCalled();
+  });
+
+  it("shows a stable error when selected file bytes cannot be loaded", async () => {
+    window.ziqiApp.selectAudioFile = vi
+      .fn()
+      .mockRejectedValue(new Error("Failed to load audio file."));
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn()
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to load audio file.")).toBeTruthy();
+    });
+    expect(screen.getByText("No project loaded")).toBeTruthy();
+    expect(waveformService.buildOverviewFromAudioData).not.toHaveBeenCalled();
+    expect(FakeAudioElement.instances[0].src).toBe("");
   });
 
   it("shows a stable error when waveform decoding fails", async () => {
     const waveformService = {
-      buildOverview: vi.fn(),
       buildOverviewFromAudioData: vi
         .fn()
         .mockRejectedValue(new Error("Failed to decode audio waveform."))
@@ -124,17 +140,14 @@ describe("App local audio import", () => {
     window.ziqiApp.selectAudioFile = vi
       .fn()
       .mockResolvedValueOnce({
+        audioData: firstAudioData,
         filePath: "D:\\Music Library\\demo track.wav"
       })
       .mockResolvedValueOnce({
+        audioData: secondAudioData,
         filePath: "D:\\Music Library\\broken track.wav"
       });
-    window.ziqiApp.readAudioFile = vi
-      .fn()
-      .mockResolvedValueOnce(firstAudioData)
-      .mockResolvedValueOnce(secondAudioData);
     const waveformService = {
-      buildOverview: vi.fn(),
       buildOverviewFromAudioData: vi
         .fn()
         .mockResolvedValueOnce({
@@ -173,6 +186,50 @@ describe("App local audio import", () => {
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(secondAudioData);
   });
 
+  it("keeps the current project and shows a stable error when a later selected file cannot be loaded", async () => {
+    const firstAudioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        audioData: firstAudioData,
+        filePath: "D:\\Music Library\\demo track.wav"
+      })
+      .mockRejectedValueOnce(new Error("Failed to load audio file."));
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [
+          { startMs: 0, endMs: 20, peak: 0.2 },
+          { startMs: 20, endMs: 40, peak: 0.8 }
+        ]
+      })
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+    expect(FakeAudioElement.instances[0].src).toBe(
+      "file:///D:/Music%20Library/demo%20track.wav"
+    );
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to load audio file.")).toBeTruthy();
+    });
+    expect(screen.getByText("demo track")).toBeTruthy();
+    expect(FakeAudioElement.instances[0].src).toBe(
+      "file:///D:/Music%20Library/demo%20track.wav"
+    );
+    expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledOnce();
+  });
+
   it("keeps the current project and shows a stable error when media loading fails", async () => {
     class ErrorLoadingAudioElement extends FakeAudioElement {
       override duration = Number.NaN;
@@ -202,7 +259,6 @@ describe("App local audio import", () => {
       value: ErrorLoadingAudioElement
     });
     const waveformService = {
-      buildOverview: vi.fn(),
       buildOverviewFromAudioData: vi.fn().mockResolvedValue({
         pointsPerSecond: 50,
         durationMs: 12_000,

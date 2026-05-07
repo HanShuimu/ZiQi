@@ -37,9 +37,8 @@ export function App({ waveformService }: AppProps) {
         return;
       }
 
-      const audioData = await window.ziqiApp.readAudioFile(selectedFile.filePath);
       const nextWaveformOverview =
-        await activeWaveformService.buildOverviewFromAudioData(audioData);
+        await activeWaveformService.buildOverviewFromAudioData(selectedFile.audioData);
       const metadata = await audioFacade.source.load(selectedFile.filePath);
       await audioFacade.playback.seek(0);
       setProject(
