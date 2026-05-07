@@ -27,6 +27,7 @@ describe("App local audio import", () => {
   beforeEach(() => {
     FakeAudioElement.instances = [];
     const audioData = new ArrayBuffer(8);
+    let objectUrlIndex = 0;
 
     Object.defineProperty(window, "ziqiApp", {
       configurable: true,
@@ -37,6 +38,17 @@ describe("App local audio import", () => {
           filePath: "D:\\Music Library\\demo track.wav"
         })
       }
+    });
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: vi.fn(() => {
+        objectUrlIndex += 1;
+        return `blob:audio-${objectUrlIndex}`;
+      })
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: vi.fn()
     });
 
     Object.defineProperty(window, "Audio", {
@@ -77,6 +89,7 @@ describe("App local audio import", () => {
     });
     expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(audioData);
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
   });
 
   it("does nothing when file selection is canceled", async () => {
@@ -169,9 +182,7 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
-    expect(FakeAudioElement.instances[0].src).toBe(
-      "file:///D:/Music%20Library/demo%20track.wav"
-    );
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(firstAudioData);
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
@@ -180,10 +191,9 @@ describe("App local audio import", () => {
       expect(screen.getByText("Failed to decode audio waveform.")).toBeTruthy();
     });
     expect(screen.getByText("demo track")).toBeTruthy();
-    expect(FakeAudioElement.instances[0].src).toBe(
-      "file:///D:/Music%20Library/demo%20track.wav"
-    );
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(secondAudioData);
+    expect(URL.createObjectURL).toHaveBeenCalledOnce();
   });
 
   it("keeps the current project and shows a stable error when a later selected file cannot be loaded", async () => {
@@ -214,9 +224,7 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
-    expect(FakeAudioElement.instances[0].src).toBe(
-      "file:///D:/Music%20Library/demo%20track.wav"
-    );
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -224,9 +232,7 @@ describe("App local audio import", () => {
       expect(screen.getByText("Failed to load audio file.")).toBeTruthy();
     });
     expect(screen.getByText("demo track")).toBeTruthy();
-    expect(FakeAudioElement.instances[0].src).toBe(
-      "file:///D:/Music%20Library/demo%20track.wav"
-    );
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledOnce();
   });
 
@@ -276,5 +282,6 @@ describe("App local audio import", () => {
     });
     expect(screen.getByText("No project loaded")).toBeTruthy();
     expect(FakeAudioElement.instances[0].src).toBe("");
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-1");
   });
 });

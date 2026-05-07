@@ -16,12 +16,12 @@ export function createBrowserProjectAudioFacade(
 
   return {
     source: {
-      async load(filePath) {
+      async load(filePath, sourceUrl) {
         const hasMediaSource = "src" in media;
         const previousSrc = hasMediaSource ? media.src : undefined;
 
         if (hasMediaSource) {
-          media.src = toAudioUrl(filePath);
+          media.src = sourceUrl ?? toAudioUrl(filePath);
         }
 
         try {

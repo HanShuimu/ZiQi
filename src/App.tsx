@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { WorkbenchShell } from "./components/WorkbenchShell";
 import { createBrowserProjectAudioFacade } from "./domain/audio/browserProjectAudioFacade";
 import type { ProjectSummary } from "./domain/project/types";
@@ -18,6 +18,7 @@ export function App({ waveformService }: AppProps) {
   const [waveformOverview, setWaveformOverview] = useState<WaveformOverview | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const activePlaybackUrl = useRef<string | null>(null);
   const audioFacade = useMemo(
     () => createBrowserProjectAudioFacade(new Audio()),
     []
@@ -39,7 +40,14 @@ export function App({ waveformService }: AppProps) {
 
       const nextWaveformOverview =
         await activeWaveformService.buildOverviewFromAudioData(selectedFile.audioData);
-      const metadata = await audioFacade.source.load(selectedFile.filePath);
+      const nextPlaybackUrl = URL.createObjectURL(new Blob([selectedFile.audioData]));
+      let metadata;
+      try {
+        metadata = await audioFacade.source.load(selectedFile.filePath, nextPlaybackUrl);
+      } catch (error) {
+        URL.revokeObjectURL(nextPlaybackUrl);
+        throw error;
+      }
       await audioFacade.playback.seek(0);
       setProject(
         createProjectFromAudio({
@@ -48,6 +56,10 @@ export function App({ waveformService }: AppProps) {
         })
       );
       setWaveformOverview(nextWaveformOverview);
+      if (activePlaybackUrl.current) {
+        URL.revokeObjectURL(activePlaybackUrl.current);
+      }
+      activePlaybackUrl.current = nextPlaybackUrl;
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Failed to import audio.");
     } finally {

@@ -55,6 +55,15 @@ describe("createBrowserProjectAudioFacade", () => {
     });
   });
 
+  it("uses an explicit source URL when provided", async () => {
+    const media = new FakeMediaElement();
+    const facade = createBrowserProjectAudioFacade(media);
+
+    await facade.source.load("D:\\Music Library\\demo track.wav", "blob:demo-track");
+
+    expect(media.src).toBe("blob:demo-track");
+  });
+
   it("waits for browser metadata before returning duration", async () => {
     const media = new FakeMetadataLoadingMediaElement();
     const facade = createBrowserProjectAudioFacade(media);
