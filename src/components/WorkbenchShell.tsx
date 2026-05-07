@@ -2,11 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { ProjectSummary } from "../domain/project/types";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
 import type { ProjectAudioFacade } from "../domain/audio/interfaces";
-import type { PlaybackState, SpectrumFrame } from "../domain/audio/types";
+import type { PlaybackState, SpectrumFrame, WaveformOverview } from "../domain/audio/types";
 
 interface WorkbenchShellProps {
   project: ProjectSummary | null;
   audioFacade?: ProjectAudioFacade;
+  waveformOverview?: WaveformOverview | null;
   importError?: string | null;
   isImporting?: boolean;
   onImportAudio?: () => Promise<void> | void;
@@ -15,6 +16,7 @@ interface WorkbenchShellProps {
 export function WorkbenchShell({
   project,
   audioFacade = mockProjectAudioFacade,
+  waveformOverview,
   importError,
   isImporting = false,
   onImportAudio
@@ -164,26 +166,28 @@ export function WorkbenchShell({
               </div>
             </div>
 
-            <div className="spectrum-canvas">
-              <div className="spectrum-grid">
-                {spectrumFrames.map((frame) => (
-                  <div key={frame.startMs} className="spectrum-column">
-                    {frame.bins.map((bin, index) => (
-                      <div
-                        key={index}
-                        className="spectrum-bin"
-                        style={{
-                          opacity: Math.min(1, bin + 0.2),
-                          height: `${Math.max(6, bin * 100)}%`
-                        }}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
+            <div className="spectrum-canvas waveform-canvas" aria-label="Audio waveform">
+              {waveformOverview && waveformOverview.points.length > 0 ? (
+                <div className="waveform-grid">
+                  {waveformOverview.points.map((point) => (
+                    <div
+                      key={`${point.startMs}-${point.endMs}`}
+                      className="waveform-point"
+                      data-testid="waveform-point"
+                      style={{
+                        height: `${Math.max(2, point.peak * 100)}%`
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="waveform-empty">Import audio to generate a waveform.</div>
+              )}
 
-              <div className="cursor-line cursor-line-vertical" />
-              <div className="cursor-line cursor-line-horizontal" />
+              <div
+                className="cursor-line cursor-line-vertical"
+                style={{ left: `${progressPercent}%` }}
+              />
               <div className="grid-overlay" />
             </div>
           </div>

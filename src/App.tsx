@@ -3,14 +3,29 @@ import { WorkbenchShell } from "./components/WorkbenchShell";
 import { createBrowserProjectAudioFacade } from "./domain/audio/browserProjectAudioFacade";
 import type { ProjectSummary } from "./domain/project/types";
 import { createProjectFromAudio } from "./domain/project/createProjectFromAudio";
+import {
+  createBrowserWaveformService,
+  type WaveformService
+} from "./domain/audio/browserWaveformService";
+import { toAudioUrl } from "./domain/audio/audioFileUrl";
+import type { WaveformOverview } from "./domain/audio/types";
 
-export function App() {
+interface AppProps {
+  waveformService?: WaveformService;
+}
+
+export function App({ waveformService }: AppProps) {
   const [project, setProject] = useState<ProjectSummary | null>(null);
+  const [waveformOverview, setWaveformOverview] = useState<WaveformOverview | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const audioFacade = useMemo(
     () => createBrowserProjectAudioFacade(new Audio()),
     []
+  );
+  const activeWaveformService = useMemo(
+    () => waveformService ?? createBrowserWaveformService(),
+    [waveformService]
   );
 
   async function handleImportAudio() {
@@ -23,7 +38,9 @@ export function App() {
         return;
       }
 
+      const audioUrl = toAudioUrl(selectedFile.filePath);
       const metadata = await audioFacade.source.load(selectedFile.filePath);
+      const nextWaveformOverview = await activeWaveformService.buildOverview(audioUrl);
       await audioFacade.playback.seek(0);
       setProject(
         createProjectFromAudio({
@@ -31,6 +48,7 @@ export function App() {
           metadata
         })
       );
+      setWaveformOverview(nextWaveformOverview);
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Failed to import audio.");
     } finally {
@@ -45,6 +63,7 @@ export function App() {
       isImporting={isImporting}
       onImportAudio={handleImportAudio}
       project={project}
+      waveformOverview={waveformOverview}
     />
   );
 }
