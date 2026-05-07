@@ -98,6 +98,30 @@ describe("WorkbenchShell transport controls", () => {
     );
 
     expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Audio waveform" })).toBeTruthy();
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
+  });
+
+  it("limits rendered waveform points for long overviews", async () => {
+    const project = createMockProjectSummary();
+    const waveformOverview: WaveformOverview = {
+      pointsPerSecond: 50,
+      durationMs: 20_000,
+      points: Array.from({ length: 1000 }, (_, index) => ({
+        startMs: index * 20,
+        endMs: index * 20 + 20,
+        peak: (index % 10) / 10
+      }))
+    };
+
+    render(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        waveformOverview={waveformOverview}
+      />
+    );
+
+    expect(screen.getAllByTestId("waveform-point")).toHaveLength(800);
   });
 });

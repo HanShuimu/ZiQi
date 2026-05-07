@@ -39,8 +39,8 @@ export function App({ waveformService }: AppProps) {
       }
 
       const audioUrl = toAudioUrl(selectedFile.filePath);
-      const metadata = await audioFacade.source.load(selectedFile.filePath);
       const nextWaveformOverview = await activeWaveformService.buildOverview(audioUrl);
+      const metadata = await audioFacade.source.load(selectedFile.filePath);
       await audioFacade.playback.seek(0);
       setProject(
         createProjectFromAudio({

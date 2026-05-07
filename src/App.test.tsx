@@ -4,11 +4,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
 class FakeAudioElement {
+  static instances: FakeAudioElement[] = [];
+
   currentTime = 0;
   duration = 12;
   playbackRate = 1;
   preservesPitch = false;
   src = "";
+
+  constructor() {
+    FakeAudioElement.instances.push(this);
+  }
 
   async play() {}
 
@@ -19,6 +25,8 @@ class FakeAudioElement {
 
 describe("App local audio import", () => {
   beforeEach(() => {
+    FakeAudioElement.instances = [];
+
     Object.defineProperty(window, "ziqiApp", {
       configurable: true,
       value: {
@@ -128,6 +136,9 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
+    expect(FakeAudioElement.instances[0].src).toBe(
+      "file:///D:/Music%20Library/demo%20track.wav"
+    );
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -135,5 +146,8 @@ describe("App local audio import", () => {
       expect(screen.getByText("Failed to decode audio waveform.")).toBeTruthy();
     });
     expect(screen.getByText("demo track")).toBeTruthy();
+    expect(FakeAudioElement.instances[0].src).toBe(
+      "file:///D:/Music%20Library/demo%20track.wav"
+    );
   });
 });
