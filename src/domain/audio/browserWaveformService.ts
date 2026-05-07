@@ -24,14 +24,26 @@ export function createBrowserWaveformService(): WaveformService {
       }
 
       const audioContext = new AudioContext();
+      let decodedAudio: AudioBuffer;
 
       try {
         const audioData = await response.arrayBuffer();
-        const decodedAudio = await audioContext.decodeAudioData(audioData);
-        return createWaveformOverviewFromBuffer(decodedAudio, options);
+        decodedAudio = await audioContext.decodeAudioData(audioData);
       } catch {
         throw new Error("Failed to decode audio waveform.");
+      } finally {
+        await closeAudioContext(audioContext);
       }
+
+      return createWaveformOverviewFromBuffer(decodedAudio, options);
     }
   };
+}
+
+async function closeAudioContext(audioContext: AudioContext) {
+  try {
+    await audioContext.close?.();
+  } catch {
+    // Ignore cleanup failures so they do not mask the primary result or error.
+  }
 }
