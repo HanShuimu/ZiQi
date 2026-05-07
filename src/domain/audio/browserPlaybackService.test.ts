@@ -2,12 +2,26 @@ import { describe, expect, it, vi } from "vitest";
 import { BrowserPlaybackService } from "./browserPlaybackService";
 
 class FakeMediaElement {
-  currentTime = 0;
+  private simulatedCurrentTime = 0;
+  currentTimeWrites = 0;
   playbackRate = 1;
   preservesPitch = true;
   loop = false;
   paused = true;
   private listeners = new Map<string, Set<() => void>>();
+
+  get currentTime() {
+    return this.simulatedCurrentTime;
+  }
+
+  set currentTime(time: number) {
+    this.currentTimeWrites += 1;
+    this.simulatedCurrentTime = time;
+  }
+
+  simulateBrowserCurrentTime(time: number) {
+    this.simulatedCurrentTime = time;
+  }
 
   async play() {
     this.paused = false;
@@ -76,14 +90,28 @@ describe("BrowserPlaybackService", () => {
     expect(service.getState().loopRange).toBeUndefined();
   });
 
-  it("advances time while playing and wraps to the loop start when the loop end is reached", async () => {
+  it("syncs browser-driven time while playing and only seeks when the loop end is reached", async () => {
     vi.useFakeTimers();
     const media = new FakeMediaElement();
     const service = new BrowserPlaybackService(media);
 
     await service.setLoopRange(1_000, 2_000);
     await service.play(1_500);
-    vi.advanceTimersByTime(500);
+    const writesAfterPlay = media.currentTimeWrites;
+
+    vi.advanceTimersByTime(50);
+
+    expect(media.currentTime).toBe(1.5);
+    expect(media.currentTimeWrites).toBe(writesAfterPlay);
+
+    media.simulateBrowserCurrentTime(1.75);
+    vi.advanceTimersByTime(50);
+
+    expect(media.currentTimeWrites).toBe(writesAfterPlay);
+    expect(service.getState().currentTimeMs).toBe(1_750);
+
+    media.simulateBrowserCurrentTime(2.1);
+    vi.advanceTimersByTime(50);
 
     expect(media.currentTime).toBe(1);
     expect(service.getState().currentTimeMs).toBe(1_000);
