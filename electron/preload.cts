@@ -6,7 +6,9 @@ const api = {
     ipcRenderer.invoke("audio:select-file") as Promise<{
       audioData: ArrayBuffer;
       filePath: string;
-    } | null>
+    } | null>,
+  saveProject: (request: unknown) => ipcRenderer.invoke("project:save", request),
+  openProject: () => ipcRenderer.invoke("project:open")
 };
 
 contextBridge.exposeInMainWorld("ziqiApp", api);

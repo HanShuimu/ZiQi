@@ -8,7 +8,7 @@ import {
   parseZiqiProjectPayload,
   saveExistingProject,
   saveNewProject
-} from "./projectFiles";
+} from "./projectFiles.js";
 
 const project = {
   id: "project-2026-05-07T12:00:00.000Z",

@@ -2,6 +2,7 @@ import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { openProjectFromFile, saveExistingProject, saveNewProject } from "./projectFiles.js";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -99,6 +100,53 @@ app.whenReady().then(() => {
       throw new Error("Failed to load audio file.");
     }
   });
+
+  ipcMain.handle("project:save", async (_event, request) => {
+    if (!request?.project) {
+      throw new Error("Failed to save project.");
+    }
+
+    if (request.projectFilePath && request.projectRootPath) {
+      return saveExistingProject({
+        project: request.project,
+        projectFilePath: request.projectFilePath,
+        projectRootPath: request.projectRootPath
+      });
+    }
+
+    const result = await dialog.showOpenDialog({
+      properties: ["openDirectory", "createDirectory"],
+      title: "Choose Project Parent Folder"
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    return saveNewProject({
+      parentDirectoryPath: result.filePaths[0],
+      project: request.project
+    });
+  });
+
+  ipcMain.handle("project:open", async () => {
+    const result = await dialog.showOpenDialog({
+      properties: ["openFile"],
+      filters: [
+        {
+          name: "ZiQi Project",
+          extensions: ["ziqi"]
+        }
+      ]
+    });
+
+    if (result.canceled || result.filePaths.length === 0) {
+      return null;
+    }
+
+    return openProjectFromFile(result.filePaths[0]);
+  });
+
   createWindow();
 
   app.on("activate", () => {
