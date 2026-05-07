@@ -69,4 +69,16 @@ describe("createBrowserProjectAudioFacade", () => {
       channelCount: 2
     });
   });
+
+  it("rejects and restores the previous source when browser metadata loading errors", async () => {
+    const media = new FakeMetadataLoadingMediaElement();
+    media.src = "file:///D:/Music%20Library/current.wav";
+    const facade = createBrowserProjectAudioFacade(media);
+
+    const metadataPromise = facade.source.load("D:\\Music Library\\broken.wav");
+    media.emit("error");
+
+    await expect(metadataPromise).rejects.toThrow("Failed to load audio file.");
+    expect(media.src).toBe("file:///D:/Music%20Library/current.wav");
+  });
 });

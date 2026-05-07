@@ -24,18 +24,14 @@ describe("createBrowserWaveformService", () => {
     Reflect.deleteProperty(globalThis, "AudioContext");
   });
 
-  it("fetches and decodes an audio URL into a waveform overview", async () => {
+  it("decodes audio data into a waveform overview", async () => {
     const arrayBuffer = new ArrayBuffer(8);
     const decodeAudioData = vi.fn().mockResolvedValue(new FakeAudioBuffer());
     const close = vi.fn().mockRejectedValue(new Error("close failed"));
-    const fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      arrayBuffer: vi.fn().mockResolvedValue(arrayBuffer)
-    });
 
     Object.defineProperty(globalThis, "fetch", {
       configurable: true,
-      value: fetch
+      value: vi.fn()
     });
     Object.defineProperty(globalThis, "AudioContext", {
       configurable: true,
@@ -45,9 +41,9 @@ describe("createBrowserWaveformService", () => {
     });
 
     const service = createBrowserWaveformService();
-    const overview = await service.buildOverview("file:///D:/demo.wav");
+    const overview = await service.buildOverviewFromAudioData(arrayBuffer);
 
-    expect(fetch).toHaveBeenCalledWith("file:///D:/demo.wav");
+    expect(globalThis.fetch).not.toHaveBeenCalled();
     expect(decodeAudioData).toHaveBeenCalledWith(arrayBuffer);
     expect(overview.pointsPerSecond).toBe(50);
     expect(overview.durationMs).toBe(1000);
@@ -55,79 +51,9 @@ describe("createBrowserWaveformService", () => {
     expect(close).toHaveBeenCalledOnce();
   });
 
-  it("throws a stable error when fetching the audio file fails", async () => {
-    Object.defineProperty(globalThis, "fetch", {
-      configurable: true,
-      value: vi.fn().mockResolvedValue({ ok: false })
-    });
-    Object.defineProperty(globalThis, "AudioContext", {
-      configurable: true,
-      value: vi.fn(function () {
-        return { decodeAudioData: vi.fn() };
-      })
-    });
-
-    const service = createBrowserWaveformService();
-
-    await expect(service.buildOverview("file:///D:/missing.wav")).rejects.toThrow(
-      "Failed to load audio file."
-    );
-  });
-
-  it("throws a stable error when fetching rejects", async () => {
-    Object.defineProperty(globalThis, "fetch", {
-      configurable: true,
-      value: vi.fn().mockRejectedValue(new Error("cannot read"))
-    });
-    Object.defineProperty(globalThis, "AudioContext", {
-      configurable: true,
-      value: vi.fn(function () {
-        return { close: vi.fn(), decodeAudioData: vi.fn() };
-      })
-    });
-
-    const service = createBrowserWaveformService();
-
-    await expect(service.buildOverview("file:///D:/unreadable.wav")).rejects.toThrow(
-      "Failed to load audio file."
-    );
-  });
-
-  it("throws a stable error when reading audio data fails", async () => {
-    const close = vi.fn().mockResolvedValue(undefined);
-
-    Object.defineProperty(globalThis, "fetch", {
-      configurable: true,
-      value: vi.fn().mockResolvedValue({
-        ok: true,
-        arrayBuffer: vi.fn().mockRejectedValue(new Error("bad data"))
-      })
-    });
-    Object.defineProperty(globalThis, "AudioContext", {
-      configurable: true,
-      value: vi.fn(function () {
-        return { close, decodeAudioData: vi.fn() };
-      })
-    });
-
-    const service = createBrowserWaveformService();
-
-    await expect(service.buildOverview("file:///D:/bad-data.wav")).rejects.toThrow(
-      "Failed to decode audio waveform."
-    );
-    expect(close).toHaveBeenCalledOnce();
-  });
-
   it("throws a stable error when decoding fails", async () => {
     const close = vi.fn().mockRejectedValue(new Error("close failed"));
 
-    Object.defineProperty(globalThis, "fetch", {
-      configurable: true,
-      value: vi.fn().mockResolvedValue({
-        ok: true,
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8))
-      })
-    });
     Object.defineProperty(globalThis, "AudioContext", {
       configurable: true,
       value: vi.fn(function () {
@@ -140,7 +66,7 @@ describe("createBrowserWaveformService", () => {
 
     const service = createBrowserWaveformService();
 
-    await expect(service.buildOverview("file:///D:/bad.wav")).rejects.toThrow(
+    await expect(service.buildOverviewFromAudioData(new ArrayBuffer(8))).rejects.toThrow(
       "Failed to decode audio waveform."
     );
     expect(close).toHaveBeenCalledOnce();
@@ -149,13 +75,6 @@ describe("createBrowserWaveformService", () => {
   it("does not remap waveform generation errors", async () => {
     const close = vi.fn().mockResolvedValue(undefined);
 
-    Object.defineProperty(globalThis, "fetch", {
-      configurable: true,
-      value: vi.fn().mockResolvedValue({
-        ok: true,
-        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8))
-      })
-    });
     Object.defineProperty(globalThis, "AudioContext", {
       configurable: true,
       value: vi.fn(function () {
@@ -168,7 +87,7 @@ describe("createBrowserWaveformService", () => {
 
     const service = createBrowserWaveformService();
 
-    await expect(service.buildOverview("file:///D:/overview.wav")).rejects.toThrow(
+    await expect(service.buildOverviewFromAudioData(new ArrayBuffer(8))).rejects.toThrow(
       "overview failed"
     );
     expect(close).toHaveBeenCalledOnce();

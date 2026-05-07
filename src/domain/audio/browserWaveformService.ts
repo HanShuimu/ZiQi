@@ -5,29 +5,19 @@ import {
 } from "./waveform";
 
 export interface WaveformService {
-  buildOverview(audioUrl: string, options?: WaveformBuildOptions): Promise<WaveformOverview>;
+  buildOverviewFromAudioData(
+    audioData: ArrayBuffer,
+    options?: WaveformBuildOptions
+  ): Promise<WaveformOverview>;
 }
 
 export function createBrowserWaveformService(): WaveformService {
   return {
-    async buildOverview(audioUrl, options) {
-      let response: Response;
-
-      try {
-        response = await fetch(audioUrl);
-      } catch {
-        throw new Error("Failed to load audio file.");
-      }
-
-      if (!response.ok) {
-        throw new Error("Failed to load audio file.");
-      }
-
+    async buildOverviewFromAudioData(audioData, options) {
       const audioContext = new AudioContext();
       let decodedAudio: AudioBuffer;
 
       try {
-        const audioData = await response.arrayBuffer();
         decodedAudio = await audioContext.decodeAudioData(audioData);
       } catch {
         throw new Error("Failed to decode audio waveform.");

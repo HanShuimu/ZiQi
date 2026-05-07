@@ -17,12 +17,23 @@ export function createBrowserProjectAudioFacade(
   return {
     source: {
       async load(filePath) {
-        if ("src" in media) {
+        const hasMediaSource = "src" in media;
+        const previousSrc = hasMediaSource ? media.src : undefined;
+
+        if (hasMediaSource) {
           media.src = toAudioUrl(filePath);
         }
 
-        media.load?.();
-        await waitForMetadata(media);
+        try {
+          media.load?.();
+          await waitForMetadata(media);
+        } catch {
+          if (hasMediaSource) {
+            media.src = previousSrc ?? "";
+            media.load?.();
+          }
+          throw new Error("Failed to load audio file.");
+        }
 
         return {
           durationMs: Number.isFinite(media.duration) ? Math.round((media.duration ?? 0) * 1000) : 0,
@@ -52,7 +63,7 @@ function waitForMetadata(media: BrowserProjectAudioMedia) {
     return Promise.resolve();
   }
 
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
     const cleanup = () => {
       media.removeEventListener?.("loadedmetadata", handleLoadedMetadata);
       media.removeEventListener?.("error", handleError);
@@ -63,7 +74,7 @@ function waitForMetadata(media: BrowserProjectAudioMedia) {
     };
     const handleError = () => {
       cleanup();
-      resolve();
+      reject(new Error("Failed to load audio file."));
     };
 
     media.addEventListener?.("loadedmetadata", handleLoadedMetadata);

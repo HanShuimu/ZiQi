@@ -91,6 +91,10 @@ app.whenReady().then(() => {
       filePath: result.filePaths[0]
     };
   });
+  ipcMain.handle("audio:read-file", async (_event, filePath: string) => {
+    const file = await fs.readFile(filePath);
+    return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength);
+  });
   createWindow();
 
   app.on("activate", () => {

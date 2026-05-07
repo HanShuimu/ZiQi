@@ -7,7 +7,6 @@ import {
   createBrowserWaveformService,
   type WaveformService
 } from "./domain/audio/browserWaveformService";
-import { toAudioUrl } from "./domain/audio/audioFileUrl";
 import type { WaveformOverview } from "./domain/audio/types";
 
 interface AppProps {
@@ -38,8 +37,9 @@ export function App({ waveformService }: AppProps) {
         return;
       }
 
-      const audioUrl = toAudioUrl(selectedFile.filePath);
-      const nextWaveformOverview = await activeWaveformService.buildOverview(audioUrl);
+      const audioData = await window.ziqiApp.readAudioFile(selectedFile.filePath);
+      const nextWaveformOverview =
+        await activeWaveformService.buildOverviewFromAudioData(audioData);
       const metadata = await audioFacade.source.load(selectedFile.filePath);
       await audioFacade.playback.seek(0);
       setProject(
