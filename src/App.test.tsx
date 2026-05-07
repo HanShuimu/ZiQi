@@ -96,4 +96,44 @@ describe("App local audio import", () => {
     });
     expect(screen.getByText("No project loaded")).toBeTruthy();
   });
+
+  it("keeps the current project and shows a stable error when a later import fails", async () => {
+    window.ziqiApp.selectAudioFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        filePath: "D:\\Music Library\\demo track.wav"
+      })
+      .mockResolvedValueOnce({
+        filePath: "D:\\Music Library\\broken track.wav"
+      });
+    const waveformService = {
+      buildOverview: vi
+        .fn()
+        .mockResolvedValueOnce({
+          pointsPerSecond: 50,
+          durationMs: 12_000,
+          points: [
+            { startMs: 0, endMs: 20, peak: 0.2 },
+            { startMs: 20, endMs: 40, peak: 0.8 }
+          ]
+        })
+        .mockRejectedValueOnce(new Error("Failed to decode audio waveform."))
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to decode audio waveform.")).toBeTruthy();
+    });
+    expect(screen.getByText("demo track")).toBeTruthy();
+  });
 });

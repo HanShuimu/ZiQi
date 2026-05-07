@@ -107,6 +107,8 @@ export function WorkbenchShell({
         <button>Run Analysis</button>
       </section>
 
+      {project && importError ? <p className="error-copy">{importError}</p> : null}
+
       {!project ? (
         <main className="empty-workspace panel">
           <div>
