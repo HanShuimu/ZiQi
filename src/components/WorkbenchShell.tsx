@@ -2,11 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import type { ProjectSummary } from "../domain/project/types";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
 import type { ProjectAudioFacade } from "../domain/audio/interfaces";
-import type { PlaybackState, SpectrumFrame } from "../domain/audio/types";
+import type { PlaybackState, WaveformOverview } from "../domain/audio/types";
+
+const MAX_RENDERED_WAVEFORM_POINTS = 800;
+
+type RenderedWaveformPoint = WaveformOverview["points"][number];
 
 interface WorkbenchShellProps {
   project: ProjectSummary | null;
   audioFacade?: ProjectAudioFacade;
+  waveformOverview?: WaveformOverview | null;
   importError?: string | null;
   isImporting?: boolean;
   onImportAudio?: () => Promise<void> | void;
@@ -15,12 +20,12 @@ interface WorkbenchShellProps {
 export function WorkbenchShell({
   project,
   audioFacade = mockProjectAudioFacade,
+  waveformOverview,
   importError,
   isImporting = false,
   onImportAudio
 }: WorkbenchShellProps) {
   const [appVersion, setAppVersion] = useState<string>("...");
-  const [spectrumFrames, setSpectrumFrames] = useState<SpectrumFrame[]>([]);
   const [playbackState, setPlaybackState] = useState<PlaybackState>(() =>
     audioFacade.playback.getState()
   );
@@ -31,17 +36,7 @@ export function WorkbenchShell({
     } else {
       setAppVersion("bridge-missing");
     }
-
-    void audioFacade.analysis
-      .getSpectrum({
-        startMs: 0,
-        endMs: 12000,
-        minHz: 20,
-        maxHz: 5000,
-        channelMode: "merged"
-      })
-      .then(setSpectrumFrames);
-  }, [audioFacade]);
+  }, []);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -79,6 +74,10 @@ export function WorkbenchShell({
     durationMs > 0
       ? Math.min(100, Math.max(0, (playbackState.currentTimeMs / durationMs) * 100))
       : 0;
+  const renderedWaveformPoints = useMemo(
+    () => getRenderedWaveformPoints(waveformOverview),
+    [waveformOverview]
+  );
   const importButtonLabel = isImporting ? "Importing..." : "Import Audio";
 
   return (
@@ -104,6 +103,8 @@ export function WorkbenchShell({
         <button>Run Stem Provider</button>
         <button>Run Analysis</button>
       </section>
+
+      {project && importError ? <p className="error-copy">{importError}</p> : null}
 
       {!project ? (
         <main className="empty-workspace panel">
@@ -164,26 +165,28 @@ export function WorkbenchShell({
               </div>
             </div>
 
-            <div className="spectrum-canvas">
-              <div className="spectrum-grid">
-                {spectrumFrames.map((frame) => (
-                  <div key={frame.startMs} className="spectrum-column">
-                    {frame.bins.map((bin, index) => (
-                      <div
-                        key={index}
-                        className="spectrum-bin"
-                        style={{
-                          opacity: Math.min(1, bin + 0.2),
-                          height: `${Math.max(6, bin * 100)}%`
-                        }}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
+            <div className="spectrum-canvas waveform-canvas" aria-label="Audio waveform" role="img">
+              {renderedWaveformPoints.length > 0 ? (
+                <div className="waveform-grid">
+                  {renderedWaveformPoints.map((point) => (
+                    <div
+                      key={`${point.startMs}-${point.endMs}`}
+                      className="waveform-point"
+                      data-testid="waveform-point"
+                      style={{
+                        height: `${Math.max(2, point.peak * 100)}%`
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="waveform-empty">Import audio to generate a waveform.</div>
+              )}
 
-              <div className="cursor-line cursor-line-vertical" />
-              <div className="cursor-line cursor-line-horizontal" />
+              <div
+                className="cursor-line cursor-line-vertical"
+                style={{ left: `${progressPercent}%` }}
+              />
               <div className="grid-overlay" />
             </div>
           </div>
@@ -257,4 +260,25 @@ export function WorkbenchShell({
       )}
     </div>
   );
+}
+
+function getRenderedWaveformPoints(
+  waveformOverview: WaveformOverview | null | undefined
+): RenderedWaveformPoint[] {
+  const points = waveformOverview?.points ?? [];
+  if (points.length <= MAX_RENDERED_WAVEFORM_POINTS) {
+    return points;
+  }
+
+  return Array.from({ length: MAX_RENDERED_WAVEFORM_POINTS }, (_, index) => {
+    const startIndex = Math.floor((index * points.length) / MAX_RENDERED_WAVEFORM_POINTS);
+    const endIndex = Math.floor(((index + 1) * points.length) / MAX_RENDERED_WAVEFORM_POINTS);
+    const group = points.slice(startIndex, Math.max(startIndex + 1, endIndex));
+
+    return {
+      startMs: group[0].startMs,
+      endMs: group[group.length - 1].endMs,
+      peak: Math.max(...group.map((point) => point.peak))
+    };
+  });
 }

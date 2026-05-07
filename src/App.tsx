@@ -1,16 +1,31 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { WorkbenchShell } from "./components/WorkbenchShell";
 import { createBrowserProjectAudioFacade } from "./domain/audio/browserProjectAudioFacade";
 import type { ProjectSummary } from "./domain/project/types";
 import { createProjectFromAudio } from "./domain/project/createProjectFromAudio";
+import {
+  createBrowserWaveformService,
+  type WaveformService
+} from "./domain/audio/browserWaveformService";
+import type { WaveformOverview } from "./domain/audio/types";
 
-export function App() {
+interface AppProps {
+  waveformService?: WaveformService;
+}
+
+export function App({ waveformService }: AppProps) {
   const [project, setProject] = useState<ProjectSummary | null>(null);
+  const [waveformOverview, setWaveformOverview] = useState<WaveformOverview | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const activePlaybackUrl = useRef<string | null>(null);
   const audioFacade = useMemo(
     () => createBrowserProjectAudioFacade(new Audio()),
     []
+  );
+  const activeWaveformService = useMemo(
+    () => waveformService ?? createBrowserWaveformService(),
+    [waveformService]
   );
 
   async function handleImportAudio() {
@@ -23,14 +38,27 @@ export function App() {
         return;
       }
 
-      const metadata = await audioFacade.source.load(selectedFile.filePath);
-      await audioFacade.playback.seek(0);
-      setProject(
-        createProjectFromAudio({
-          filePath: selectedFile.filePath,
-          metadata
-        })
-      );
+      const nextPlaybackUrl = URL.createObjectURL(new Blob([selectedFile.audioData]));
+      try {
+        const nextWaveformOverview =
+          await activeWaveformService.buildOverviewFromAudioData(selectedFile.audioData);
+        const metadata = await audioFacade.source.load(selectedFile.filePath, nextPlaybackUrl);
+        await audioFacade.playback.seek(0);
+        setProject(
+          createProjectFromAudio({
+            filePath: selectedFile.filePath,
+            metadata
+          })
+        );
+        setWaveformOverview(nextWaveformOverview);
+        if (activePlaybackUrl.current) {
+          URL.revokeObjectURL(activePlaybackUrl.current);
+        }
+        activePlaybackUrl.current = nextPlaybackUrl;
+      } catch (error) {
+        URL.revokeObjectURL(nextPlaybackUrl);
+        throw error;
+      }
     } catch (error) {
       setImportError(error instanceof Error ? error.message : "Failed to import audio.");
     } finally {
@@ -45,6 +73,7 @@ export function App() {
       isImporting={isImporting}
       onImportAudio={handleImportAudio}
       project={project}
+      waveformOverview={waveformOverview}
     />
   );
 }

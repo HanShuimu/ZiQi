@@ -83,7 +83,6 @@ export class BrowserPlaybackService implements PlaybackService {
     }
 
     this.timerId = setInterval(() => {
-      this.media.currentTime += (TICK_MS / 1000) * this.state.playbackRate;
       this.syncFromMedia();
       this.applyLoopRange();
     }, TICK_MS);

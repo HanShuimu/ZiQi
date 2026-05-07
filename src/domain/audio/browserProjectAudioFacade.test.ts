@@ -55,6 +55,15 @@ describe("createBrowserProjectAudioFacade", () => {
     });
   });
 
+  it("uses an explicit source URL when provided", async () => {
+    const media = new FakeMediaElement();
+    const facade = createBrowserProjectAudioFacade(media);
+
+    await facade.source.load("D:\\Music Library\\demo track.wav", "blob:demo-track");
+
+    expect(media.src).toBe("blob:demo-track");
+  });
+
   it("waits for browser metadata before returning duration", async () => {
     const media = new FakeMetadataLoadingMediaElement();
     const facade = createBrowserProjectAudioFacade(media);
@@ -68,5 +77,17 @@ describe("createBrowserProjectAudioFacade", () => {
       sampleRate: 0,
       channelCount: 2
     });
+  });
+
+  it("rejects and restores the previous source when browser metadata loading errors", async () => {
+    const media = new FakeMetadataLoadingMediaElement();
+    media.src = "file:///D:/Music%20Library/current.wav";
+    const facade = createBrowserProjectAudioFacade(media);
+
+    const metadataPromise = facade.source.load("D:\\Music Library\\broken.wav");
+    media.emit("error");
+
+    await expect(metadataPromise).rejects.toThrow("Failed to load audio file.");
+    expect(media.src).toBe("file:///D:/Music%20Library/current.wav");
   });
 });

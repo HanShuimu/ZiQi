@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
+import type { WaveformOverview } from "../domain/audio/types";
 import { createMockProjectSummary } from "../domain/project/mockProject";
 import { WorkbenchShell } from "./WorkbenchShell";
 
@@ -74,5 +75,53 @@ describe("WorkbenchShell transport controls", () => {
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
     expect(onImportAudio).toHaveBeenCalledOnce();
+  });
+
+  it("renders real waveform overview data when a project is loaded", async () => {
+    const project = createMockProjectSummary();
+    const waveformOverview: WaveformOverview = {
+      pointsPerSecond: 50,
+      durationMs: 120_000,
+      points: [
+        { startMs: 0, endMs: 20, peak: 0.2 },
+        { startMs: 20, endMs: 40, peak: 0.8 },
+        { startMs: 40, endMs: 60, peak: 0.4 }
+      ]
+    };
+
+    render(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        waveformOverview={waveformOverview}
+      />
+    );
+
+    expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Audio waveform" })).toBeTruthy();
+    expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
+  });
+
+  it("limits rendered waveform points for long overviews", async () => {
+    const project = createMockProjectSummary();
+    const waveformOverview: WaveformOverview = {
+      pointsPerSecond: 50,
+      durationMs: 20_000,
+      points: Array.from({ length: 1000 }, (_, index) => ({
+        startMs: index * 20,
+        endMs: index * 20 + 20,
+        peak: (index % 10) / 10
+      }))
+    };
+
+    render(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        waveformOverview={waveformOverview}
+      />
+    );
+
+    expect(screen.getAllByTestId("waveform-point")).toHaveLength(800);
   });
 });

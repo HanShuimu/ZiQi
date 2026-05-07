@@ -7,7 +7,7 @@ import type {
 } from "./types";
 
 export interface AudioSourceService {
-  load(filePath: string): Promise<AudioMetadata>;
+  load(filePath: string, sourceUrl?: string): Promise<AudioMetadata>;
   unload(): Promise<void>;
 }
 
@@ -36,4 +36,3 @@ export interface ProjectAudioFacade {
   analysis: AnalysisDataService;
   processing: AudioProcessingService;
 }
-

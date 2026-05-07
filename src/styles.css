@@ -172,6 +172,31 @@ button:disabled {
   min-height: 2px;
 }
 
+.waveform-canvas {
+  display: grid;
+  align-items: center;
+}
+
+.waveform-grid {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 100%;
+  min-width: 100%;
+}
+
+.waveform-point {
+  flex: 1 1 0;
+  min-width: 0;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f4b36e, #b96a30);
+}
+
+.waveform-empty {
+  color: #6e6256;
+  justify-self: center;
+}
+
 .cursor-line,
 .grid-overlay {
   position: absolute;

@@ -28,7 +28,7 @@ function createWindow() {
     minHeight: 760,
     backgroundColor: "#f3efe8",
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -87,9 +87,17 @@ app.whenReady().then(() => {
       return null;
     }
 
-    return {
-      filePath: result.filePaths[0]
-    };
+    const filePath = result.filePaths[0];
+
+    try {
+      const file = await fs.readFile(filePath);
+      return {
+        audioData: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength),
+        filePath
+      };
+    } catch {
+      throw new Error("Failed to load audio file.");
+    }
   });
   createWindow();
 
