@@ -83,6 +83,64 @@ describe("projectFiles", () => {
     ).toThrow("Failed to open project.");
   });
 
+  it("rejects .ziqi payloads with invalid project shapes", () => {
+    const payload = createZiqiProjectPayload(project);
+
+    expect(() =>
+      parseZiqiProjectPayload(
+        JSON.stringify({
+          ...payload,
+          project: {
+            ...project,
+            workspace: []
+          }
+        })
+      )
+    ).toThrow("Failed to open project.");
+    expect(() =>
+      parseZiqiProjectPayload(
+        JSON.stringify({
+          ...payload,
+          project: {
+            ...project,
+            sourceAudio: {
+              ...project.sourceAudio,
+              durationMs: Number.NaN
+            }
+          }
+        })
+      )
+    ).toThrow("Failed to open project.");
+    expect(() =>
+      parseZiqiProjectPayload(
+        JSON.stringify({
+          ...payload,
+          project: {
+            ...project,
+            sourceAudio: {
+              ...project.sourceAudio,
+              sampleRate: Number.POSITIVE_INFINITY
+            }
+          }
+        })
+      )
+    ).toThrow("Failed to open project.");
+    expect(() =>
+      parseZiqiProjectPayload(
+        JSON.stringify({
+          ...payload,
+          project: {
+            ...project,
+            sourceAudio: {
+              ...project.sourceAudio,
+              channelCount: Number.NEGATIVE_INFINITY
+            }
+          }
+        })
+      )
+    ).toThrow("Failed to open project.");
+  });
+
   it("saves a new project folder with a .ziqi file and audio copy", async () => {
     const sourceAudioPath = path.join(tempDir, "demo track.wav");
     await fs.writeFile(sourceAudioPath, Buffer.from([1, 2, 3, 4]));
@@ -120,6 +178,18 @@ describe("projectFiles", () => {
     ).rejects.toThrow("Failed to save project.");
   });
 
+  it("cleans up a newly created project folder when source audio is missing", async () => {
+    const projectRootPath = path.join(tempDir, "Demo Track.ziqiproject");
+
+    await expect(
+      saveNewProject({
+        parentDirectoryPath: tempDir,
+        project
+      })
+    ).rejects.toThrow("Failed to save project.");
+    await expect(fs.stat(projectRootPath)).rejects.toThrow();
+  });
+
   it("rewrites an existing .ziqi file without copying audio again", async () => {
     const sourceAudioPath = path.join(tempDir, "demo track.wav");
     await fs.writeFile(sourceAudioPath, Buffer.from([1, 2, 3, 4]));
@@ -154,6 +224,70 @@ describe("projectFiles", () => {
     await expect(
       fs.readFile(path.join(saved.projectRootPath, "audio", "demo track.wav"))
     ).resolves.toEqual(Buffer.from([1, 2, 3, 4]));
+  });
+
+  it("rejects existing project saves outside the project root or with a wrong extension", async () => {
+    const projectRootPath = path.join(tempDir, "Demo Track.ziqiproject");
+    await fs.mkdir(projectRootPath);
+    const safeProject = {
+      ...project,
+      sourceAudio: {
+        ...project.sourceAudio,
+        filePath: "audio/demo track.wav"
+      }
+    };
+
+    await expect(
+      saveExistingProject({
+        project: safeProject,
+        projectFilePath: path.join(tempDir, "Demo Track.ziqi"),
+        projectRootPath
+      })
+    ).rejects.toThrow("Failed to save project.");
+    await expect(
+      saveExistingProject({
+        project: safeProject,
+        projectFilePath: path.join(projectRootPath, "Nested", "Demo Track.ziqi"),
+        projectRootPath
+      })
+    ).rejects.toThrow("Failed to save project.");
+    await expect(
+      saveExistingProject({
+        project: safeProject,
+        projectFilePath: path.join(projectRootPath, "Demo Track.json"),
+        projectRootPath
+      })
+    ).rejects.toThrow("Failed to save project.");
+  });
+
+  it("rejects existing project saves with unsafe project audio paths", async () => {
+    const projectRootPath = path.join(tempDir, "Demo Track.ziqiproject");
+    await fs.mkdir(projectRootPath);
+    const projectFilePath = path.join(projectRootPath, "Demo Track.ziqi");
+    const unsafeAudioPaths = [
+      "/abs.wav",
+      "C:\\abs.wav",
+      "..\\escape.wav",
+      "audio\\..\\..\\escape.wav",
+      "C:drive-relative.wav",
+      "audio/bad:name.wav"
+    ];
+
+    for (const filePath of unsafeAudioPaths) {
+      await expect(
+        saveExistingProject({
+          project: {
+            ...project,
+            sourceAudio: {
+              ...project.sourceAudio,
+              filePath
+            }
+          },
+          projectFilePath,
+          projectRootPath
+        })
+      ).rejects.toThrow("Failed to save project.");
+    }
   });
 
   it("opens a project from a .ziqi file and reads project audio bytes", async () => {
@@ -199,5 +333,32 @@ describe("projectFiles", () => {
     await expect(openProjectFromFile(projectFilePath)).rejects.toThrow(
       "Failed to load project audio."
     );
+  });
+
+  it("throws a stable error when project audio paths are unsafe", async () => {
+    const projectRootPath = path.join(tempDir, "Unsafe Audio.ziqiproject");
+    await fs.mkdir(projectRootPath);
+    const unsafeAudioPaths = ["../escape.wav", "C:drive-relative.wav", "audio/bad:name.wav"];
+
+    for (const [index, filePath] of unsafeAudioPaths.entries()) {
+      const projectFilePath = path.join(projectRootPath, `Unsafe Audio ${index}.ziqi`);
+      await fs.writeFile(
+        projectFilePath,
+        JSON.stringify(
+          createZiqiProjectPayload({
+            ...project,
+            name: "Unsafe Audio",
+            sourceAudio: {
+              ...project.sourceAudio,
+              filePath
+            }
+          })
+        )
+      );
+
+      await expect(openProjectFromFile(projectFilePath)).rejects.toThrow(
+        "Failed to load project audio."
+      );
+    }
   });
 });

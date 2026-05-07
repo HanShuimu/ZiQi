@@ -92,9 +92,11 @@ export async function saveNewProject({
   );
   const relativeAudioPath = toProjectRelativePath(AUDIO_DIRECTORY_NAME, audioFileName);
   const copiedAudioPath = path.join(audioDirectoryPath, audioFileName);
+  let createdProjectRoot = false;
 
   try {
     await fs.mkdir(projectRootPath);
+    createdProjectRoot = true;
     await fs.mkdir(audioDirectoryPath);
     await fs.copyFile(project.sourceAudio.filePath, copiedAudioPath);
 
@@ -107,6 +109,9 @@ export async function saveNewProject({
       projectRootPath
     };
   } catch {
+    if (createdProjectRoot) {
+      await fs.rm(projectRootPath, { recursive: true, force: true });
+    }
     throw new Error("Failed to save project.");
   }
 }
@@ -116,7 +121,10 @@ export async function saveExistingProject({
   projectFilePath,
   projectRootPath
 }: SaveExistingProjectOptions): Promise<SaveProjectResult> {
-  if (!isProjectRelativePath(project.sourceAudio.filePath)) {
+  if (
+    !isProjectFilePathInRoot(projectFilePath, projectRootPath) ||
+    !isProjectRelativePath(project.sourceAudio.filePath)
+  ) {
     throw new Error("Failed to save project.");
   }
 
@@ -187,13 +195,32 @@ function sanitizeFileName(value: string) {
   return cleaned || "Untitled Project";
 }
 
-function isProjectRelativePath(value: string) {
-  if (path.isAbsolute(value)) {
+function isProjectFilePathInRoot(projectFilePath: string, projectRootPath: string) {
+  if (path.extname(projectFilePath) !== PROJECT_FILE_EXTENSION) {
     return false;
   }
 
-  const normalized = path.posix.normalize(value.replaceAll("\\", "/"));
-  return normalized !== "." && !normalized.startsWith("../") && normalized !== "..";
+  const normalizedProjectFileDirectory = path.normalize(path.resolve(path.dirname(projectFilePath)));
+  const normalizedProjectRootPath = path.normalize(path.resolve(projectRootPath));
+  return normalizedProjectFileDirectory === normalizedProjectRootPath;
+}
+
+function isProjectRelativePath(value: string) {
+  if (
+    value.includes("\\") ||
+    value.includes("\0") ||
+    path.isAbsolute(value) ||
+    path.posix.isAbsolute(value) ||
+    path.win32.isAbsolute(value) ||
+    /^[A-Za-z]:/.test(value)
+  ) {
+    return false;
+  }
+
+  const segments = value.split("/");
+  return segments.every(
+    (segment) => segment !== "" && segment !== "." && segment !== ".." && !segment.includes(":")
+  );
 }
 
 function toArrayBuffer(buffer: Buffer): ArrayBuffer {
@@ -224,9 +251,9 @@ function isProject(value: unknown): value is SerializableProject {
     typeof value.name === "string" &&
     typeof value.sourceAudio.id === "string" &&
     typeof value.sourceAudio.name === "string" &&
-    typeof value.sourceAudio.durationMs === "number" &&
-    typeof value.sourceAudio.sampleRate === "number" &&
-    typeof value.sourceAudio.channelCount === "number" &&
+    Number.isFinite(value.sourceAudio.durationMs) &&
+    Number.isFinite(value.sourceAudio.sampleRate) &&
+    Number.isFinite(value.sourceAudio.channelCount) &&
     typeof value.sourceAudio.filePath === "string" &&
     Array.isArray(value.assets) &&
     Array.isArray(value.analysisRuns) &&
@@ -235,5 +262,5 @@ function isProject(value: unknown): value is SerializableProject {
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
