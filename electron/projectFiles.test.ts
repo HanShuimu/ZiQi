@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   createZiqiProjectPayload,
+  isSerializableProject,
   openProjectFromFile,
   parseZiqiProjectPayload,
   saveExistingProject,
@@ -59,6 +60,43 @@ describe("projectFiles", () => {
     const payload = createZiqiProjectPayload(project);
 
     expect(parseZiqiProjectPayload(JSON.stringify(payload))).toEqual(payload);
+  });
+
+  it("identifies serializable project shapes", () => {
+    expect(isSerializableProject(project)).toBe(true);
+    expect(
+      isSerializableProject({
+        ...project,
+        name: undefined
+      })
+    ).toBe(false);
+    expect(
+      isSerializableProject({
+        ...project,
+        assets: undefined
+      })
+    ).toBe(false);
+    expect(
+      isSerializableProject({
+        ...project,
+        workspace: undefined
+      })
+    ).toBe(false);
+    expect(
+      isSerializableProject({
+        ...project,
+        workspace: []
+      })
+    ).toBe(false);
+    expect(
+      isSerializableProject({
+        ...project,
+        sourceAudio: {
+          ...project.sourceAudio,
+          durationMs: Number.NaN
+        }
+      })
+    ).toBe(false);
   });
 
   it("rejects invalid .ziqi payloads with a stable error", () => {

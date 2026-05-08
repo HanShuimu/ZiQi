@@ -2,7 +2,12 @@ import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { openProjectFromFile, saveExistingProject, saveNewProject } from "./projectFiles.js";
+import {
+  isSerializableProject,
+  openProjectFromFile,
+  saveExistingProject,
+  saveNewProject
+} from "./projectFiles.js";
 import type { SaveProjectResult, SerializableProject } from "./projectFiles.js";
 
 protocol.registerSchemesAsPrivileged([
@@ -210,11 +215,7 @@ function updateCurrentProjectLocation(result: SaveProjectResult) {
 }
 
 function isSaveProjectRequest(value: unknown): value is SaveProjectRequest {
-  if (!isRecord(value) || !isRecord(value.project) || !isRecord(value.project.sourceAudio)) {
-    return false;
-  }
-
-  if (typeof value.project.sourceAudio.filePath !== "string") {
+  if (!isRecord(value) || !isSerializableProject(value.project)) {
     return false;
   }
 

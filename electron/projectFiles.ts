@@ -76,6 +76,26 @@ export function parseZiqiProjectPayload(contents: string): ZiqiProjectPayload {
   return parsed;
 }
 
+export function isSerializableProject(value: unknown): value is SerializableProject {
+  if (!isRecord(value) || !isRecord(value.sourceAudio) || !isRecord(value.workspace)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.name === "string" &&
+    typeof value.sourceAudio.id === "string" &&
+    typeof value.sourceAudio.name === "string" &&
+    Number.isFinite(value.sourceAudio.durationMs) &&
+    Number.isFinite(value.sourceAudio.sampleRate) &&
+    Number.isFinite(value.sourceAudio.channelCount) &&
+    typeof value.sourceAudio.filePath === "string" &&
+    Array.isArray(value.assets) &&
+    Array.isArray(value.analysisRuns) &&
+    Array.isArray(value.annotations)
+  );
+}
+
 export async function saveNewProject({
   parentDirectoryPath,
   project
@@ -237,27 +257,7 @@ function isZiqiProjectPayload(value: unknown): value is ZiqiProjectPayload {
   return (
     value.format === PROJECT_FORMAT &&
     value.schemaVersion === PROJECT_SCHEMA_VERSION &&
-    isProject(value.project)
-  );
-}
-
-function isProject(value: unknown): value is SerializableProject {
-  if (!isRecord(value) || !isRecord(value.sourceAudio) || !isRecord(value.workspace)) {
-    return false;
-  }
-
-  return (
-    typeof value.id === "string" &&
-    typeof value.name === "string" &&
-    typeof value.sourceAudio.id === "string" &&
-    typeof value.sourceAudio.name === "string" &&
-    Number.isFinite(value.sourceAudio.durationMs) &&
-    Number.isFinite(value.sourceAudio.sampleRate) &&
-    Number.isFinite(value.sourceAudio.channelCount) &&
-    typeof value.sourceAudio.filePath === "string" &&
-    Array.isArray(value.assets) &&
-    Array.isArray(value.analysisRuns) &&
-    Array.isArray(value.annotations)
+    isSerializableProject(value.project)
   );
 }
 
