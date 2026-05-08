@@ -6,15 +6,29 @@ import type { ProjectSummary } from "./domain/project/types";
 
 class FakeAudioElement {
   static instances: FakeAudioElement[] = [];
+  static currentTimeWrites = 0;
+  static throwOnCurrentTimeWrite: number | null = null;
 
-  currentTime = 0;
   duration = 12;
   playbackRate = 1;
   preservesPitch = false;
   src = "";
+  private currentTimeValue = 0;
 
   constructor() {
     FakeAudioElement.instances.push(this);
+  }
+
+  get currentTime() {
+    return this.currentTimeValue;
+  }
+
+  set currentTime(time: number) {
+    FakeAudioElement.currentTimeWrites += 1;
+    if (FakeAudioElement.throwOnCurrentTimeWrite === FakeAudioElement.currentTimeWrites) {
+      throw new Error("Failed to seek audio.");
+    }
+    this.currentTimeValue = time;
   }
 
   async play() {}
@@ -27,6 +41,8 @@ class FakeAudioElement {
 describe("App local audio import", () => {
   beforeEach(() => {
     FakeAudioElement.instances = [];
+    FakeAudioElement.currentTimeWrites = 0;
+    FakeAudioElement.throwOnCurrentTimeWrite = null;
     const audioData = new ArrayBuffer(8);
     let objectUrlIndex = 0;
 
@@ -93,6 +109,33 @@ describe("App local audio import", () => {
     expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(audioData);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
+  });
+
+  it("revokes the current playback URL after a successful import unmounts", async () => {
+    const audioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+      })
+    };
+    const user = userEvent.setup();
+
+    const { unmount } = render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    unmount();
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-1");
   });
 
   it("creates the playback blob before waveform decoding can detach the audio data", async () => {
@@ -639,6 +682,47 @@ describe("App local audio import", () => {
     expect(screen.getByText("demo track")).toBeTruthy();
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(openedAudioData);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
+  });
+
+  it("keeps the current project and restores playback URL when open seek fails after source load", async () => {
+    const importedAudioData = new ArrayBuffer(8);
+    const openedAudioData = new ArrayBuffer(16);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData: importedAudioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: openedAudioData,
+      project: createProjectSummary("audio/broken track.wav"),
+      projectFilePath: "D:\\ZiQi Projects\\Broken\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Broken"
+    });
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+      })
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
+
+    FakeAudioElement.throwOnCurrentTimeWrite = 2;
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to seek audio.")).toBeTruthy();
+    });
+    expect(screen.getByText("demo track")).toBeTruthy();
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
   });
 

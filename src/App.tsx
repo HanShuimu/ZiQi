@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { WorkbenchShell } from "./components/WorkbenchShell";
 import { createBrowserProjectAudioFacade } from "./domain/audio/browserProjectAudioFacade";
 import type { ProjectSummary } from "./domain/project/types";
@@ -35,6 +35,14 @@ export function App({ waveformService }: AppProps) {
     () => waveformService ?? createBrowserWaveformService(),
     [waveformService]
   );
+
+  useEffect(() => {
+    return () => {
+      if (activePlaybackUrl.current) {
+        URL.revokeObjectURL(activePlaybackUrl.current);
+      }
+    };
+  }, []);
 
   async function handleImportAudio() {
     setIsImporting(true);
@@ -114,6 +122,7 @@ export function App({ waveformService }: AppProps) {
         return;
       }
 
+      const previousPlaybackUrl = activePlaybackUrl.current;
       const nextPlaybackUrl = URL.createObjectURL(new Blob([openedProject.audioData]));
       try {
         const nextWaveformOverview =
@@ -132,6 +141,15 @@ export function App({ waveformService }: AppProps) {
         activePlaybackUrl.current = nextPlaybackUrl;
       } catch (error) {
         URL.revokeObjectURL(nextPlaybackUrl);
+        try {
+          if (previousPlaybackUrl && project) {
+            await audioFacade.source.load(project.sourceAudio.filePath, previousPlaybackUrl);
+          } else {
+            await audioFacade.source.unload();
+          }
+        } catch {
+          // Keep the original open failure as the user-facing error.
+        }
         throw error;
       }
     } catch (error) {
