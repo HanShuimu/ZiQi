@@ -219,9 +219,16 @@ function isSaveProjectRequest(value: unknown): value is SaveProjectRequest {
     return false;
   }
 
+  const hasProjectFilePath = "projectFilePath" in value;
+  const hasProjectRootPath = "projectRootPath" in value;
+
+  if (hasProjectFilePath !== hasProjectRootPath) {
+    return false;
+  }
+
   if (
-    ("projectFilePath" in value && typeof value.projectFilePath !== "string") ||
-    ("projectRootPath" in value && typeof value.projectRootPath !== "string")
+    hasProjectFilePath &&
+    (typeof value.projectFilePath !== "string" || typeof value.projectRootPath !== "string")
   ) {
     return false;
   }
