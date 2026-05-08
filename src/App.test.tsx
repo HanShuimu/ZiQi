@@ -365,6 +365,53 @@ describe("App local audio import", () => {
     });
   });
 
+  it("keeps the imported project unchanged when save is canceled", async () => {
+    const audioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    window.ziqiApp.saveProject = vi.fn().mockResolvedValue(null);
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+      })
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    await user.click(screen.getByRole("button", { name: "Save Project" }));
+
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.getByText("demo track")).toBeTruthy();
+    expect(screen.queryByText("Failed to save project.")).toBeNull();
+    expect(window.ziqiApp.saveProject).toHaveBeenNthCalledWith(1, {
+      project: expect.objectContaining({
+        sourceAudio: expect.objectContaining({
+          filePath: "D:\\Music Library\\demo track.wav"
+        })
+      })
+    });
+    expect(window.ziqiApp.saveProject).toHaveBeenNthCalledWith(2, {
+      project: expect.objectContaining({
+        sourceAudio: expect.objectContaining({
+          filePath: "D:\\Music Library\\demo track.wav"
+        })
+      })
+    });
+  });
+
   it("saves an already saved project using existing location", async () => {
     const openedAudioData = new ArrayBuffer(8);
     window.ziqiApp.openProject = vi.fn().mockResolvedValue({
@@ -407,6 +454,102 @@ describe("App local audio import", () => {
       }),
       projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
       projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+  });
+
+  it("keeps the opened project and existing location when save fails", async () => {
+    const openedAudioData = new ArrayBuffer(8);
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: openedAudioData,
+      project: createProjectSummary("audio/demo track.wav"),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+    window.ziqiApp.saveProject = vi
+      .fn()
+      .mockRejectedValue(new Error("Failed to write project."));
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+      })
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    await waitFor(() => {
+      expect(screen.getByText("Failed to write project.")).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledTimes(2);
+    });
+    expect(screen.getByText("demo track")).toBeTruthy();
+    expect(window.ziqiApp.saveProject).toHaveBeenNthCalledWith(2, {
+      project: expect.objectContaining({
+        sourceAudio: expect.objectContaining({
+          filePath: "audio/demo track.wav"
+        })
+      }),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+  });
+
+  it("drops the opened project location when importing new audio before saving", async () => {
+    const openedAudioData = new ArrayBuffer(8);
+    const importedAudioData = new ArrayBuffer(16);
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: openedAudioData,
+      project: createProjectSummary("audio/demo track.wav"),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData: importedAudioData,
+      filePath: "D:\\Music Library\\fresh take.wav"
+    });
+    window.ziqiApp.saveProject = vi.fn().mockResolvedValue(null);
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+      })
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("fresh take")).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
+    });
+    expect(window.ziqiApp.saveProject).toHaveBeenCalledWith({
+      project: expect.objectContaining({
+        sourceAudio: expect.objectContaining({
+          filePath: "D:\\Music Library\\fresh take.wav"
+        })
+      })
     });
   });
 
@@ -497,6 +640,40 @@ describe("App local audio import", () => {
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(openedAudioData);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
+  });
+
+  it("keeps the current project and playback URL when open project rejects", async () => {
+    const importedAudioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData: importedAudioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    window.ziqiApp.openProject = vi.fn().mockRejectedValue(new Error("Failed to read project."));
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+      })
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
+
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to read project.")).toBeTruthy();
+    });
+    expect(screen.getByText("demo track")).toBeTruthy();
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
+    expect(URL.revokeObjectURL).not.toHaveBeenCalledWith("blob:audio-1");
   });
 });
 
