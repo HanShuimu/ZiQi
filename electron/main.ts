@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { openProjectFromFile, saveExistingProject, saveNewProject } from "./projectFiles.js";
+import type { SaveProjectResult, SerializableProject } from "./projectFiles.js";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -20,6 +21,18 @@ const __dirname = path.dirname(__filename);
 
 const rendererDevUrl = process.env.ZIQI_RENDERER_DEV_URL;
 const rendererDistDir = path.join(__dirname, "../dist");
+let currentProjectLocation: ProjectLocation | null = null;
+
+interface ProjectLocation {
+  projectFilePath: string;
+  projectRootPath: string;
+}
+
+interface SaveProjectRequest {
+  project: SerializableProject;
+  projectFilePath?: string;
+  projectRootPath?: string;
+}
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -102,11 +115,19 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle("project:save", async (_event, request) => {
-    if (!request?.project) {
+    if (!isSaveProjectRequest(request)) {
       throw new Error("Failed to save project.");
     }
 
     if (request.projectFilePath && request.projectRootPath) {
+      if (
+        !currentProjectLocation ||
+        request.projectFilePath !== currentProjectLocation.projectFilePath ||
+        request.projectRootPath !== currentProjectLocation.projectRootPath
+      ) {
+        throw new Error("Failed to save project.");
+      }
+
       return saveExistingProject({
         project: request.project,
         projectFilePath: request.projectFilePath,
@@ -123,10 +144,12 @@ app.whenReady().then(() => {
       return null;
     }
 
-    return saveNewProject({
+    const savedProject = await saveNewProject({
       parentDirectoryPath: result.filePaths[0],
       project: request.project
     });
+    updateCurrentProjectLocation(savedProject);
+    return savedProject;
   });
 
   ipcMain.handle("project:open", async () => {
@@ -144,7 +167,9 @@ app.whenReady().then(() => {
       return null;
     }
 
-    return openProjectFromFile(result.filePaths[0]);
+    const openedProject = await openProjectFromFile(result.filePaths[0]);
+    updateCurrentProjectLocation(openedProject);
+    return openedProject;
   });
 
   createWindow();
@@ -175,4 +200,34 @@ function getContentType(filePath: string) {
     default:
       return "application/octet-stream";
   }
+}
+
+function updateCurrentProjectLocation(result: SaveProjectResult) {
+  currentProjectLocation = {
+    projectFilePath: result.projectFilePath,
+    projectRootPath: result.projectRootPath
+  };
+}
+
+function isSaveProjectRequest(value: unknown): value is SaveProjectRequest {
+  if (!isRecord(value) || !isRecord(value.project) || !isRecord(value.project.sourceAudio)) {
+    return false;
+  }
+
+  if (typeof value.project.sourceAudio.filePath !== "string") {
+    return false;
+  }
+
+  if (
+    ("projectFilePath" in value && typeof value.projectFilePath !== "string") ||
+    ("projectRootPath" in value && typeof value.projectRootPath !== "string")
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
