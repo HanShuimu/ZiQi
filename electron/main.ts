@@ -27,7 +27,7 @@ const __dirname = path.dirname(__filename);
 const rendererDevUrl = process.env.ZIQI_RENDERER_DEV_URL;
 const rendererDistDir = path.join(__dirname, "../dist");
 let currentProjectLocation: ProjectLocation | null = null;
-let currentImportedAudioPath: string | null = null;
+const trustedImportedAudioPaths = new Set<string>();
 let pendingOpenedProjectLocation: ProjectLocation | null = null;
 
 interface ProjectLocation {
@@ -112,7 +112,7 @@ app.whenReady().then(() => {
 
     try {
       const file = await fs.readFile(filePath);
-      currentImportedAudioPath = filePath;
+      trustedImportedAudioPaths.add(filePath);
       return {
         audioData: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength),
         filePath
@@ -143,10 +143,9 @@ app.whenReady().then(() => {
       });
     }
 
-    if (
-      !currentImportedAudioPath ||
-      request.project.sourceAudio.filePath !== currentImportedAudioPath
-    ) {
+    const trustedAudioPath = request.project.sourceAudio.filePath;
+
+    if (!trustedImportedAudioPaths.has(trustedAudioPath)) {
       throw new Error("Failed to save project.");
     }
 
@@ -165,12 +164,12 @@ app.whenReady().then(() => {
         ...request.project,
         sourceAudio: {
           ...request.project.sourceAudio,
-          filePath: currentImportedAudioPath
+          filePath: trustedAudioPath
         }
       }
     });
     updateCurrentProjectLocation(savedProject);
-    currentImportedAudioPath = null;
+    trustedImportedAudioPaths.delete(trustedAudioPath);
     return savedProject;
   });
 

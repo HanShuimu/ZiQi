@@ -129,13 +129,13 @@ export function App({ waveformService }: AppProps) {
           await activeWaveformService.buildOverviewFromAudioData(openedProject.audioData);
         await audioFacade.source.load(openedProject.project.sourceAudio.filePath, nextPlaybackUrl);
         await audioFacade.playback.seek(0);
-        setProject(openedProject.project);
-        setWaveformOverview(nextWaveformOverview);
-        setProjectLocation({
+        await window.ziqiApp.activateOpenedProject({
           projectFilePath: openedProject.projectFilePath,
           projectRootPath: openedProject.projectRootPath
         });
-        await window.ziqiApp.activateOpenedProject({
+        setProject(openedProject.project);
+        setWaveformOverview(nextWaveformOverview);
+        setProjectLocation({
           projectFilePath: openedProject.projectFilePath,
           projectRootPath: openedProject.projectRootPath
         });
