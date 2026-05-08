@@ -8,7 +8,9 @@ const api = {
       filePath: string;
     } | null>,
   saveProject: (request: unknown) => ipcRenderer.invoke("project:save", request),
-  openProject: () => ipcRenderer.invoke("project:open")
+  openProject: () => ipcRenderer.invoke("project:open"),
+  activateOpenedProject: (request: unknown) =>
+    ipcRenderer.invoke("project:activate-opened", request)
 };
 
 contextBridge.exposeInMainWorld("ziqiApp", api);

@@ -8,7 +8,7 @@ import {
   saveExistingProject,
   saveNewProject
 } from "./projectFiles.js";
-import type { SaveProjectResult, SerializableProject } from "./projectFiles.js";
+import type { SerializableProject } from "./projectFiles.js";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -27,6 +27,8 @@ const __dirname = path.dirname(__filename);
 const rendererDevUrl = process.env.ZIQI_RENDERER_DEV_URL;
 const rendererDistDir = path.join(__dirname, "../dist");
 let currentProjectLocation: ProjectLocation | null = null;
+let currentImportedAudioPath: string | null = null;
+let pendingOpenedProjectLocation: ProjectLocation | null = null;
 
 interface ProjectLocation {
   projectFilePath: string;
@@ -110,6 +112,7 @@ app.whenReady().then(() => {
 
     try {
       const file = await fs.readFile(filePath);
+      currentImportedAudioPath = filePath;
       return {
         audioData: file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength),
         filePath
@@ -140,6 +143,13 @@ app.whenReady().then(() => {
       });
     }
 
+    if (
+      !currentImportedAudioPath ||
+      request.project.sourceAudio.filePath !== currentImportedAudioPath
+    ) {
+      throw new Error("Failed to save project.");
+    }
+
     const result = await dialog.showOpenDialog({
       properties: ["openDirectory", "createDirectory"],
       title: "Choose Project Parent Folder"
@@ -151,9 +161,16 @@ app.whenReady().then(() => {
 
     const savedProject = await saveNewProject({
       parentDirectoryPath: result.filePaths[0],
-      project: request.project
+      project: {
+        ...request.project,
+        sourceAudio: {
+          ...request.project.sourceAudio,
+          filePath: currentImportedAudioPath
+        }
+      }
     });
     updateCurrentProjectLocation(savedProject);
+    currentImportedAudioPath = null;
     return savedProject;
   });
 
@@ -173,8 +190,25 @@ app.whenReady().then(() => {
     }
 
     const openedProject = await openProjectFromFile(result.filePaths[0]);
-    updateCurrentProjectLocation(openedProject);
+    pendingOpenedProjectLocation = {
+      projectFilePath: openedProject.projectFilePath,
+      projectRootPath: openedProject.projectRootPath
+    };
     return openedProject;
+  });
+
+  ipcMain.handle("project:activate-opened", async (_event, request) => {
+    if (
+      !isProjectLocationRequest(request) ||
+      !pendingOpenedProjectLocation ||
+      request.projectFilePath !== pendingOpenedProjectLocation.projectFilePath ||
+      request.projectRootPath !== pendingOpenedProjectLocation.projectRootPath
+    ) {
+      throw new Error("Failed to open project.");
+    }
+
+    updateCurrentProjectLocation(request);
+    pendingOpenedProjectLocation = null;
   });
 
   createWindow();
@@ -207,7 +241,7 @@ function getContentType(filePath: string) {
   }
 }
 
-function updateCurrentProjectLocation(result: SaveProjectResult) {
+function updateCurrentProjectLocation(result: ProjectLocation) {
   currentProjectLocation = {
     projectFilePath: result.projectFilePath,
     projectRootPath: result.projectRootPath
@@ -234,6 +268,14 @@ function isSaveProjectRequest(value: unknown): value is SaveProjectRequest {
   }
 
   return true;
+}
+
+function isProjectLocationRequest(value: unknown): value is ProjectLocation {
+  return (
+    isRecord(value) &&
+    typeof value.projectFilePath === "string" &&
+    typeof value.projectRootPath === "string"
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -135,6 +135,10 @@ export function App({ waveformService }: AppProps) {
           projectFilePath: openedProject.projectFilePath,
           projectRootPath: openedProject.projectRootPath
         });
+        await window.ziqiApp.activateOpenedProject({
+          projectFilePath: openedProject.projectFilePath,
+          projectRootPath: openedProject.projectRootPath
+        });
         if (activePlaybackUrl.current) {
           URL.revokeObjectURL(activePlaybackUrl.current);
         }

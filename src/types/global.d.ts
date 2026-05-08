@@ -24,6 +24,7 @@ declare global {
       selectAudioFile(): Promise<{ audioData: ArrayBuffer; filePath: string } | null>;
       saveProject(request: SaveProjectRequest): Promise<SaveProjectResult | null>;
       openProject(): Promise<OpenProjectResult | null>;
+      activateOpenedProject(request: ProjectLocation): Promise<void>;
     };
   }
 }

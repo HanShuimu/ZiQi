@@ -49,6 +49,7 @@ describe("App local audio import", () => {
     Object.defineProperty(window, "ziqiApp", {
       configurable: true,
       value: {
+        activateOpenedProject: vi.fn().mockResolvedValue(undefined),
         getVersion: vi.fn().mockResolvedValue("test-version"),
         openProject: vi.fn().mockResolvedValue(null),
         saveProject: vi.fn().mockResolvedValue(null),
@@ -623,6 +624,10 @@ describe("App local audio import", () => {
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(openedAudioData);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
+    expect(window.ziqiApp.activateOpenedProject).toHaveBeenCalledWith({
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
   });
 
   it("open cancel does nothing", async () => {
@@ -683,6 +688,69 @@ describe("App local audio import", () => {
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(openedAudioData);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
+    expect(window.ziqiApp.activateOpenedProject).not.toHaveBeenCalled();
+  });
+
+  it("keeps saving to the current project location when opening another project fails", async () => {
+    const firstOpenedAudioData = new ArrayBuffer(8);
+    const secondOpenedAudioData = new ArrayBuffer(16);
+    window.ziqiApp.openProject = vi
+      .fn()
+      .mockResolvedValueOnce({
+        audioData: firstOpenedAudioData,
+        project: createProjectSummary("audio/demo track.wav"),
+        projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+        projectRootPath: "D:\\ZiQi Projects\\Demo"
+      })
+      .mockResolvedValueOnce({
+        audioData: secondOpenedAudioData,
+        project: createProjectSummary("audio/broken track.wav"),
+        projectFilePath: "D:\\ZiQi Projects\\Broken\\project.ziqi.json",
+        projectRootPath: "D:\\ZiQi Projects\\Broken"
+      });
+    window.ziqiApp.saveProject = vi.fn().mockImplementation(async (request) => ({
+      project: request.project,
+      projectFilePath: request.projectFilePath,
+      projectRootPath: request.projectRootPath
+    }));
+    const waveformService = {
+      buildOverviewFromAudioData: vi
+        .fn()
+        .mockResolvedValueOnce({
+          pointsPerSecond: 50,
+          durationMs: 12_000,
+          points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+        })
+        .mockRejectedValueOnce(new Error("Failed to decode project audio."))
+    };
+    const user = userEvent.setup();
+
+    render(<App waveformService={waveformService} />);
+
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    await waitFor(() => {
+      expect(screen.getByText("Failed to decode project audio.")).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
+    });
+    expect(window.ziqiApp.activateOpenedProject).toHaveBeenCalledTimes(1);
+    expect(window.ziqiApp.saveProject).toHaveBeenCalledWith({
+      project: expect.objectContaining({
+        sourceAudio: expect.objectContaining({
+          filePath: "audio/demo track.wav"
+        })
+      }),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
   });
 
   it("keeps the current project and restores playback URL when open seek fails after source load", async () => {
