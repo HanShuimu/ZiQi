@@ -2,16 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import type { ProjectSummary } from "../domain/project/types";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
 import type { ProjectAudioFacade } from "../domain/audio/interfaces";
-import type { PlaybackState, WaveformOverview } from "../domain/audio/types";
-
-const MAX_RENDERED_WAVEFORM_POINTS = 800;
-
-type RenderedWaveformPoint = WaveformOverview["points"][number];
+import type { PlaybackState, SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
+import { SpectrogramView } from "./SpectrogramView";
 
 interface WorkbenchShellProps {
   project: ProjectSummary | null;
   audioFacade?: ProjectAudioFacade;
   waveformOverview?: WaveformOverview | null;
+  spectrogramOverview?: SpectrogramOverview | null;
   importError?: string | null;
   isImporting?: boolean;
   isOpeningProject?: boolean;
@@ -25,6 +23,7 @@ export function WorkbenchShell({
   project,
   audioFacade = mockProjectAudioFacade,
   waveformOverview,
+  spectrogramOverview,
   importError,
   isImporting = false,
   isOpeningProject = false,
@@ -82,10 +81,6 @@ export function WorkbenchShell({
     durationMs > 0
       ? Math.min(100, Math.max(0, (playbackState.currentTimeMs / durationMs) * 100))
       : 0;
-  const renderedWaveformPoints = useMemo(
-    () => getRenderedWaveformPoints(waveformOverview),
-    [waveformOverview]
-  );
   const importButtonLabel = isImporting ? "Importing..." : "Import Audio";
   const openProjectButtonLabel = isOpeningProject ? "Opening..." : "Open Project";
   const saveProjectButtonLabel = isSavingProject ? "Saving..." : "Save Project";
@@ -180,30 +175,12 @@ export function WorkbenchShell({
               </div>
             </div>
 
-            <div className="spectrum-canvas waveform-canvas" aria-label="Audio waveform" role="img">
-              {renderedWaveformPoints.length > 0 ? (
-                <div className="waveform-grid">
-                  {renderedWaveformPoints.map((point) => (
-                    <div
-                      key={`${point.startMs}-${point.endMs}`}
-                      className="waveform-point"
-                      data-testid="waveform-point"
-                      style={{
-                        height: `${Math.max(2, point.peak * 100)}%`
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <div className="waveform-empty">Import audio to generate a waveform.</div>
-              )}
-
-              <div
-                className="cursor-line cursor-line-vertical"
-                style={{ left: `${progressPercent}%` }}
-              />
-              <div className="grid-overlay" />
-            </div>
+            <SpectrogramView
+              currentTimeMs={playbackState.currentTimeMs}
+              durationMs={durationMs}
+              spectrogramOverview={spectrogramOverview}
+              waveformOverview={waveformOverview}
+            />
           </div>
 
           <div className="dock-tabs panel">
@@ -275,25 +252,4 @@ export function WorkbenchShell({
       )}
     </div>
   );
-}
-
-function getRenderedWaveformPoints(
-  waveformOverview: WaveformOverview | null | undefined
-): RenderedWaveformPoint[] {
-  const points = waveformOverview?.points ?? [];
-  if (points.length <= MAX_RENDERED_WAVEFORM_POINTS) {
-    return points;
-  }
-
-  return Array.from({ length: MAX_RENDERED_WAVEFORM_POINTS }, (_, index) => {
-    const startIndex = Math.floor((index * points.length) / MAX_RENDERED_WAVEFORM_POINTS);
-    const endIndex = Math.floor(((index + 1) * points.length) / MAX_RENDERED_WAVEFORM_POINTS);
-    const group = points.slice(startIndex, Math.max(startIndex + 1, endIndex));
-
-    return {
-      startMs: group[0].startMs,
-      endMs: group[group.length - 1].endMs,
-      peak: Math.max(...group.map((point) => point.peak))
-    };
-  });
 }

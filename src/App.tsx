@@ -18,12 +18,6 @@ interface AppProps {
   spectrogramService?: SpectrogramService;
 }
 
-const WorkbenchShellWithSpectrogram = WorkbenchShell as (
-  props: Parameters<typeof WorkbenchShell>[0] & {
-    spectrogramOverview?: SpectrogramOverview | null;
-  }
-) => ReturnType<typeof WorkbenchShell>;
-
 interface ProjectLocation {
   projectFilePath: string;
   projectRootPath: string;
@@ -188,7 +182,7 @@ export function App({ waveformService, spectrogramService }: AppProps) {
   }
 
   return (
-    <WorkbenchShellWithSpectrogram
+    <WorkbenchShell
       audioFacade={audioFacade}
       importError={importError}
       isImporting={isImporting}
