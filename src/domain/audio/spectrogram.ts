@@ -106,7 +106,7 @@ export function createSpectrogramOverviewFromBuffer(
       magnitudes
     };
   });
-  const maxMagnitude = Math.max(0, ...rawFrames.flatMap((frame) => frame.magnitudes));
+  const maxMagnitude = findMaxMagnitude(rawFrames);
 
   return {
     durationMs,
@@ -240,6 +240,20 @@ function averageRange(values: number[], startIndex: number, endIndex: number) {
   }
 
   return count === 0 ? 0 : total / count;
+}
+
+function findMaxMagnitude(frames: SpectrogramFrame[]) {
+  let maxMagnitude = 0;
+
+  for (const frame of frames) {
+    for (const magnitude of frame.magnitudes) {
+      if (magnitude > maxMagnitude) {
+        maxMagnitude = magnitude;
+      }
+    }
+  }
+
+  return maxMagnitude;
 }
 
 function normalizeMagnitude(value: number, maxMagnitude: number) {

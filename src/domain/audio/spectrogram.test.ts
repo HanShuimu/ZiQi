@@ -86,6 +86,43 @@ describe("spectrogram domain", () => {
     }
   });
 
+  it("places a known sine frequency near its log-frequency bin", () => {
+    const sampleRate = 8192;
+    const frequencyHz = 440;
+    const binsPerFrame = 48;
+    const samples = new Float32Array(sampleRate);
+    for (let index = 0; index < samples.length; index += 1) {
+      samples[index] = Math.sin((2 * Math.PI * frequencyHz * index) / sampleRate);
+    }
+    const buffer = new FakeAudioBuffer([samples], sampleRate);
+
+    const overview = createSpectrogramOverviewFromBuffer(buffer, {
+      binsPerFrame,
+      framesPerSecond: 1,
+      fftSize: 2048
+    });
+    const magnitudes = overview.frames[0].magnitudes;
+    const strongestBinIndex = magnitudes.indexOf(Math.max(...magnitudes));
+    const expectedBinIndex = Math.floor(frequencyToLogPosition(frequencyHz) * binsPerFrame);
+
+    expect(strongestBinIndex).toBeGreaterThanOrEqual(expectedBinIndex - 1);
+    expect(strongestBinIndex).toBeLessThanOrEqual(expectedBinIndex + 1);
+  });
+
+  it("normalizes long multi-frame overviews without exceeding argument limits", () => {
+    const samples = new Float32Array(256);
+    samples[0] = 1;
+    const buffer = new FakeAudioBuffer([samples], 1);
+
+    expect(() =>
+      createSpectrogramOverviewFromBuffer(buffer, {
+        binsPerFrame: 1,
+        framesPerSecond: 512,
+        fftSize: 8
+      })
+    ).not.toThrow();
+  });
+
   it("mixes multiple channels into mono before analysis", () => {
     const left = new Float32Array([1, 1, 1, 1, 1, 1, 1, 1]);
     const right = new Float32Array([-1, -1, -1, -1, -1, -1, -1, -1]);
