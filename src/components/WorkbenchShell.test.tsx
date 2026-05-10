@@ -77,6 +77,50 @@ describe("WorkbenchShell transport controls", () => {
     expect(onImportAudio).toHaveBeenCalledOnce();
   });
 
+  it("disables save project when no project is loaded", () => {
+    render(<WorkbenchShell project={null} />);
+
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Save Project" }).disabled).toBe(
+      true
+    );
+  });
+
+  it("runs project open and save commands from the command strip", async () => {
+    const user = userEvent.setup();
+    const project = createMockProjectSummary();
+    const onOpenProject = vi.fn().mockResolvedValue(undefined);
+    const onSaveProject = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <WorkbenchShell
+        project={project}
+        onOpenProject={onOpenProject}
+        onSaveProject={onSaveProject}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+
+    expect(onSaveProject).toHaveBeenCalledOnce();
+    expect(onOpenProject).toHaveBeenCalledOnce();
+  });
+
+  it("shows busy labels and disables project open and save commands", () => {
+    const project = createMockProjectSummary();
+
+    render(
+      <WorkbenchShell project={project} isOpeningProject={true} isSavingProject={true} />
+    );
+
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Opening..." }).disabled).toBe(
+      true
+    );
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Saving..." }).disabled).toBe(
+      true
+    );
+  });
+
   it("renders real waveform overview data when a project is loaded", async () => {
     const project = createMockProjectSummary();
     const waveformOverview: WaveformOverview = {

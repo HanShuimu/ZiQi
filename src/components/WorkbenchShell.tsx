@@ -14,7 +14,11 @@ interface WorkbenchShellProps {
   waveformOverview?: WaveformOverview | null;
   importError?: string | null;
   isImporting?: boolean;
+  isOpeningProject?: boolean;
+  isSavingProject?: boolean;
   onImportAudio?: () => Promise<void> | void;
+  onOpenProject?: () => Promise<void> | void;
+  onSaveProject?: () => Promise<void> | void;
 }
 
 export function WorkbenchShell({
@@ -23,7 +27,11 @@ export function WorkbenchShell({
   waveformOverview,
   importError,
   isImporting = false,
-  onImportAudio
+  isOpeningProject = false,
+  isSavingProject = false,
+  onImportAudio,
+  onOpenProject,
+  onSaveProject
 }: WorkbenchShellProps) {
   const [appVersion, setAppVersion] = useState<string>("...");
   const [playbackState, setPlaybackState] = useState<PlaybackState>(() =>
@@ -79,6 +87,8 @@ export function WorkbenchShell({
     [waveformOverview]
   );
   const importButtonLabel = isImporting ? "Importing..." : "Import Audio";
+  const openProjectButtonLabel = isOpeningProject ? "Opening..." : "Open Project";
+  const saveProjectButtonLabel = isSavingProject ? "Saving..." : "Save Project";
 
   return (
     <div className="app-shell">
@@ -94,7 +104,12 @@ export function WorkbenchShell({
       </header>
 
       <section className="command-strip">
-        <button>Open Project</button>
+        <button disabled={isOpeningProject} onClick={onOpenProject}>
+          {openProjectButtonLabel}
+        </button>
+        <button disabled={!project || isSavingProject} onClick={onSaveProject}>
+          {saveProjectButtonLabel}
+        </button>
         <button disabled={isImporting} onClick={onImportAudio}>
           {importButtonLabel}
         </button>
