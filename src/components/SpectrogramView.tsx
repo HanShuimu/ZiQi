@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import type { CSSProperties } from "react";
 import {
   PIANO_KEYS,
   frequencyToLogPosition,
@@ -10,6 +11,9 @@ const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 420;
 const MAX_RENDERED_WAVEFORM_POINTS = 800;
 const PIANO_KEY_HEIGHT_PERCENT = 1.4;
+const SPECTROGRAM_VIEW_STYLE = {
+  "--spectrogram-display-height": `${CANVAS_HEIGHT}px`
+} as CSSProperties;
 
 interface SpectrogramViewProps {
   currentTimeMs: number;
@@ -48,24 +52,43 @@ export function SpectrogramView({
     context.fillStyle = "rgb(0, 0, 0)";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    const frameWidth = canvas.width / Math.max(1, spectrogramOverview.frames.length);
+    const renderedColumnCount = Math.min(canvas.width, spectrogramOverview.frames.length);
+    if (renderedColumnCount <= 0) {
+      return;
+    }
+
+    const frameWidth = canvas.width / renderedColumnCount;
     const binHeight = canvas.height / Math.max(1, spectrogramOverview.binsPerFrame);
 
-    spectrogramOverview.frames.forEach((frame, frameIndex) => {
-      frame.magnitudes.forEach((magnitude, binIndex) => {
+    for (let columnIndex = 0; columnIndex < renderedColumnCount; columnIndex += 1) {
+      const startFrameIndex = Math.floor(
+        (columnIndex * spectrogramOverview.frames.length) / renderedColumnCount
+      );
+      const endFrameIndex = Math.max(
+        startFrameIndex + 1,
+        Math.floor(((columnIndex + 1) * spectrogramOverview.frames.length) / renderedColumnCount)
+      );
+
+      for (let binIndex = 0; binIndex < spectrogramOverview.binsPerFrame; binIndex += 1) {
+        const magnitude = getMaxMagnitudeForColumn(
+          spectrogramOverview.frames,
+          startFrameIndex,
+          endFrameIndex,
+          binIndex
+        );
         context.fillStyle = magnitudeToSpectrogramColor(magnitude);
         context.fillRect(
-          frameIndex * frameWidth,
+          columnIndex * frameWidth,
           canvas.height - (binIndex + 1) * binHeight,
           Math.ceil(frameWidth),
           Math.ceil(binHeight)
         );
-      });
-    });
+      }
+    }
   }, [hasSpectrogramFrames, spectrogramOverview]);
 
   return (
-    <div className="spectrogram-view">
+    <div className="spectrogram-view" style={SPECTROGRAM_VIEW_STYLE}>
       <div className="waveform-overview" aria-label="Audio waveform overview" role="img">
         <div className="waveform-grid waveform-grid-compact">
           {renderedWaveformPoints.map((point) => (
@@ -175,6 +198,21 @@ function createTimeGridLines(durationMs: number) {
 function getPianoKeyBottomPercent(logPosition: number) {
   const boundedPosition = Math.min(1, Math.max(0, logPosition));
   return Math.round(boundedPosition * (100 - PIANO_KEY_HEIGHT_PERCENT) * 1000) / 1000;
+}
+
+function getMaxMagnitudeForColumn(
+  frames: SpectrogramOverview["frames"],
+  startFrameIndex: number,
+  endFrameIndex: number,
+  binIndex: number
+) {
+  let maxMagnitude = 0;
+
+  for (let frameIndex = startFrameIndex; frameIndex < endFrameIndex; frameIndex += 1) {
+    maxMagnitude = Math.max(maxMagnitude, frames[frameIndex]?.magnitudes[binIndex] ?? 0);
+  }
+
+  return maxMagnitude;
 }
 
 function chooseGridIntervalSeconds(durationSeconds: number) {

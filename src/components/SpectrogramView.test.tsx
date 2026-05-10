@@ -37,6 +37,26 @@ function createSpectrogramOverview(): SpectrogramOverview {
   };
 }
 
+function createLongSpectrogramOverview(
+  frameCount: number,
+  binsPerFrame: number
+): SpectrogramOverview {
+  return {
+    durationMs: 60_000,
+    framesPerSecond: 24,
+    minFrequencyHz: 27.5,
+    maxFrequencyHz: 4186,
+    binsPerFrame,
+    frames: Array.from({ length: frameCount }, (_, frameIndex) => ({
+      startMs: frameIndex * 42,
+      endMs: (frameIndex + 1) * 42,
+      magnitudes: Array.from({ length: binsPerFrame }, (_, binIndex) =>
+        (frameIndex + binIndex) % 2 === 0 ? 0.4 : 0.8
+      )
+    }))
+  };
+}
+
 describe("SpectrogramView", () => {
   beforeEach(() => {
     drawCalls.length = 0;
@@ -80,6 +100,47 @@ describe("SpectrogramView", () => {
     expect(screen.getAllByTestId("spectrogram-time-grid-line").length).toBeGreaterThan(1);
     expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("25%");
     expect(drawCalls.some((call) => call.fillStyle === "rgb(255, 0, 0)")).toBe(true);
+  });
+
+  it("limits long spectrogram bin drawing to the canvas pixel columns", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={60_000}
+        spectrogramOverview={createLongSpectrogramOverview(1_200, 4)}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const canvas = screen.getByRole("img", { name: "Audio spectrogram" }) as HTMLCanvasElement;
+    const binDrawCalls = drawCalls.filter(
+      (call) =>
+        !(
+          call.x === 0 &&
+          call.y === 0 &&
+          call.width === canvas.width &&
+          call.height === canvas.height
+        )
+    );
+
+    expect(binDrawCalls.length).toBeLessThanOrEqual(canvas.width * 4);
+  });
+
+  it("uses a stable shared spectrogram display height", () => {
+    const { container } = render(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const canvas = screen.getByRole("img", { name: "Audio spectrogram" }) as HTMLCanvasElement;
+    const spectrogramView = container.querySelector(".spectrogram-view") as HTMLElement;
+
+    expect(canvas.height).toBe(420);
+    expect(spectrogramView.style.getPropertyValue("--spectrogram-display-height")).toBe("420px");
   });
 
   it("keeps the lowest and highest piano keys inside the pitch axis", () => {

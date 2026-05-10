@@ -302,6 +302,7 @@ button:disabled {
 }
 
 .spectrogram-view {
+  --spectrogram-display-height: 420px;
   display: grid;
   gap: 0.75rem;
   margin-top: 1rem;
@@ -325,12 +326,12 @@ button:disabled {
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);
   gap: 0.5rem;
-  min-height: 420px;
+  height: var(--spectrogram-display-height);
 }
 
 .piano-axis {
   position: relative;
-  min-height: 420px;
+  height: var(--spectrogram-display-height);
   border: 1px solid #211d1a;
   border-radius: 8px;
   overflow: hidden;
@@ -358,7 +359,7 @@ button:disabled {
 .spectrogram-canvas-frame {
   position: relative;
   min-width: 0;
-  min-height: 420px;
+  height: var(--spectrogram-display-height);
   border: 1px solid #211d1a;
   border-radius: 8px;
   overflow: hidden;
