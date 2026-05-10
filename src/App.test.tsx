@@ -76,6 +76,14 @@ describe("App local audio import", () => {
       configurable: true,
       value: FakeAudioElement
     });
+    Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+      configurable: true,
+      value: vi.fn(() => ({
+        clearRect: vi.fn(),
+        fillRect: vi.fn(),
+        fillStyle: ""
+      }))
+    });
   });
 
   afterEach(() => {
@@ -109,7 +117,8 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
-    expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
+    expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
+    expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(audioData);
     const [spectrogramAudioData] = spectrogramService.buildOverviewFromAudioData.mock.calls[0];
     expect(spectrogramAudioData).toBeInstanceOf(ArrayBuffer);
@@ -677,7 +686,8 @@ describe("App local audio import", () => {
     });
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(openedAudioData);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
-    expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
+    expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
+    expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
     expect(window.ziqiApp.activateOpenedProject).toHaveBeenCalledWith({
       projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
       projectRootPath: "D:\\ZiQi Projects\\Demo"
