@@ -82,6 +82,31 @@ describe("SpectrogramView", () => {
     expect(drawCalls.some((call) => call.fillStyle === "rgb(255, 0, 0)")).toBe(true);
   });
 
+  it("keeps the lowest and highest piano keys inside the pitch axis", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const lowestKey = screen.getByTitle("A0");
+    const highestKey = screen.getByTitle("C8");
+    const lowestKeyBottom = Number.parseFloat(lowestKey.dataset.bottomPercent ?? "");
+    const highestKeyBottom = Number.parseFloat(highestKey.dataset.bottomPercent ?? "");
+
+    expect(lowestKey.dataset.logPosition).toBe("0");
+    expect(highestKey.dataset.logPosition).toBe("1");
+    expect(lowestKeyBottom).toBeGreaterThanOrEqual(0);
+    expect(lowestKeyBottom).toBeLessThanOrEqual(100);
+    expect(highestKeyBottom).toBeGreaterThanOrEqual(0);
+    expect(highestKeyBottom).toBeLessThan(100);
+    expect(lowestKey.style.bottom).toBe(`${lowestKeyBottom}%`);
+    expect(highestKey.style.bottom).toBe(`${highestKeyBottom}%`);
+  });
+
   it("shows an empty spectrogram state without drawing bins", () => {
     render(
       <SpectrogramView

@@ -9,6 +9,7 @@ import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/type
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 420;
 const MAX_RENDERED_WAVEFORM_POINTS = 800;
+const PIANO_KEY_HEIGHT_PERCENT = 1.4;
 
 interface SpectrogramViewProps {
   currentTimeMs: number;
@@ -81,17 +82,26 @@ export function SpectrogramView({
 
       <div className="spectrogram-body">
         <div className="piano-axis" aria-label="Piano pitch axis">
-          {PIANO_KEYS.map((key) => (
-            <div
-              key={key.midiNumber}
-              className={key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"}
-              data-testid="piano-key"
-              style={{
-                bottom: `${frequencyToLogPosition(key.frequencyHz) * 100}%`
-              }}
-              title={key.name}
-            />
-          ))}
+          {PIANO_KEYS.map((key) => {
+            const logPosition = frequencyToLogPosition(key.frequencyHz);
+            const bottomPercent = getPianoKeyBottomPercent(logPosition);
+
+            return (
+              <div
+                key={key.midiNumber}
+                className={
+                  key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"
+                }
+                data-bottom-percent={bottomPercent}
+                data-log-position={logPosition}
+                data-testid="piano-key"
+                style={{
+                  bottom: `${bottomPercent}%`
+                }}
+                title={key.name}
+              />
+            );
+          })}
         </div>
 
         <div className="spectrogram-canvas-frame">
@@ -160,6 +170,11 @@ function createTimeGridLines(durationMs: number) {
   return Array.from({ length: lineCount }, (_, index) =>
     Math.round((((index + 1) * intervalSeconds) / durationSeconds) * 1000) / 10
   ).filter((position) => position > 0 && position < 100);
+}
+
+function getPianoKeyBottomPercent(logPosition: number) {
+  const boundedPosition = Math.min(1, Math.max(0, logPosition));
+  return Math.round(boundedPosition * (100 - PIANO_KEY_HEIGHT_PERCENT) * 1000) / 1000;
 }
 
 function chooseGridIntervalSeconds(durationSeconds: number) {
