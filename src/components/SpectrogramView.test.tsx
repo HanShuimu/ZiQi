@@ -1,0 +1,198 @@
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
+import { SpectrogramView } from "./SpectrogramView";
+
+const drawCalls: Array<{
+  fillStyle: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}> = [];
+
+function createWaveformOverview(): WaveformOverview {
+  return {
+    pointsPerSecond: 50,
+    durationMs: 12_000,
+    points: [
+      { startMs: 0, endMs: 20, peak: 0.2 },
+      { startMs: 20, endMs: 40, peak: 0.8 },
+      { startMs: 40, endMs: 60, peak: 0.4 }
+    ]
+  };
+}
+
+function createSpectrogramOverview(): SpectrogramOverview {
+  return {
+    durationMs: 12_000,
+    framesPerSecond: 24,
+    minFrequencyHz: 27.5,
+    maxFrequencyHz: 4186,
+    binsPerFrame: 4,
+    frames: [
+      { startMs: 0, endMs: 42, magnitudes: [0, 0.25, 0.5, 1] },
+      { startMs: 42, endMs: 84, magnitudes: [1, 0.5, 0.25, 0] }
+    ]
+  };
+}
+
+function createLongSpectrogramOverview(
+  frameCount: number,
+  binsPerFrame: number
+): SpectrogramOverview {
+  return {
+    durationMs: 60_000,
+    framesPerSecond: 24,
+    minFrequencyHz: 27.5,
+    maxFrequencyHz: 4186,
+    binsPerFrame,
+    frames: Array.from({ length: frameCount }, (_, frameIndex) => ({
+      startMs: frameIndex * 42,
+      endMs: (frameIndex + 1) * 42,
+      magnitudes: Array.from({ length: binsPerFrame }, (_, binIndex) =>
+        (frameIndex + binIndex) % 2 === 0 ? 0.4 : 0.8
+      )
+    }))
+  };
+}
+
+describe("SpectrogramView", () => {
+  beforeEach(() => {
+    drawCalls.length = 0;
+    Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+      configurable: true,
+      value: vi.fn(() => ({
+        clearRect: vi.fn(),
+        fillRect: vi.fn(function (
+          this: { fillStyle: string },
+          x: number,
+          y: number,
+          width: number,
+          height: number
+        ) {
+          drawCalls.push({ fillStyle: this.fillStyle, x, y, width, height });
+        }),
+        fillStyle: ""
+      }))
+    });
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("renders waveform strip, piano rail, time grid, and spectrogram canvas", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={3_000}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    expect(screen.getByRole("img", { name: "Audio waveform overview" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Audio spectrogram" })).toBeTruthy();
+    expect(screen.getByLabelText("Piano pitch axis")).toBeTruthy();
+    expect(screen.getAllByTestId("piano-key")).toHaveLength(88);
+    expect(screen.getAllByTestId("spectrogram-time-grid-line").length).toBeGreaterThan(1);
+    expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("25%");
+    expect(drawCalls.some((call) => call.fillStyle === "rgb(255, 0, 0)")).toBe(true);
+  });
+
+  it("limits long spectrogram bin drawing to the canvas pixel columns", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={60_000}
+        spectrogramOverview={createLongSpectrogramOverview(1_200, 4)}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const canvas = screen.getByRole("img", { name: "Audio spectrogram" }) as HTMLCanvasElement;
+    const binDrawCalls = drawCalls.filter(
+      (call) =>
+        !(
+          call.x === 0 &&
+          call.y === 0 &&
+          call.width === canvas.width &&
+          call.height === canvas.height
+        )
+    );
+
+    expect(binDrawCalls.length).toBeLessThanOrEqual(canvas.width * 4);
+  });
+
+  it("uses a stable shared spectrogram display height", () => {
+    const { container } = render(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const canvas = screen.getByRole("img", { name: "Audio spectrogram" }) as HTMLCanvasElement;
+    const spectrogramView = container.querySelector(".spectrogram-view") as HTMLElement;
+
+    expect(canvas.height).toBe(420);
+    expect(spectrogramView.style.getPropertyValue("--spectrogram-display-height")).toBe("420px");
+  });
+
+  it("keeps the lowest and highest piano keys inside the pitch axis", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const lowestKey = screen.getByTitle("A0");
+    const highestKey = screen.getByTitle("C8");
+    const lowestKeyBottom = Number.parseFloat(lowestKey.dataset.bottomPercent ?? "");
+    const highestKeyBottom = Number.parseFloat(highestKey.dataset.bottomPercent ?? "");
+
+    expect(lowestKey.dataset.logPosition).toBe("0");
+    expect(highestKey.dataset.logPosition).toBe("1");
+    expect(lowestKeyBottom).toBeGreaterThanOrEqual(0);
+    expect(lowestKeyBottom).toBeLessThanOrEqual(100);
+    expect(highestKeyBottom).toBeGreaterThanOrEqual(0);
+    expect(highestKeyBottom).toBeLessThan(100);
+    expect(lowestKey.style.bottom).toBe(`${lowestKeyBottom}%`);
+    expect(highestKey.style.bottom).toBe(`${highestKeyBottom}%`);
+  });
+
+  it("shows an empty spectrogram state without drawing bins", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={null}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    expect(screen.getByText("Generating spectrogram...")).toBeTruthy();
+    expect(drawCalls).toEqual([]);
+  });
+
+  it("treats an overview with no frames as an empty spectrogram", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={{ ...createSpectrogramOverview(), frames: [] }}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    expect(screen.getByText("Generating spectrogram...")).toBeTruthy();
+    expect(drawCalls).toEqual([]);
+  });
+});

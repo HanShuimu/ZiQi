@@ -138,45 +138,6 @@ button:disabled {
   font-size: 0.95rem;
 }
 
-.spectrum-canvas {
-  position: relative;
-  margin-top: 1rem;
-  height: 420px;
-  padding: 1rem;
-  border-radius: 22px;
-  overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(117, 61, 21, 0.12), transparent),
-    #fff7ef;
-  border: 1px solid #d8c8b3;
-}
-
-.spectrum-grid {
-  display: grid;
-  grid-template-columns: repeat(72, minmax(0, 1fr));
-  gap: 0.18rem;
-  align-items: end;
-  height: 100%;
-}
-
-.spectrum-column {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 0.12rem;
-  height: 100%;
-}
-
-.spectrum-bin {
-  border-radius: 999px;
-  background: linear-gradient(180deg, #f4b36e, #c86f2c);
-  min-height: 2px;
-}
-
-.waveform-canvas {
-  display: grid;
-  align-items: center;
-}
-
 .waveform-grid {
   display: flex;
   align-items: center;
@@ -192,13 +153,7 @@ button:disabled {
   background: linear-gradient(180deg, #f4b36e, #b96a30);
 }
 
-.waveform-empty {
-  color: #6e6256;
-  justify-self: center;
-}
-
-.cursor-line,
-.grid-overlay {
+.cursor-line {
   position: absolute;
   pointer-events: none;
 }
@@ -209,24 +164,6 @@ button:disabled {
   left: 38%;
   width: 2px;
   background: rgba(53, 34, 18, 0.58);
-}
-
-.cursor-line-horizontal {
-  left: 0;
-  right: 0;
-  top: 44%;
-  height: 2px;
-  background: rgba(53, 34, 18, 0.42);
-}
-
-.grid-overlay {
-  inset: 0;
-  background-image: linear-gradient(
-    90deg,
-    rgba(99, 58, 26, 0.12) 1px,
-    transparent 1px
-  );
-  background-size: calc(100% / 16) 100%;
 }
 
 .dock-tabs {
@@ -299,6 +236,96 @@ button:disabled {
   height: 100%;
   border-radius: 999px;
   background: linear-gradient(90deg, #f2b06c, #b96a30);
+}
+
+.spectrogram-view {
+  --spectrogram-display-height: 420px;
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.waveform-overview {
+  position: relative;
+  height: 72px;
+  border: 1px solid #d8c8b3;
+  border-radius: 12px;
+  background: #fff7ef;
+  overflow: hidden;
+  padding: 0.45rem;
+}
+
+.waveform-grid-compact {
+  height: 100%;
+}
+
+.spectrogram-body {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 0.5rem;
+  height: var(--spectrogram-display-height);
+}
+
+.piano-axis {
+  position: relative;
+  height: var(--spectrogram-display-height);
+  border: 1px solid #211d1a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f3eb;
+}
+
+.piano-key {
+  position: absolute;
+  left: 0;
+  height: 1.4%;
+  border-bottom: 1px solid rgba(25, 21, 18, 0.2);
+}
+
+.piano-key-white {
+  width: 100%;
+  background: #fbf8f1;
+}
+
+.piano-key-black {
+  width: 62%;
+  background: #191512;
+  z-index: 1;
+}
+
+.spectrogram-canvas-frame {
+  position: relative;
+  min-width: 0;
+  height: var(--spectrogram-display-height);
+  border: 1px solid #211d1a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;
+}
+
+.spectrogram-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+.spectrogram-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #d8c8b3;
+  background: #000;
+}
+
+.spectrogram-time-grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.16);
+  pointer-events: none;
 }
 
 @media (max-width: 1200px) {

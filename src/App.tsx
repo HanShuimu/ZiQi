@@ -7,10 +7,15 @@ import {
   createBrowserWaveformService,
   type WaveformService
 } from "./domain/audio/browserWaveformService";
-import type { WaveformOverview } from "./domain/audio/types";
+import {
+  createBrowserSpectrogramService,
+  type SpectrogramService
+} from "./domain/audio/browserSpectrogramService";
+import type { SpectrogramOverview, WaveformOverview } from "./domain/audio/types";
 
 interface AppProps {
   waveformService?: WaveformService;
+  spectrogramService?: SpectrogramService;
 }
 
 interface ProjectLocation {
@@ -18,10 +23,11 @@ interface ProjectLocation {
   projectRootPath: string;
 }
 
-export function App({ waveformService }: AppProps) {
+export function App({ waveformService, spectrogramService }: AppProps) {
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [projectLocation, setProjectLocation] = useState<ProjectLocation | null>(null);
   const [waveformOverview, setWaveformOverview] = useState<WaveformOverview | null>(null);
+  const [spectrogramOverview, setSpectrogramOverview] = useState<SpectrogramOverview | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isOpeningProject, setIsOpeningProject] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
@@ -34,6 +40,10 @@ export function App({ waveformService }: AppProps) {
   const activeWaveformService = useMemo(
     () => waveformService ?? createBrowserWaveformService(),
     [waveformService]
+  );
+  const activeSpectrogramService = useMemo(
+    () => spectrogramService ?? createBrowserSpectrogramService(),
+    [spectrogramService]
   );
 
   useEffect(() => {
@@ -55,9 +65,12 @@ export function App({ waveformService }: AppProps) {
       }
 
       const nextPlaybackUrl = URL.createObjectURL(new Blob([selectedFile.audioData]));
+      const spectrogramAudioData = selectedFile.audioData.slice(0);
       try {
         const nextWaveformOverview =
           await activeWaveformService.buildOverviewFromAudioData(selectedFile.audioData);
+        const nextSpectrogramOverview =
+          await activeSpectrogramService.buildOverviewFromAudioData(spectrogramAudioData);
         const metadata = await audioFacade.source.load(selectedFile.filePath, nextPlaybackUrl);
         await audioFacade.playback.seek(0);
         setProject(
@@ -68,6 +81,7 @@ export function App({ waveformService }: AppProps) {
         );
         setProjectLocation(null);
         setWaveformOverview(nextWaveformOverview);
+        setSpectrogramOverview(nextSpectrogramOverview);
         if (activePlaybackUrl.current) {
           URL.revokeObjectURL(activePlaybackUrl.current);
         }
@@ -124,9 +138,12 @@ export function App({ waveformService }: AppProps) {
 
       const previousPlaybackUrl = activePlaybackUrl.current;
       const nextPlaybackUrl = URL.createObjectURL(new Blob([openedProject.audioData]));
+      const spectrogramAudioData = openedProject.audioData.slice(0);
       try {
         const nextWaveformOverview =
           await activeWaveformService.buildOverviewFromAudioData(openedProject.audioData);
+        const nextSpectrogramOverview =
+          await activeSpectrogramService.buildOverviewFromAudioData(spectrogramAudioData);
         await audioFacade.source.load(openedProject.project.sourceAudio.filePath, nextPlaybackUrl);
         await audioFacade.playback.seek(0);
         await window.ziqiApp.activateOpenedProject({
@@ -135,6 +152,7 @@ export function App({ waveformService }: AppProps) {
         });
         setProject(openedProject.project);
         setWaveformOverview(nextWaveformOverview);
+        setSpectrogramOverview(nextSpectrogramOverview);
         setProjectLocation({
           projectFilePath: openedProject.projectFilePath,
           projectRootPath: openedProject.projectRootPath
@@ -174,6 +192,7 @@ export function App({ waveformService }: AppProps) {
       onOpenProject={handleOpenProject}
       onSaveProject={handleSaveProject}
       project={project}
+      spectrogramOverview={spectrogramOverview}
       waveformOverview={waveformOverview}
     />
   );

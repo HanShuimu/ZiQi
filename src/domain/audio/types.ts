@@ -35,3 +35,4 @@ export interface EqBandSetting {
 }
 
 export type { WaveformOverview, WaveformPoint } from "./waveform";
+export type { SpectrogramFrame, SpectrogramOverview } from "./spectrogram";

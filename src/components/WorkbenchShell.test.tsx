@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
-import type { WaveformOverview } from "../domain/audio/types";
+import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import { createMockProjectSummary } from "../domain/project/mockProject";
 import { WorkbenchShell } from "./WorkbenchShell";
 
@@ -17,6 +17,14 @@ describe("WorkbenchShell transport controls", () => {
       value: {
         getVersion: vi.fn().mockResolvedValue("test-version")
       }
+    });
+    Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+      configurable: true,
+      value: vi.fn(() => ({
+        clearRect: vi.fn(),
+        fillRect: vi.fn(),
+        fillStyle: ""
+      }))
     });
   });
 
@@ -137,12 +145,14 @@ describe("WorkbenchShell transport controls", () => {
       <WorkbenchShell
         project={project}
         audioFacade={mockProjectAudioFacade}
+        spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={waveformOverview}
       />
     );
 
-    expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Audio waveform" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Audio waveform overview" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Audio spectrogram" })).toBeTruthy();
+    expect(screen.getByLabelText("Piano pitch axis")).toBeTruthy();
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
   });
 
@@ -162,6 +172,7 @@ describe("WorkbenchShell transport controls", () => {
       <WorkbenchShell
         project={project}
         audioFacade={mockProjectAudioFacade}
+        spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={waveformOverview}
       />
     );
@@ -169,3 +180,14 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(800);
   });
 });
+
+function createSpectrogramOverview(): SpectrogramOverview {
+  return {
+    durationMs: 120_000,
+    framesPerSecond: 24,
+    minFrequencyHz: 27.5,
+    maxFrequencyHz: 4186,
+    binsPerFrame: 4,
+    frames: [{ startMs: 0, endMs: 42, magnitudes: [0, 0.25, 0.5, 1] }]
+  };
+}

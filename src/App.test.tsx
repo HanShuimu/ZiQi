@@ -2,6 +2,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
+import type { SpectrogramOverview, WaveformOverview } from "./domain/audio/types";
 import type { ProjectSummary } from "./domain/project/types";
 
 class FakeAudioElement {
@@ -75,6 +76,14 @@ describe("App local audio import", () => {
       configurable: true,
       value: FakeAudioElement
     });
+    Object.defineProperty(HTMLCanvasElement.prototype, "getContext", {
+      configurable: true,
+      value: vi.fn(() => ({
+        clearRect: vi.fn(),
+        fillRect: vi.fn(),
+        fillStyle: ""
+      }))
+    });
   });
 
   afterEach(() => {
@@ -98,17 +107,23 @@ describe("App local audio import", () => {
         ]
       })
     };
+    const spectrogramService = createSpectrogramService();
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService, spectrogramService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
-    expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
+    expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
+    expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(audioData);
+    const [spectrogramAudioData] = spectrogramService.buildOverviewFromAudioData.mock.calls[0];
+    expect(spectrogramAudioData).toBeInstanceOf(ArrayBuffer);
+    expect(spectrogramAudioData).not.toBe(audioData);
+    expect(spectrogramAudioData.byteLength).toBe(audioData.byteLength);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
   });
 
@@ -127,7 +142,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    const { unmount } = render(<App waveformService={waveformService} />);
+    const { unmount } = renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
     await waitFor(() => {
@@ -157,7 +172,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -175,7 +190,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -192,7 +207,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -212,7 +227,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -251,7 +266,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -270,6 +285,54 @@ describe("App local audio import", () => {
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(secondAudioData);
     expect(URL.createObjectURL).toHaveBeenCalledTimes(2);
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
+  });
+
+  it("keeps the current project and shows a stable error when spectrogram generation fails", async () => {
+    const firstAudioData = new ArrayBuffer(8);
+    const secondAudioData = new ArrayBuffer(16);
+    window.ziqiApp.selectAudioFile = vi
+      .fn()
+      .mockResolvedValueOnce({
+        audioData: firstAudioData,
+        filePath: "D:\\Music Library\\demo track.wav"
+      })
+      .mockResolvedValueOnce({
+        audioData: secondAudioData,
+        filePath: "D:\\Music Library\\broken track.wav"
+      });
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+    const spectrogramService = createSpectrogramService({
+      buildOverviewFromAudioData: vi
+        .fn()
+        .mockResolvedValueOnce(createSpectrogramOverview())
+        .mockRejectedValueOnce(new Error("Failed to generate spectrogram."))
+    });
+    const user = userEvent.setup();
+
+    renderApp({ waveformService, spectrogramService });
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
+
+    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+
+    await waitFor(() => {
+      expect(screen.getByText("Failed to generate spectrogram.")).toBeTruthy();
+    });
+    expect(screen.getByText("demo track")).toBeTruthy();
+    expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
+    expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(secondAudioData);
+    const [spectrogramAudioData] = spectrogramService.buildOverviewFromAudioData.mock.calls[1];
+    expect(spectrogramAudioData).toBeInstanceOf(ArrayBuffer);
+    expect(spectrogramAudioData).not.toBe(secondAudioData);
+    expect(spectrogramAudioData.byteLength).toBe(secondAudioData.byteLength);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
   });
 
@@ -294,7 +357,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -350,7 +413,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
 
@@ -388,7 +451,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
     await waitFor(() => {
@@ -425,7 +488,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
     await waitFor(() => {
@@ -478,7 +541,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getByRole("button", { name: "Open Project" }));
     await waitFor(() => {
@@ -521,7 +584,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getByRole("button", { name: "Open Project" }));
     await waitFor(() => {
@@ -572,7 +635,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getByRole("button", { name: "Open Project" }));
     await waitFor(() => {
@@ -614,7 +677,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getByRole("button", { name: "Open Project" }));
 
@@ -623,7 +686,8 @@ describe("App local audio import", () => {
     });
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(openedAudioData);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
-    expect(screen.getByLabelText("Audio waveform")).toBeTruthy();
+    expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
+    expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
     expect(window.ziqiApp.activateOpenedProject).toHaveBeenCalledWith({
       projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
       projectRootPath: "D:\\ZiQi Projects\\Demo"
@@ -637,7 +701,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getByRole("button", { name: "Open Project" }));
 
@@ -671,7 +735,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
     await waitFor(() => {
@@ -725,7 +789,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getByRole("button", { name: "Open Project" }));
     await waitFor(() => {
@@ -735,6 +799,67 @@ describe("App local audio import", () => {
     await user.click(screen.getByRole("button", { name: "Open Project" }));
     await waitFor(() => {
       expect(screen.getByText("Failed to decode project audio.")).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
+    });
+    expect(window.ziqiApp.activateOpenedProject).toHaveBeenCalledTimes(1);
+    expect(window.ziqiApp.saveProject).toHaveBeenCalledWith({
+      project: expect.objectContaining({
+        sourceAudio: expect.objectContaining({
+          filePath: "audio/demo track.wav"
+        })
+      }),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+  });
+
+  it("keeps the current project and location when opened project spectrogram generation fails", async () => {
+    const firstOpenedAudioData = new ArrayBuffer(8);
+    const secondOpenedAudioData = new ArrayBuffer(16);
+    window.ziqiApp.openProject = vi
+      .fn()
+      .mockResolvedValueOnce({
+        audioData: firstOpenedAudioData,
+        project: createProjectSummary("audio/demo track.wav"),
+        projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+        projectRootPath: "D:\\ZiQi Projects\\Demo"
+      })
+      .mockResolvedValueOnce({
+        audioData: secondOpenedAudioData,
+        project: createProjectSummary("audio/broken track.wav"),
+        projectFilePath: "D:\\ZiQi Projects\\Broken\\project.ziqi.json",
+        projectRootPath: "D:\\ZiQi Projects\\Broken"
+      });
+    window.ziqiApp.saveProject = vi.fn().mockImplementation(async (request) => ({
+      project: request.project,
+      projectFilePath: request.projectFilePath,
+      projectRootPath: request.projectRootPath
+    }));
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+    const spectrogramService = createSpectrogramService({
+      buildOverviewFromAudioData: vi
+        .fn()
+        .mockResolvedValueOnce(createSpectrogramOverview())
+        .mockRejectedValueOnce(new Error("Failed to generate spectrogram."))
+    });
+    const user = userEvent.setup();
+
+    renderApp({ waveformService, spectrogramService });
+
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    await waitFor(() => {
+      expect(screen.getByText("Failed to generate spectrogram.")).toBeTruthy();
     });
 
     await user.click(screen.getByRole("button", { name: "Save Project" }));
@@ -775,7 +900,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
     await waitFor(() => {
@@ -829,7 +954,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getByRole("button", { name: "Open Project" }));
     await waitFor(() => {
@@ -877,7 +1002,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
     await waitFor(() => {
@@ -921,7 +1046,7 @@ describe("App local audio import", () => {
     };
     const user = userEvent.setup();
 
-    render(<App waveformService={waveformService} />);
+    renderApp({ waveformService });
 
     await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
     await waitFor(() => {
@@ -947,6 +1072,41 @@ describe("App local audio import", () => {
     });
   });
 });
+
+function renderApp(props: Parameters<typeof App>[0]) {
+  return render(<App spectrogramService={createSpectrogramService()} {...props} />);
+}
+
+function createWaveformOverview(): WaveformOverview {
+  return {
+    pointsPerSecond: 50,
+    durationMs: 12_000,
+    points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+  };
+}
+
+function createSpectrogramOverview(): SpectrogramOverview {
+  return {
+    durationMs: 12_000,
+    framesPerSecond: 24,
+    minFrequencyHz: 27.5,
+    maxFrequencyHz: 4186,
+    binsPerFrame: 4,
+    frames: [
+      { startMs: 0, endMs: 42, magnitudes: [0, 0.25, 0.5, 1] },
+      { startMs: 42, endMs: 84, magnitudes: [1, 0.5, 0.25, 0] }
+    ]
+  };
+}
+
+function createSpectrogramService(overrides?: {
+  buildOverviewFromAudioData?: ReturnType<typeof vi.fn>;
+}) {
+  return {
+    buildOverviewFromAudioData:
+      overrides?.buildOverviewFromAudioData ?? vi.fn().mockResolvedValue(createSpectrogramOverview())
+  };
+}
 
 function createProjectSummary(filePath: string): ProjectSummary {
   return {
