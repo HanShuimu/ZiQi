@@ -177,7 +177,7 @@ describe("WorkbenchShell transport controls", () => {
       />
     );
 
-    expect(screen.getAllByTestId("waveform-point")).toHaveLength(800);
+    expect(screen.getAllByTestId("waveform-point")).toHaveLength(500);
   });
 });
 
