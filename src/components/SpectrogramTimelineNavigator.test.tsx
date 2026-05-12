@@ -1,0 +1,85 @@
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { SpectrogramTimelineNavigator } from "./SpectrogramTimelineNavigator";
+
+function stubTrackRect(element: Element) {
+  vi.spyOn(element, "getBoundingClientRect").mockReturnValue({
+    x: 0,
+    y: 0,
+    width: 1_000,
+    height: 32,
+    top: 0,
+    right: 1_000,
+    bottom: 32,
+    left: 0,
+    toJSON: () => ({})
+  });
+}
+
+describe("SpectrogramTimelineNavigator", () => {
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
+
+  it("renders track labels, viewport range, playhead, and viewport thumb", () => {
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={6_000}
+        durationMs={12_000}
+        onViewportChange={vi.fn()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+      />
+    );
+
+    expect(screen.getByText("0:00")).toBeTruthy();
+    expect(screen.getByText("0:12")).toBeTruthy();
+    expect(screen.getByText("0:00-0:10")).toBeTruthy();
+    expect(screen.getByTestId("spectrogram-navigator-playhead").style.left).toBe("50%");
+    expect(screen.getByTestId("spectrogram-navigator-thumb").style.left).toBe("0%");
+    expect(screen.getByTestId("spectrogram-navigator-thumb").style.width).toBe("83.33333333333334%");
+  });
+
+  it("moves the viewport center when clicking the track", () => {
+    const onViewportChange = vi.fn();
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={0}
+        durationMs={20_000}
+        onViewportChange={onViewportChange}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+      />
+    );
+
+    const track = screen.getByTestId("spectrogram-navigator-track");
+    stubTrackRect(track);
+
+    fireEvent.pointerDown(track, { clientX: 750 });
+
+    expect(onViewportChange).toHaveBeenCalledWith({ startMs: 10_000, durationMs: 10_000 });
+  });
+
+  it("drags the viewport thumb without changing zoom", () => {
+    const onViewportChange = vi.fn();
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={0}
+        durationMs={20_000}
+        onViewportChange={onViewportChange}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+      />
+    );
+
+    const track = screen.getByTestId("spectrogram-navigator-track");
+    const thumb = screen.getByTestId("spectrogram-navigator-thumb");
+    stubTrackRect(track);
+
+    fireEvent.pointerDown(thumb, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerMove(thumb, { clientX: 600, pointerId: 1 });
+
+    expect(onViewportChange).toHaveBeenLastCalledWith({
+      startMs: 10_000,
+      durationMs: 10_000
+    });
+  });
+});

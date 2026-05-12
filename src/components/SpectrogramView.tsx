@@ -16,6 +16,7 @@ import {
   zoomSpectrogramViewport
 } from "./spectrogramViewport";
 import type { SpectrogramViewport } from "./spectrogramViewport";
+import { SpectrogramTimelineNavigator } from "./SpectrogramTimelineNavigator";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 420;
@@ -221,6 +222,13 @@ export function SpectrogramView({
           ) : null}
         </div>
       </div>
+
+      <SpectrogramTimelineNavigator
+        currentTimeMs={currentTimeMs}
+        durationMs={durationMs}
+        onViewportChange={setViewport}
+        viewport={viewport}
+      />
     </div>
   );
 }
