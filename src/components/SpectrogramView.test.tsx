@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
@@ -13,12 +13,12 @@ const drawCalls: Array<{
 
 function createWaveformOverview(): WaveformOverview {
   return {
-    pointsPerSecond: 50,
+    pointsPerSecond: 1,
     durationMs: 12_000,
     points: [
-      { startMs: 0, endMs: 20, peak: 0.2 },
-      { startMs: 20, endMs: 40, peak: 0.8 },
-      { startMs: 40, endMs: 60, peak: 0.4 }
+      { startMs: 0, endMs: 1_000, peak: 0.2 },
+      { startMs: 9_000, endMs: 10_000, peak: 0.8 },
+      { startMs: 10_000, endMs: 11_000, peak: 0.4 }
     ]
   };
 }
@@ -26,13 +26,14 @@ function createWaveformOverview(): WaveformOverview {
 function createSpectrogramOverview(): SpectrogramOverview {
   return {
     durationMs: 12_000,
-    framesPerSecond: 24,
+    framesPerSecond: 1,
     minFrequencyHz: 27.5,
     maxFrequencyHz: 4186,
     binsPerFrame: 4,
     frames: [
-      { startMs: 0, endMs: 42, magnitudes: [0, 0.25, 0.5, 1] },
-      { startMs: 42, endMs: 84, magnitudes: [1, 0.5, 0.25, 0] }
+      { startMs: 0, endMs: 1_000, magnitudes: [0, 0.25, 0.5, 1] },
+      { startMs: 9_000, endMs: 10_000, magnitudes: [1, 0.5, 0.25, 0] },
+      { startMs: 10_000, endMs: 11_000, magnitudes: [0.25, 0.25, 0.25, 0.25] }
     ]
   };
 }
@@ -55,6 +56,20 @@ function createLongSpectrogramOverview(
       )
     }))
   };
+}
+
+function stubCanvasFrameRect(element: Element) {
+  vi.spyOn(element, "getBoundingClientRect").mockReturnValue({
+    x: 0,
+    y: 0,
+    width: 1_000,
+    height: 420,
+    top: 0,
+    right: 1_000,
+    bottom: 420,
+    left: 0,
+    toJSON: () => ({})
+  });
 }
 
 describe("SpectrogramView", () => {
@@ -97,8 +112,9 @@ describe("SpectrogramView", () => {
     expect(screen.getByRole("img", { name: "Audio spectrogram" })).toBeTruthy();
     expect(screen.getByLabelText("Piano pitch axis")).toBeTruthy();
     expect(screen.getAllByTestId("piano-key")).toHaveLength(88);
-    expect(screen.getAllByTestId("spectrogram-time-grid-line").length).toBeGreaterThan(1);
-    expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("25%");
+    expect(screen.getAllByTestId("spectrogram-time-grid-line").length).toBe(1);
+    expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("30%");
+    expect(screen.getByLabelText("Spectrogram time navigator")).toBeTruthy();
     expect(drawCalls.some((call) => call.fillStyle === "rgb(255, 0, 0)")).toBe(true);
   });
 
@@ -194,5 +210,83 @@ describe("SpectrogramView", () => {
 
     expect(screen.getByText("Generating spectrogram...")).toBeTruthy();
     expect(drawCalls).toEqual([]);
+  });
+
+  it("defaults long audio to a 10 second viewport for drawing and waveform points", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={3_000}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const waveform = screen.getByRole("img", { name: "Audio waveform overview" });
+    expect(within(waveform).getAllByTestId("waveform-point")).toHaveLength(2);
+
+    const canvas = screen.getByRole("img", { name: "Audio spectrogram" }) as HTMLCanvasElement;
+    const binDrawCalls = drawCalls.filter(
+      (call) =>
+        !(
+          call.x === 0 &&
+          call.y === 0 &&
+          call.width === canvas.width &&
+          call.height === canvas.height
+        )
+    );
+
+    expect(binDrawCalls).toHaveLength(8);
+  });
+
+  it("hides the main spectrogram cursor when playback is outside the viewport", () => {
+    render(
+      <SpectrogramView
+        currentTimeMs={11_000}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    expect(screen.queryByTestId("spectrogram-cursor")).toBeNull();
+  });
+
+  it("zooms horizontally with ctrl wheel around the mouse position", () => {
+    const { container } = render(
+      <SpectrogramView
+        currentTimeMs={2_500}
+        durationMs={12_000}
+        spectrogramOverview={createLongSpectrogramOverview(12, 4)}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.wheel(frame, { ctrlKey: true, deltaY: -100, clientX: 250 });
+
+    expect(Number.parseFloat(
+      screen.getByTestId("spectrogram-cursor").style.left
+    )).toBeCloseTo(25, 0);
+  });
+
+  it("pans horizontally with horizontal wheel movement", () => {
+    const { container } = render(
+      <SpectrogramView
+        currentTimeMs={6_000}
+        durationMs={12_000}
+        spectrogramOverview={createLongSpectrogramOverview(12, 4)}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.wheel(frame, { deltaX: 100, deltaY: 0, clientX: 500 });
+
+    expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("50%");
   });
 });

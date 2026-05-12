@@ -328,6 +328,62 @@ button:disabled {
   pointer-events: none;
 }
 
+.spectrogram-navigator {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.spectrogram-navigator-labels {
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr) 4rem;
+  align-items: center;
+  color: #6e6256;
+  font-size: 0.82rem;
+}
+
+.spectrogram-navigator-labels span:nth-child(2) {
+  justify-self: center;
+  min-width: 0;
+}
+
+.spectrogram-navigator-labels span:last-child {
+  justify-self: end;
+}
+
+.spectrogram-navigator-track {
+  position: relative;
+  height: 28px;
+  border: 1px solid #d8c8b3;
+  border-radius: 8px;
+  background: #fff7ef;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.spectrogram-navigator-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  min-width: 18px;
+  border: 1px solid rgba(185, 106, 48, 0.85);
+  border-radius: 6px;
+  background: rgba(244, 179, 110, 0.55);
+  cursor: grab;
+}
+
+.spectrogram-navigator-thumb:active {
+  cursor: grabbing;
+}
+
+.spectrogram-navigator-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(53, 34, 18, 0.72);
+  pointer-events: none;
+}
+
 @media (max-width: 1200px) {
   .workspace-grid {
     grid-template-columns: 1fr;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import {
   PIANO_KEYS,
@@ -6,6 +6,17 @@ import {
   magnitudeToSpectrogramColor
 } from "../domain/audio/spectrogram";
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
+import {
+  createDefaultSpectrogramViewport,
+  filterSpectrogramFramesForViewport,
+  filterWaveformPointsForViewport,
+  isTimeInsideViewport,
+  panSpectrogramViewport,
+  timeToViewportPercent,
+  zoomSpectrogramViewport
+} from "./spectrogramViewport";
+import type { SpectrogramViewport } from "./spectrogramViewport";
+import { SpectrogramTimelineNavigator } from "./SpectrogramTimelineNavigator";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 420;
@@ -29,17 +40,37 @@ export function SpectrogramView({
   waveformOverview
 }: SpectrogramViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const renderedWaveformPoints = useMemo(
-    () => getRenderedWaveformPoints(waveformOverview),
-    [waveformOverview]
+  const [viewport, setViewport] = useState(() => createDefaultSpectrogramViewport(durationMs));
+
+  useEffect(() => {
+    setViewport((prev) => {
+      const next = createDefaultSpectrogramViewport(durationMs);
+      if (prev.startMs === next.startMs && prev.durationMs === next.durationMs) {
+        return prev;
+      }
+      return next;
+    });
+  }, [durationMs, spectrogramOverview]);
+  const visibleWaveformPoints = useMemo(
+    () => filterWaveformPointsForViewport(waveformOverview, viewport),
+    [viewport, waveformOverview]
   );
-  const progressPercent =
-    durationMs > 0 ? Math.min(100, Math.max(0, (currentTimeMs / durationMs) * 100)) : 0;
-  const timeGridLines = useMemo(() => createTimeGridLines(durationMs), [durationMs]);
+  const renderedWaveformPoints = useMemo(
+    () => getRenderedWaveformPoints(visibleWaveformPoints),
+    [visibleWaveformPoints]
+  );
+  const isPlaybackVisible = isTimeInsideViewport(currentTimeMs, viewport);
+  const progressPercent = isPlaybackVisible ? timeToViewportPercent(currentTimeMs, viewport) : 0;
+  const timeGridLines = useMemo(() => createTimeGridLines(viewport), [viewport]);
   const hasSpectrogramFrames =
     spectrogramOverview !== null &&
     spectrogramOverview !== undefined &&
     spectrogramOverview.frames.length > 0;
+
+  const visibleFrames = useMemo(
+    () => (hasSpectrogramFrames ? filterSpectrogramFramesForViewport(spectrogramOverview, viewport) : []),
+    [hasSpectrogramFrames, spectrogramOverview, viewport]
+  );
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -52,7 +83,7 @@ export function SpectrogramView({
     context.fillStyle = "rgb(0, 0, 0)";
     context.fillRect(0, 0, canvas.width, canvas.height);
 
-    const renderedColumnCount = Math.min(canvas.width, spectrogramOverview.frames.length);
+    const renderedColumnCount = Math.min(canvas.width, visibleFrames.length);
     if (renderedColumnCount <= 0) {
       return;
     }
@@ -62,16 +93,16 @@ export function SpectrogramView({
 
     for (let columnIndex = 0; columnIndex < renderedColumnCount; columnIndex += 1) {
       const startFrameIndex = Math.floor(
-        (columnIndex * spectrogramOverview.frames.length) / renderedColumnCount
+        (columnIndex * visibleFrames.length) / renderedColumnCount
       );
       const endFrameIndex = Math.max(
         startFrameIndex + 1,
-        Math.floor(((columnIndex + 1) * spectrogramOverview.frames.length) / renderedColumnCount)
+        Math.floor(((columnIndex + 1) * visibleFrames.length) / renderedColumnCount)
       );
 
       for (let binIndex = 0; binIndex < spectrogramOverview.binsPerFrame; binIndex += 1) {
         const magnitude = getMaxMagnitudeForColumn(
-          spectrogramOverview.frames,
+          visibleFrames,
           startFrameIndex,
           endFrameIndex,
           binIndex
@@ -85,7 +116,40 @@ export function SpectrogramView({
         );
       }
     }
-  }, [hasSpectrogramFrames, spectrogramOverview]);
+  }, [visibleFrames]);
+
+  function handleSpectrogramWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (durationMs <= 0) {
+      return;
+    }
+
+    if (event.ctrlKey) {
+      event.preventDefault();
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const anchorRatio = bounds.width > 0 ? (event.clientX - bounds.left) / bounds.width : 0.5;
+
+      setViewport((currentViewport) =>
+        zoomSpectrogramViewport({
+          viewport: currentViewport,
+          totalDurationMs: durationMs,
+          anchorRatio,
+          deltaY: event.deltaY
+        })
+      );
+      return;
+    }
+
+    if (event.deltaX !== 0) {
+      event.preventDefault();
+      setViewport((currentViewport) =>
+        panSpectrogramViewport({
+          viewport: currentViewport,
+          totalDurationMs: durationMs,
+          direction: Math.sign(event.deltaX)
+        })
+      );
+    }
+  }
 
   return (
     <div className="spectrogram-view" style={SPECTROGRAM_VIEW_STYLE}>
@@ -100,7 +164,9 @@ export function SpectrogramView({
             />
           ))}
         </div>
-        <div className="cursor-line cursor-line-vertical" style={{ left: `${progressPercent}%` }} />
+        {isPlaybackVisible ? (
+          <div className="cursor-line cursor-line-vertical" style={{ left: `${progressPercent}%` }} />
+        ) : null}
       </div>
 
       <div className="spectrogram-body">
@@ -127,7 +193,7 @@ export function SpectrogramView({
           })}
         </div>
 
-        <div className="spectrogram-canvas-frame">
+        <div className="spectrogram-canvas-frame" onWheel={handleSpectrogramWheel}>
           <canvas
             aria-label="Audio spectrogram"
             className="spectrogram-canvas"
@@ -147,23 +213,29 @@ export function SpectrogramView({
               style={{ left: `${position}%` }}
             />
           ))}
-          <div
-            className="cursor-line cursor-line-vertical"
-            data-testid="spectrogram-cursor"
-            style={{ left: `${progressPercent}%` }}
-          />
+          {isPlaybackVisible ? (
+            <div
+              className="cursor-line cursor-line-vertical"
+              data-testid="spectrogram-cursor"
+              style={{ left: `${progressPercent}%` }}
+            />
+          ) : null}
         </div>
       </div>
+
+      <SpectrogramTimelineNavigator
+        currentTimeMs={currentTimeMs}
+        durationMs={durationMs}
+        onViewportChange={setViewport}
+        viewport={viewport}
+      />
     </div>
   );
 }
 
 type RenderedWaveformPoint = WaveformOverview["points"][number];
 
-function getRenderedWaveformPoints(
-  waveformOverview: WaveformOverview | null | undefined
-): RenderedWaveformPoint[] {
-  const points = waveformOverview?.points ?? [];
+function getRenderedWaveformPoints(points: RenderedWaveformPoint[]): RenderedWaveformPoint[] {
   if (points.length <= MAX_RENDERED_WAVEFORM_POINTS) {
     return points;
   }
@@ -181,18 +253,30 @@ function getRenderedWaveformPoints(
   });
 }
 
-function createTimeGridLines(durationMs: number) {
-  if (durationMs <= 0) {
+function createTimeGridLines(viewport: SpectrogramViewport) {
+  if (viewport.durationMs <= 0) {
     return [];
   }
 
-  const durationSeconds = durationMs / 1000;
+  const durationSeconds = viewport.durationMs / 1000;
   const intervalSeconds = chooseGridIntervalSeconds(durationSeconds);
-  const lineCount = Math.floor(durationSeconds / intervalSeconds);
+  const firstLineSeconds = Math.ceil(viewport.startMs / 1000 / intervalSeconds) * intervalSeconds;
+  const endSeconds = (viewport.startMs + viewport.durationMs) / 1000;
+  const positions: number[] = [];
 
-  return Array.from({ length: lineCount }, (_, index) =>
-    Math.round((((index + 1) * intervalSeconds) / durationSeconds) * 1000) / 10
-  ).filter((position) => position > 0 && position < 100);
+  for (
+    let lineSeconds = firstLineSeconds;
+    lineSeconds < endSeconds;
+    lineSeconds += intervalSeconds
+  ) {
+    const lineMs = lineSeconds * 1000;
+    const position = timeToViewportPercent(lineMs, viewport);
+    if (position > 0 && position < 100) {
+      positions.push(Math.round(position * 10) / 10);
+    }
+  }
+
+  return positions;
 }
 
 function getPianoKeyBottomPercent(logPosition: number) {
