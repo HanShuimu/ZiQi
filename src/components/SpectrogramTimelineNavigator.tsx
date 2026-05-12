@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
   clampSpectrogramViewport,
   formatTimeLabel,
@@ -22,6 +23,9 @@ export function SpectrogramTimelineNavigator({
   if (durationMs <= 0 || viewport.durationMs <= 0) {
     return null;
   }
+
+  const onViewportChangeRef = useRef(onViewportChange);
+  onViewportChangeRef.current = onViewportChange;
 
   const viewportLeftPercent = timeToTrackPercent(viewport.startMs, durationMs);
   const viewportWidthPercent = Math.min(100, (viewport.durationMs / durationMs) * 100);
@@ -66,7 +70,7 @@ export function SpectrogramTimelineNavigator({
     function handlePointerMove(pointerEvent: PointerEvent) {
       const bounds = track.getBoundingClientRect();
       const deltaRatio = bounds.width > 0 ? (pointerEvent.clientX - startClientX) / bounds.width : 0;
-      onViewportChange(
+      onViewportChangeRef.current(
         clampSpectrogramViewport(
           {
             ...startViewport,
@@ -77,7 +81,8 @@ export function SpectrogramTimelineNavigator({
       );
     }
 
-    function handlePointerUp() {
+    function handlePointerUp(event: PointerEvent) {
+      thumb.releasePointerCapture(event.pointerId);
       thumb.removeEventListener("pointermove", handlePointerMove);
       thumb.removeEventListener("pointerup", handlePointerUp);
       thumb.removeEventListener("pointercancel", handlePointerUp);
