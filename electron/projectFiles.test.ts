@@ -56,6 +56,15 @@ describe("projectFiles", () => {
     });
   });
 
+  it("does not serialize runtime spectrogram viewport state", () => {
+    const payload = createZiqiProjectPayload(project);
+    const serialized = JSON.stringify(payload);
+
+    expect(serialized).not.toContain("viewport");
+    expect(serialized).not.toContain("zoom");
+    expect(serialized).not.toContain("pan");
+  });
+
   it("parses a valid .ziqi payload", () => {
     const payload = createZiqiProjectPayload(project);
 
