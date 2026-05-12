@@ -13,6 +13,7 @@ import {
   isTimeInsideViewport,
   timeToViewportPercent
 } from "./spectrogramViewport";
+import type { SpectrogramViewport } from "./spectrogramViewport";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 420;
@@ -63,6 +64,11 @@ export function SpectrogramView({
     spectrogramOverview !== undefined &&
     spectrogramOverview.frames.length > 0;
 
+  const visibleFrames = useMemo(
+    () => (hasSpectrogramFrames ? filterSpectrogramFramesForViewport(spectrogramOverview, viewport) : []),
+    [hasSpectrogramFrames, spectrogramOverview, viewport]
+  );
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
@@ -73,8 +79,6 @@ export function SpectrogramView({
     context.clearRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = "rgb(0, 0, 0)";
     context.fillRect(0, 0, canvas.width, canvas.height);
-
-    const visibleFrames = filterSpectrogramFramesForViewport(spectrogramOverview, viewport);
 
     const renderedColumnCount = Math.min(canvas.width, visibleFrames.length);
     if (renderedColumnCount <= 0) {
@@ -109,7 +113,7 @@ export function SpectrogramView({
         );
       }
     }
-  }, [hasSpectrogramFrames, spectrogramOverview, viewport]);
+  }, [visibleFrames]);
 
   return (
     <div className="spectrogram-view" style={SPECTROGRAM_VIEW_STYLE}>
@@ -206,7 +210,7 @@ function getRenderedWaveformPoints(points: RenderedWaveformPoint[]): RenderedWav
   });
 }
 
-function createTimeGridLines(viewport: { startMs: number; durationMs: number }) {
+function createTimeGridLines(viewport: SpectrogramViewport) {
   if (viewport.durationMs <= 0) {
     return [];
   }
