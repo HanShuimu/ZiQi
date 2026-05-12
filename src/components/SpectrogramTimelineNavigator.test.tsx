@@ -82,4 +82,19 @@ describe("SpectrogramTimelineNavigator", () => {
       durationMs: 10_000
     });
   });
+
+  it("keeps the thumb draggable when the viewport is very small", () => {
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={0}
+        durationMs={120_000}
+        onViewportChange={vi.fn()}
+        viewport={{ startMs: 60_000, durationMs: 1_000 }}
+      />
+    );
+
+    expect(screen.getByTestId("spectrogram-navigator-thumb").className).toContain(
+      "spectrogram-navigator-thumb"
+    );
+  });
 });
