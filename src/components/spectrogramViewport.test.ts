@@ -8,6 +8,7 @@ import {
   formatViewportRange,
   isTimeInsideViewport,
   panSpectrogramViewport,
+  timeToTrackPercent,
   timeToViewportPercent,
   zoomSpectrogramViewport
 } from "./spectrogramViewport";
@@ -136,5 +137,8 @@ describe("spectrogram viewport helpers", () => {
     expect(isTimeInsideViewport(20_001, viewport)).toBe(false);
     expect(formatTimeLabel(65_250)).toBe("1:05");
     expect(formatViewportRange(viewport)).toBe("0:10-0:20");
+    expect(timeToTrackPercent(10_000, 20_000)).toBe(50);
+    expect(timeToTrackPercent(0, 0)).toBe(0);
+    expect(timeToTrackPercent(0, Number.NaN)).toBe(0);
   });
 });
