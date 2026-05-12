@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
@@ -56,6 +56,20 @@ function createLongSpectrogramOverview(
       )
     }))
   };
+}
+
+function stubCanvasFrameRect(element: Element) {
+  vi.spyOn(element, "getBoundingClientRect").mockReturnValue({
+    x: 0,
+    y: 0,
+    width: 1_000,
+    height: 420,
+    top: 0,
+    right: 1_000,
+    bottom: 420,
+    left: 0,
+    toJSON: () => ({})
+  });
 }
 
 describe("SpectrogramView", () => {
@@ -235,5 +249,43 @@ describe("SpectrogramView", () => {
     );
 
     expect(screen.queryByTestId("spectrogram-cursor")).toBeNull();
+  });
+
+  it("zooms horizontally with ctrl wheel around the mouse position", () => {
+    const { container } = render(
+      <SpectrogramView
+        currentTimeMs={2_500}
+        durationMs={12_000}
+        spectrogramOverview={createLongSpectrogramOverview(12, 4)}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.wheel(frame, { ctrlKey: true, deltaY: -100, clientX: 250 });
+
+    expect(Number.parseFloat(
+      screen.getByTestId("spectrogram-cursor").style.left
+    )).toBeCloseTo(25, 0);
+  });
+
+  it("pans horizontally with horizontal wheel movement", () => {
+    const { container } = render(
+      <SpectrogramView
+        currentTimeMs={6_000}
+        durationMs={12_000}
+        spectrogramOverview={createLongSpectrogramOverview(12, 4)}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.wheel(frame, { deltaX: 100, deltaY: 0, clientX: 500 });
+
+    expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("50%");
   });
 });

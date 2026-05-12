@@ -11,7 +11,9 @@ import {
   filterSpectrogramFramesForViewport,
   filterWaveformPointsForViewport,
   isTimeInsideViewport,
-  timeToViewportPercent
+  panSpectrogramViewport,
+  timeToViewportPercent,
+  zoomSpectrogramViewport
 } from "./spectrogramViewport";
 import type { SpectrogramViewport } from "./spectrogramViewport";
 
@@ -115,6 +117,39 @@ export function SpectrogramView({
     }
   }, [visibleFrames]);
 
+  function handleSpectrogramWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (durationMs <= 0) {
+      return;
+    }
+
+    if (event.ctrlKey) {
+      event.preventDefault();
+      const bounds = event.currentTarget.getBoundingClientRect();
+      const anchorRatio = bounds.width > 0 ? (event.clientX - bounds.left) / bounds.width : 0.5;
+
+      setViewport((currentViewport) =>
+        zoomSpectrogramViewport({
+          viewport: currentViewport,
+          totalDurationMs: durationMs,
+          anchorRatio,
+          deltaY: event.deltaY
+        })
+      );
+      return;
+    }
+
+    if (event.deltaX !== 0) {
+      event.preventDefault();
+      setViewport((currentViewport) =>
+        panSpectrogramViewport({
+          viewport: currentViewport,
+          totalDurationMs: durationMs,
+          direction: Math.sign(event.deltaX)
+        })
+      );
+    }
+  }
+
   return (
     <div className="spectrogram-view" style={SPECTROGRAM_VIEW_STYLE}>
       <div className="waveform-overview" aria-label="Audio waveform overview" role="img">
@@ -157,7 +192,7 @@ export function SpectrogramView({
           })}
         </div>
 
-        <div className="spectrogram-canvas-frame">
+        <div className="spectrogram-canvas-frame" onWheel={handleSpectrogramWheel}>
           <canvas
             aria-label="Audio spectrogram"
             className="spectrogram-canvas"
