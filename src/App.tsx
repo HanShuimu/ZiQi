@@ -187,6 +187,15 @@ export function App({ waveformService, spectrogramService }: AppProps) {
         try {
           if (previousPlaybackUrl && project) {
             await audioFacade.source.load(project.sourceAudio.filePath, previousPlaybackUrl);
+            await audioFacade.playback.setPlaybackRate(project.workspace.playbackRate);
+            if (project.workspace.loopRange) {
+              await audioFacade.playback.setLoopRange(
+                project.workspace.loopRange.startMs,
+                project.workspace.loopRange.endMs
+              );
+            } else {
+              await audioFacade.playback.clearLoopRange();
+            }
           } else {
             await audioFacade.source.unload();
           }
