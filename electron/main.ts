@@ -1,4 +1,5 @@
-import { app, BrowserWindow, dialog, ipcMain, protocol } from "electron";
+import { app, BrowserWindow, Menu, dialog, ipcMain, protocol } from "electron";
+import type { MenuItemConstructorOptions } from "electron";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -9,6 +10,7 @@ import {
   saveNewProject
 } from "./projectFiles.js";
 import type { SerializableProject } from "./projectFiles.js";
+import { createApplicationMenuTemplate, type MenuCommand } from "./appMenu.js";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -63,6 +65,19 @@ function createWindow() {
 
   void window.loadURL("ziqi://app/index.html");
   return window;
+}
+
+function installApplicationMenu() {
+  const template = createApplicationMenuTemplate({
+    platform: process.platform,
+    dispatch: dispatchMenuCommand
+  });
+
+  Menu.setApplicationMenu(Menu.buildFromTemplate(template as MenuItemConstructorOptions[]));
+}
+
+function dispatchMenuCommand(command: MenuCommand) {
+  BrowserWindow.getFocusedWindow()?.webContents.send("menu:command", command);
 }
 
 app.whenReady().then(() => {
@@ -210,6 +225,7 @@ app.whenReady().then(() => {
     pendingOpenedProjectLocation = null;
   });
 
+  installApplicationMenu();
   createWindow();
 
   app.on("activate", () => {
