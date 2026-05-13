@@ -26,15 +26,24 @@ const SPECTROGRAM_VIEW_STYLE = {
   "--spectrogram-display-height": `${CANVAS_HEIGHT}px`
 } as CSSProperties;
 
+const PLAYBACK_RATE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5] as const;
+
 interface SpectrogramViewProps {
   currentTimeMs: number;
   durationMs: number;
   isPlaying: boolean;
   playbackRate: number;
+  loopRange: { startMs: number; endMs: number } | undefined;
   spectrogramOverview: SpectrogramOverview | null | undefined;
+  viewport?: SpectrogramViewport;
   waveformOverview: WaveformOverview | null | undefined;
+  onLoopClear: () => Promise<void> | void;
+  onLoopEndSet: (timeMs: number) => Promise<void> | void;
+  onLoopStartSet: (timeMs: number) => Promise<void> | void;
+  onPlaybackRateChange: (rate: number) => Promise<void> | void;
   onPlaybackToggle: () => Promise<void> | void;
   onSeek: (timeMs: number) => Promise<void> | void;
+  onViewportChange: (viewport: SpectrogramViewport) => void;
 }
 
 export function SpectrogramView({
@@ -42,42 +51,62 @@ export function SpectrogramView({
   durationMs,
   isPlaying,
   playbackRate,
+  loopRange,
   spectrogramOverview,
+  viewport: controlledViewport,
   waveformOverview,
+  onLoopClear,
+  onLoopEndSet,
+  onLoopStartSet,
+  onPlaybackRateChange,
   onPlaybackToggle,
-  onSeek
+  onSeek,
+  onViewportChange
 }: SpectrogramViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [viewport, setViewport] = useState(() => createDefaultSpectrogramViewport(durationMs));
+  const [internalViewport, setInternalViewport] = useState(() =>
+    controlledViewport ?? createDefaultSpectrogramViewport(durationMs)
+  );
+  const activeViewport = controlledViewport ?? internalViewport;
+
+  function updateViewport(nextViewport: SpectrogramViewport) {
+    if (!controlledViewport) {
+      setInternalViewport(nextViewport);
+    }
+    onViewportChange(nextViewport);
+  }
 
   useEffect(() => {
-    setViewport((prev) => {
+    if (controlledViewport) {
+      return;
+    }
+    setInternalViewport((prev) => {
       const next = createDefaultSpectrogramViewport(durationMs);
       if (prev.startMs === next.startMs && prev.durationMs === next.durationMs) {
         return prev;
       }
       return next;
     });
-  }, [durationMs, spectrogramOverview]);
+  }, [durationMs, spectrogramOverview, controlledViewport]);
   const visibleWaveformPoints = useMemo(
-    () => filterWaveformPointsForViewport(waveformOverview, viewport),
-    [viewport, waveformOverview]
+    () => filterWaveformPointsForViewport(waveformOverview, activeViewport),
+    [activeViewport, waveformOverview]
   );
   const renderedWaveformPoints = useMemo(
     () => getRenderedWaveformPoints(visibleWaveformPoints),
     [visibleWaveformPoints]
   );
-  const isPlaybackVisible = isTimeInsideViewport(currentTimeMs, viewport);
-  const progressPercent = isPlaybackVisible ? timeToViewportPercent(currentTimeMs, viewport) : 0;
-  const timeGridLines = useMemo(() => createTimeGridLines(viewport), [viewport]);
+  const isPlaybackVisible = isTimeInsideViewport(currentTimeMs, activeViewport);
+  const progressPercent = isPlaybackVisible ? timeToViewportPercent(currentTimeMs, activeViewport) : 0;
+  const timeGridLines = useMemo(() => createTimeGridLines(activeViewport), [activeViewport]);
   const hasSpectrogramFrames =
     spectrogramOverview !== null &&
     spectrogramOverview !== undefined &&
     spectrogramOverview.frames.length > 0;
 
   const visibleFrames = useMemo(
-    () => (hasSpectrogramFrames ? filterSpectrogramFramesForViewport(spectrogramOverview, viewport) : []),
-    [hasSpectrogramFrames, spectrogramOverview, viewport]
+    () => (hasSpectrogramFrames ? filterSpectrogramFramesForViewport(spectrogramOverview, activeViewport) : []),
+    [hasSpectrogramFrames, spectrogramOverview, activeViewport]
   );
 
   useEffect(() => {
@@ -136,9 +165,9 @@ export function SpectrogramView({
       const bounds = event.currentTarget.getBoundingClientRect();
       const anchorRatio = bounds.width > 0 ? (event.clientX - bounds.left) / bounds.width : 0.5;
 
-      setViewport((currentViewport) =>
+      updateViewport(
         zoomSpectrogramViewport({
-          viewport: currentViewport,
+          viewport: activeViewport,
           totalDurationMs: durationMs,
           anchorRatio,
           deltaY: event.deltaY
@@ -149,9 +178,9 @@ export function SpectrogramView({
 
     if (event.deltaX !== 0) {
       event.preventDefault();
-      setViewport((currentViewport) =>
+      updateViewport(
         panSpectrogramViewport({
-          viewport: currentViewport,
+          viewport: activeViewport,
           totalDurationMs: durationMs,
           direction: Math.sign(event.deltaX)
         })
@@ -246,16 +275,38 @@ export function SpectrogramView({
           <span>{formatTime(currentTimeMs)}</span>
           <span>/</span>
           <span>{formatTime(durationMs)}</span>
-          <span>{playbackRate.toFixed(2)}x</span>
+        </div>
+        <div className="playback-rate-controls" aria-label="Playback speed">
+          {PLAYBACK_RATE_OPTIONS.map((rate) => (
+            <button
+              aria-pressed={playbackRate === rate}
+              className="playback-rate-button"
+              key={rate}
+              onClick={() => onPlaybackRateChange(rate)}
+            >
+              {rate}x
+            </button>
+          ))}
+        </div>
+        <div className="loop-controls" aria-label="Loop controls">
+          <button onClick={() => onLoopStartSet(currentTimeMs)}>Set Loop Start</button>
+          <button onClick={() => onLoopEndSet(currentTimeMs)}>Set Loop End</button>
+          {loopRange ? <button onClick={onLoopClear}>Clear Loop</button> : null}
+          {loopRange ? (
+            <span className="loop-summary">
+              Loop {formatTime(loopRange.startMs)}-{formatTime(loopRange.endMs)}
+            </span>
+          ) : null}
         </div>
       </div>
 
       <SpectrogramTimelineNavigator
         currentTimeMs={currentTimeMs}
         durationMs={durationMs}
+        loopRange={loopRange}
         onSeek={onSeek}
-        onViewportChange={setViewport}
-        viewport={viewport}
+        onViewportChange={updateViewport}
+        viewport={activeViewport}
       />
     </div>
   );

@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WorkbenchShell } from "./components/WorkbenchShell";
 import { createBrowserProjectAudioFacade } from "./domain/audio/browserProjectAudioFacade";
-import type { ProjectSummary } from "./domain/project/types";
+import type { ProjectSummary, WorkspaceState } from "./domain/project/types";
 import { createProjectFromAudio } from "./domain/project/createProjectFromAudio";
+import { normalizeWorkspaceState } from "./domain/project/workspaceState";
 import {
   createBrowserWaveformService,
   type WaveformService
@@ -72,13 +73,17 @@ export function App({ waveformService, spectrogramService }: AppProps) {
         const nextSpectrogramOverview =
           await activeSpectrogramService.buildOverviewFromAudioData(spectrogramAudioData);
         const metadata = await audioFacade.source.load(selectedFile.filePath, nextPlaybackUrl);
+        const importedProject = createProjectFromAudio({
+          filePath: selectedFile.filePath,
+          metadata
+        });
+        setProject({
+          ...importedProject,
+          workspace: normalizeWorkspaceState(importedProject.workspace, metadata.durationMs)
+        });
+        await audioFacade.playback.setPlaybackRate(1);
+        await audioFacade.playback.clearLoopRange();
         await audioFacade.playback.seek(0);
-        setProject(
-          createProjectFromAudio({
-            filePath: selectedFile.filePath,
-            metadata
-          })
-        );
         setProjectLocation(null);
         setWaveformOverview(nextWaveformOverview);
         setSpectrogramOverview(nextSpectrogramOverview);
@@ -145,12 +150,28 @@ export function App({ waveformService, spectrogramService }: AppProps) {
         const nextSpectrogramOverview =
           await activeSpectrogramService.buildOverviewFromAudioData(spectrogramAudioData);
         await audioFacade.source.load(openedProject.project.sourceAudio.filePath, nextPlaybackUrl);
+        const normalizedProject = {
+          ...openedProject.project,
+          workspace: normalizeWorkspaceState(
+            openedProject.project.workspace,
+            openedProject.project.sourceAudio.durationMs
+          )
+        };
+        await audioFacade.playback.setPlaybackRate(normalizedProject.workspace.playbackRate);
+        if (normalizedProject.workspace.loopRange) {
+          await audioFacade.playback.setLoopRange(
+            normalizedProject.workspace.loopRange.startMs,
+            normalizedProject.workspace.loopRange.endMs
+          );
+        } else {
+          await audioFacade.playback.clearLoopRange();
+        }
         await audioFacade.playback.seek(0);
         await window.ziqiApp.activateOpenedProject({
           projectFilePath: openedProject.projectFilePath,
           projectRootPath: openedProject.projectRootPath
         });
-        setProject(openedProject.project);
+        setProject(normalizedProject);
         setWaveformOverview(nextWaveformOverview);
         setSpectrogramOverview(nextSpectrogramOverview);
         setProjectLocation({
@@ -166,6 +187,15 @@ export function App({ waveformService, spectrogramService }: AppProps) {
         try {
           if (previousPlaybackUrl && project) {
             await audioFacade.source.load(project.sourceAudio.filePath, previousPlaybackUrl);
+            await audioFacade.playback.setPlaybackRate(project.workspace.playbackRate);
+            if (project.workspace.loopRange) {
+              await audioFacade.playback.setLoopRange(
+                project.workspace.loopRange.startMs,
+                project.workspace.loopRange.endMs
+              );
+            } else {
+              await audioFacade.playback.clearLoopRange();
+            }
           } else {
             await audioFacade.source.unload();
           }
@@ -203,10 +233,27 @@ export function App({ waveformService, spectrogramService }: AppProps) {
     });
   }, [project, projectLocation, activeWaveformService, activeSpectrogramService, audioFacade]);
 
+  function handleWorkspaceChange(workspacePatch: Partial<WorkspaceState>) {
+    setProject((currentProject) => {
+      if (!currentProject) {
+        return currentProject;
+      }
+
+      return {
+        ...currentProject,
+        workspace: {
+          ...currentProject.workspace,
+          ...workspacePatch
+        }
+      };
+    });
+  }
+
   return (
     <WorkbenchShell
       audioFacade={audioFacade}
       importError={importError}
+      onWorkspaceChange={handleWorkspaceChange}
       project={project}
       spectrogramOverview={spectrogramOverview}
       waveformOverview={waveformOverview}

@@ -28,7 +28,7 @@ describe("createProjectFromAudio", () => {
       analysisRuns: [],
       annotations: [],
       workspace: {
-        preset: "spectrum-analysis",
+        preset: "pure-spectrum",
         activeDock: "analysis",
         gridEnabled: true,
         bpm: 120,

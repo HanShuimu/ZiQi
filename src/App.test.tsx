@@ -1,4 +1,5 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { SpectrogramOverview, WaveformOverview } from "./domain/audio/types";
@@ -1083,6 +1084,102 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });
+  });
+
+  it("saves focused workspace changes after playback rate updates", async () => {
+    const audioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    window.ziqiApp.saveProject = vi.fn().mockResolvedValue(null);
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+    renderApp({ waveformService });
+
+    menuCommandListener?.("import-audio");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "0.75x" }));
+    menuCommandListener?.("save-project");
+
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledWith(expect.objectContaining({
+        project: expect.objectContaining({
+          workspace: expect.objectContaining({
+            playbackRate: 0.75,
+            spectrogramViewport: {
+              startMs: 0,
+              durationMs: 10_000
+            }
+          })
+        })
+      }));
+    });
+  });
+
+  it("creates imported projects with no loop range and default playback rate", async () => {
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+    renderApp({ waveformService });
+
+    menuCommandListener?.("import-audio");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    menuCommandListener?.("save-project");
+
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledWith(expect.objectContaining({
+        project: expect.objectContaining({
+          workspace: expect.not.objectContaining({
+            loopRange: expect.anything()
+          })
+        })
+      }));
+    });
+  });
+
+  it("restores focused workspace playback state after opening a project", async () => {
+    const openedAudioData = new ArrayBuffer(8);
+    const openedProject = createProjectSummary("audio/demo track.wav");
+    openedProject.workspace = {
+      ...openedProject.workspace,
+      playbackRate: 0.75,
+      loopRange: {
+        startMs: 1_000,
+        endMs: 4_000
+      },
+      spectrogramViewport: {
+        startMs: 2_000,
+        durationMs: 5_000
+      }
+    };
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: openedAudioData,
+      project: openedProject,
+      projectFilePath: "D:\\Projects\\demo.ziqiproject\\demo.ziqi",
+      projectRootPath: "D:\\Projects\\demo.ziqiproject"
+    });
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+    renderApp({ waveformService });
+
+    menuCommandListener?.("open-project");
+
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    expect(FakeAudioElement.instances[0].playbackRate).toBe(0.75);
+    expect(screen.getByText("Loop 0:01-0:04")).toBeTruthy();
+    expect(screen.getByText("0:02-0:07")).toBeTruthy();
   });
 });
 
