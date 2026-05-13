@@ -105,6 +105,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -125,6 +129,10 @@ describe("SpectrogramView", () => {
         durationMs={60_000}
         spectrogramOverview={createLongSpectrogramOverview(1_200, 4)}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -149,6 +157,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -166,6 +178,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -191,6 +207,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={null}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -205,6 +225,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={{ ...createSpectrogramOverview(), frames: [] }}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -219,6 +243,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -246,6 +274,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -259,6 +291,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={createLongSpectrogramOverview(12, 4)}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 
@@ -279,6 +315,10 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={createLongSpectrogramOverview(12, 4)}
         waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
       />
     );
 

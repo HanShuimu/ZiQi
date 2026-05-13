@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
@@ -73,6 +74,112 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.getByRole("img", { name: "Audio spectrogram" })).toBeTruthy();
     expect(screen.getByLabelText("Piano pitch axis")).toBeTruthy();
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
+  });
+
+  it("renders a single play toggle in the spectrum timeline controls", async () => {
+    const user = userEvent.setup();
+    const project = createMockProjectSummary();
+    const play = vi.fn().mockResolvedValue(undefined);
+    const pause = vi.fn().mockResolvedValue(undefined);
+    const audioFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        getState: vi.fn(() => ({
+          isPlaying: false,
+          currentTimeMs: 43_120,
+          playbackRate: 1
+        })),
+        play,
+        pause
+      }
+    };
+
+    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+
+    expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Pause" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Play" }));
+
+    expect(play).toHaveBeenCalledWith(43_120);
+    expect(pause).not.toHaveBeenCalled();
+  });
+
+  it("shows Pause while playback is active and pauses from the toggle", async () => {
+    const user = userEvent.setup();
+    const project = createMockProjectSummary();
+    const pause = vi.fn().mockResolvedValue(undefined);
+    const audioFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        getState: vi.fn(() => ({
+          isPlaying: true,
+          currentTimeMs: 43_120,
+          playbackRate: 1
+        })),
+        pause
+      }
+    };
+
+    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+
+    expect(screen.getByRole("button", { name: "Pause" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Play" })).toBeNull();
+
+    await user.click(screen.getByRole("button", { name: "Pause" }));
+
+    expect(pause).toHaveBeenCalledOnce();
+  });
+
+  it("toggles playback with Space when a project is loaded", async () => {
+    const user = userEvent.setup();
+    const project = createMockProjectSummary();
+    const play = vi.fn().mockResolvedValue(undefined);
+    const audioFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        getState: vi.fn(() => ({
+          isPlaying: false,
+          currentTimeMs: 43_120,
+          playbackRate: 1
+        })),
+        play
+      }
+    };
+
+    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+
+    await user.keyboard(" ");
+
+    expect(play).toHaveBeenCalledWith(43_120);
+  });
+
+  it("does not steal Space from focused controls", async () => {
+    const user = userEvent.setup();
+    const project = createMockProjectSummary();
+    const play = vi.fn().mockResolvedValue(undefined);
+    const audioFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        getState: vi.fn(() => ({
+          isPlaying: false,
+          currentTimeMs: 43_120,
+          playbackRate: 1
+        })),
+        play
+      }
+    };
+
+    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+
+    screen.getByRole("button", { name: "Play" }).focus();
+    await user.keyboard(" ");
+
+    expect(play).not.toHaveBeenCalled();
   });
 
   it("limits rendered waveform points for long overviews", async () => {

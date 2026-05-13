@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ProjectSummary } from "../domain/project/types";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
 import type { ProjectAudioFacade } from "../domain/audio/interfaces";
@@ -41,13 +41,43 @@ export function WorkbenchShell({
     return () => window.clearInterval(intervalId);
   }, [audioFacade]);
 
-  const currentPositionLabel = useMemo(() => {
-    const ms = playbackState.currentTimeMs;
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainder = seconds % 60;
-    return `${minutes}:${String(remainder).padStart(2, "0")}`;
-  }, [playbackState.currentTimeMs]);
+  async function handlePlaybackToggle() {
+    if (playbackState.isPlaying) {
+      await audioFacade.playback.pause();
+    } else {
+      await audioFacade.playback.play(playbackState.currentTimeMs);
+    }
+
+    setPlaybackState(audioFacade.playback.getState());
+  }
+
+  async function handleSeek(timeMs: number) {
+    await audioFacade.playback.seek(timeMs);
+    setPlaybackState(audioFacade.playback.getState());
+  }
+
+  useEffect(() => {
+    if (!project) {
+      return;
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.code !== "Space") {
+        return;
+      }
+
+      if (shouldIgnorePlaybackShortcut(event.target)) {
+        event.preventDefault();
+        return;
+      }
+
+      event.preventDefault();
+      void handlePlaybackToggle();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [project, playbackState, audioFacade]);
 
   const durationMs = project?.sourceAudio.durationMs ?? 0;
   return (
@@ -115,7 +145,6 @@ export function WorkbenchShell({
                 <h2>Raw Spectrum</h2>
               </div>
               <div className="spectrum-meta">
-                <span>Cursor {currentPositionLabel}</span>
                 <span>{project.workspace.bpm} BPM</span>
                 <span>{playbackState.playbackRate.toFixed(2)}x</span>
               </div>
@@ -124,6 +153,10 @@ export function WorkbenchShell({
             <SpectrogramView
               currentTimeMs={playbackState.currentTimeMs}
               durationMs={durationMs}
+              isPlaying={playbackState.isPlaying}
+              onPlaybackToggle={handlePlaybackToggle}
+              onSeek={handleSeek}
+              playbackRate={playbackState.playbackRate}
               spectrogramOverview={spectrogramOverview}
               waveformOverview={waveformOverview}
             />
@@ -173,5 +206,20 @@ export function WorkbenchShell({
       </main>
       )}
     </div>
+  );
+}
+
+function shouldIgnorePlaybackShortcut(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+  return (
+    tagName === "input" ||
+    tagName === "textarea" ||
+    tagName === "select" ||
+    tagName === "button" ||
+    target.isContentEditable
   );
 }

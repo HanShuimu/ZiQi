@@ -29,15 +29,23 @@ const SPECTROGRAM_VIEW_STYLE = {
 interface SpectrogramViewProps {
   currentTimeMs: number;
   durationMs: number;
+  isPlaying: boolean;
+  playbackRate: number;
   spectrogramOverview: SpectrogramOverview | null | undefined;
   waveformOverview: WaveformOverview | null | undefined;
+  onPlaybackToggle: () => Promise<void> | void;
+  onSeek: (timeMs: number) => Promise<void> | void;
 }
 
 export function SpectrogramView({
   currentTimeMs,
   durationMs,
+  isPlaying,
+  playbackRate,
   spectrogramOverview,
-  waveformOverview
+  waveformOverview,
+  onPlaybackToggle,
+  onSeek
 }: SpectrogramViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [viewport, setViewport] = useState(() => createDefaultSpectrogramViewport(durationMs));
@@ -151,6 +159,13 @@ export function SpectrogramView({
     }
   }
 
+  function formatTime(ms: number) {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    const remainder = seconds % 60;
+    return `${minutes}:${String(remainder).padStart(2, "0")}`;
+  }
+
   return (
     <div className="spectrogram-view" style={SPECTROGRAM_VIEW_STYLE}>
       <div className="waveform-overview" aria-label="Audio waveform overview" role="img">
@@ -223,9 +238,22 @@ export function SpectrogramView({
         </div>
       </div>
 
+      <div className="playback-timeline-control" aria-label="Playback timeline controls">
+        <button className="playback-toggle" onClick={onPlaybackToggle}>
+          {isPlaying ? "Pause" : "Play"}
+        </button>
+        <div className="playback-time">
+          <span>{formatTime(currentTimeMs)}</span>
+          <span>/</span>
+          <span>{formatTime(durationMs)}</span>
+          <span>{playbackRate.toFixed(2)}x</span>
+        </div>
+      </div>
+
       <SpectrogramTimelineNavigator
         currentTimeMs={currentTimeMs}
         durationMs={durationMs}
+        onSeek={onSeek}
         onViewportChange={setViewport}
         viewport={viewport}
       />

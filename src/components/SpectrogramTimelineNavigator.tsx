@@ -11,6 +11,7 @@ interface SpectrogramTimelineNavigatorProps {
   currentTimeMs: number;
   durationMs: number;
   viewport: SpectrogramViewport;
+  onSeek?: (timeMs: number) => void;
   onViewportChange(viewport: SpectrogramViewport): void;
 }
 
@@ -18,6 +19,7 @@ export function SpectrogramTimelineNavigator({
   currentTimeMs,
   durationMs,
   viewport,
+  onSeek,
   onViewportChange
 }: SpectrogramTimelineNavigatorProps) {
   if (durationMs <= 0 || viewport.durationMs <= 0) {
@@ -30,6 +32,12 @@ export function SpectrogramTimelineNavigator({
   const viewportLeftPercent = timeToTrackPercent(viewport.startMs, durationMs);
   const viewportWidthPercent = Math.min(100, (viewport.durationMs / durationMs) * 100);
   const playheadPercent = timeToTrackPercent(currentTimeMs, durationMs);
+
+  function timeForClientX(clientX: number, track: HTMLElement) {
+    const bounds = track.getBoundingClientRect();
+    const ratio = bounds.width > 0 ? (clientX - bounds.left) / bounds.width : 0;
+    return Math.min(1, Math.max(0, ratio)) * durationMs;
+  }
 
   function viewportForClientX(clientX: number, track: HTMLElement) {
     const bounds = track.getBoundingClientRect();
@@ -47,6 +55,11 @@ export function SpectrogramTimelineNavigator({
 
   function handleTrackPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    if (onSeek) {
+      onSeek(timeForClientX(event.clientX, event.currentTarget));
       return;
     }
 

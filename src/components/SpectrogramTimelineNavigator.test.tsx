@@ -40,7 +40,7 @@ describe("SpectrogramTimelineNavigator", () => {
     expect(screen.getByTestId("spectrogram-navigator-thumb").style.width).toBe("83.33333333333334%");
   });
 
-  it("moves the viewport center when clicking the track", () => {
+  it("moves the viewport center when clicking the track without seek support", () => {
     const onViewportChange = vi.fn();
     render(
       <SpectrogramTimelineNavigator
@@ -57,6 +57,53 @@ describe("SpectrogramTimelineNavigator", () => {
     fireEvent.pointerDown(track, { clientX: 750 });
 
     expect(onViewportChange).toHaveBeenCalledWith({ startMs: 10_000, durationMs: 10_000 });
+  });
+
+  it("seeks when clicking the track outside the viewport thumb", () => {
+    const onSeek = vi.fn();
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={0}
+        durationMs={20_000}
+        onSeek={onSeek}
+        onViewportChange={vi.fn()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+      />
+    );
+
+    const track = screen.getByTestId("spectrogram-navigator-track");
+    stubTrackRect(track);
+
+    fireEvent.pointerDown(track, { clientX: 750 });
+
+    expect(onSeek).toHaveBeenCalledWith(15_000);
+  });
+
+  it("keeps viewport dragging on the thumb separate from seek", () => {
+    const onSeek = vi.fn();
+    const onViewportChange = vi.fn();
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={0}
+        durationMs={20_000}
+        onSeek={onSeek}
+        onViewportChange={onViewportChange}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+      />
+    );
+
+    const track = screen.getByTestId("spectrogram-navigator-track");
+    const thumb = screen.getByTestId("spectrogram-navigator-thumb");
+    stubTrackRect(track);
+
+    fireEvent.pointerDown(thumb, { clientX: 100, pointerId: 1 });
+    fireEvent.pointerMove(thumb, { clientX: 600, pointerId: 1 });
+
+    expect(onSeek).not.toHaveBeenCalled();
+    expect(onViewportChange).toHaveBeenLastCalledWith({
+      startMs: 10_000,
+      durationMs: 10_000
+    });
   });
 
   it("drags the viewport thumb without changing zoom", () => {
