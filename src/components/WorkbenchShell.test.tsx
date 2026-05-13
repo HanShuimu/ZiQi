@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
@@ -180,6 +180,126 @@ describe("WorkbenchShell transport controls", () => {
     await user.keyboard(" ");
 
     expect(play).not.toHaveBeenCalled();
+  });
+
+  it("changes playback rate through the playback service and reports workspace updates", async () => {
+    const user = userEvent.setup();
+    const project = createMockProjectSummary();
+    const setPlaybackRate = vi.fn().mockResolvedValue(undefined);
+    const onWorkspaceChange = vi.fn();
+    const audioFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        getState: vi.fn(() => ({
+          isPlaying: false,
+          currentTimeMs: 3_000,
+          playbackRate: 1
+        })),
+        setPlaybackRate
+      }
+    };
+
+    render(
+      <WorkbenchShell
+        project={project}
+        audioFacade={audioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "0.75x" }));
+
+    expect(setPlaybackRate).toHaveBeenCalledWith(0.75);
+    expect(onWorkspaceChange).toHaveBeenCalledWith({
+      playbackRate: 0.75
+    });
+  });
+
+  it("uses an existing loop start when setting a loop end, then clears the range", async () => {
+    const user = userEvent.setup();
+    const project = {
+      ...createMockProjectSummary(),
+      workspace: {
+        ...createMockProjectSummary().workspace,
+        loopRange: {
+          startMs: 1_000,
+          endMs: 4_000
+        }
+      }
+    };
+    const setLoopRange = vi.fn().mockResolvedValue(undefined);
+    const clearLoopRange = vi.fn().mockResolvedValue(undefined);
+    const onWorkspaceChange = vi.fn();
+    const audioFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        clearLoopRange,
+        getState: vi.fn(() => ({
+          isPlaying: false,
+          currentTimeMs: 3_000,
+          playbackRate: 1,
+          loopRange: {
+            startMs: 1_000,
+            endMs: 4_000
+          }
+        })),
+        setLoopRange
+      }
+    };
+
+    render(
+      <WorkbenchShell
+        project={project}
+        audioFacade={audioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Set Loop End" }));
+
+    expect(setLoopRange).toHaveBeenCalledWith(1_000, 3_000);
+    expect(onWorkspaceChange).toHaveBeenLastCalledWith({
+      loopRange: {
+        startMs: 1_000,
+        endMs: 3_000
+      }
+    });
+
+    await user.click(screen.getByRole("button", { name: "Clear Loop" }));
+
+    expect(clearLoopRange).toHaveBeenCalledOnce();
+    expect(onWorkspaceChange).toHaveBeenLastCalledWith({
+      loopRange: undefined
+    });
+  });
+
+  it("reports viewport changes for persistence", () => {
+    const project = createMockProjectSummary();
+    const onWorkspaceChange = vi.fn();
+
+    render(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    fireEvent.wheel(document.querySelector(".spectrogram-canvas-frame") as HTMLElement, {
+      ctrlKey: true,
+      deltaY: -100,
+      clientX: 250
+    });
+
+    expect(onWorkspaceChange).toHaveBeenCalledWith({
+      spectrogramViewport: expect.objectContaining({
+        startMs: expect.any(Number),
+        durationMs: expect.any(Number)
+      })
+    });
   });
 
   it("limits rendered waveform points for long overviews", async () => {
