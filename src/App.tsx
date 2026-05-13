@@ -181,6 +181,28 @@ export function App({ waveformService, spectrogramService }: AppProps) {
     }
   }
 
+  useEffect(() => {
+    if (typeof window.ziqiApp.onMenuCommand !== "function") {
+      return;
+    }
+
+    return window.ziqiApp.onMenuCommand((command) => {
+      if (command === "import-audio") {
+        void handleImportAudio();
+        return;
+      }
+
+      if (command === "open-project") {
+        void handleOpenProject();
+        return;
+      }
+
+      if (command === "save-project") {
+        void handleSaveProject();
+      }
+    });
+  }, [project, projectLocation, activeWaveformService, activeSpectrogramService, audioFacade]);
+
   return (
     <WorkbenchShell
       audioFacade={audioFacade}

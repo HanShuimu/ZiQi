@@ -39,8 +39,11 @@ class FakeAudioElement {
   load() {}
 }
 
+let menuCommandListener: ((command: "open-project" | "save-project" | "import-audio") => void) | null;
+
 describe("App local audio import", () => {
   beforeEach(() => {
+    menuCommandListener = null;
     FakeAudioElement.instances = [];
     FakeAudioElement.currentTimeWrites = 0;
     FakeAudioElement.throwOnCurrentTimeWrite = null;
@@ -57,6 +60,14 @@ describe("App local audio import", () => {
         selectAudioFile: vi.fn().mockResolvedValue({
           audioData,
           filePath: "D:\\Music Library\\demo track.wav"
+        }),
+        onMenuCommand: vi.fn((listener) => {
+          menuCommandListener = listener;
+          return () => {
+            if (menuCommandListener === listener) {
+              menuCommandListener = null;
+            }
+          };
         })
       }
     });
@@ -1069,6 +1080,57 @@ describe("App local audio import", () => {
           filePath: "D:\\Music Library\\demo track.wav"
         })
       })
+    });
+  });
+
+  it("imports audio from the native menu command", async () => {
+    const audioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+
+    renderApp({ waveformService });
+
+    menuCommandListener?.("import-audio");
+
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+    expect(window.ziqiApp.selectAudioFile).toHaveBeenCalledOnce();
+  });
+
+  it("opens and saves projects from native menu commands", async () => {
+    const openedAudioData = new ArrayBuffer(8);
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: openedAudioData,
+      project: createProjectSummary("audio/demo track.wav"),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+    window.ziqiApp.saveProject = vi.fn().mockImplementation(async (request) => ({
+      project: request.project,
+      projectFilePath: request.projectFilePath,
+      projectRootPath: request.projectRootPath
+    }));
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+
+    renderApp({ waveformService });
+
+    menuCommandListener?.("open-project");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    menuCommandListener?.("save-project");
+
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });
   });
 });

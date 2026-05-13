@@ -17,6 +17,8 @@ export interface OpenProjectResult extends SaveProjectResult {
   audioData: ArrayBuffer;
 }
 
+export type MenuCommand = "open-project" | "save-project" | "import-audio";
+
 declare global {
   interface Window {
     ziqiApp: {
@@ -25,6 +27,7 @@ declare global {
       saveProject(request: SaveProjectRequest): Promise<SaveProjectResult | null>;
       openProject(): Promise<OpenProjectResult | null>;
       activateOpenedProject(request: ProjectLocation): Promise<void>;
+      onMenuCommand(callback: (command: MenuCommand) => void): () => void;
     };
   }
 }
