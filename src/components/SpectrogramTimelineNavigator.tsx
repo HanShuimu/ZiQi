@@ -10,6 +10,7 @@ import type { SpectrogramViewport } from "./spectrogramViewport";
 interface SpectrogramTimelineNavigatorProps {
   currentTimeMs: number;
   durationMs: number;
+  loopRange?: { startMs: number; endMs: number };
   viewport: SpectrogramViewport;
   onSeek?: (timeMs: number) => void;
   onViewportChange(viewport: SpectrogramViewport): void;
@@ -18,6 +19,7 @@ interface SpectrogramTimelineNavigatorProps {
 export function SpectrogramTimelineNavigator({
   currentTimeMs,
   durationMs,
+  loopRange,
   viewport,
   onSeek,
   onViewportChange
@@ -32,6 +34,8 @@ export function SpectrogramTimelineNavigator({
   const viewportLeftPercent = timeToTrackPercent(viewport.startMs, durationMs);
   const viewportWidthPercent = Math.min(100, (viewport.durationMs / durationMs) * 100);
   const playheadPercent = timeToTrackPercent(currentTimeMs, durationMs);
+  const loopLeftPercent = loopRange ? timeToTrackPercent(loopRange.startMs, durationMs) : 0;
+  const loopRightPercent = loopRange ? timeToTrackPercent(loopRange.endMs, durationMs) : 0;
 
   function timeForClientX(clientX: number, track: HTMLElement) {
     const bounds = track.getBoundingClientRect();
@@ -118,6 +122,16 @@ export function SpectrogramTimelineNavigator({
         data-testid="spectrogram-navigator-track"
         onPointerDown={handleTrackPointerDown}
       >
+        {loopRange ? (
+          <div
+            className="spectrogram-navigator-loop-range"
+            data-testid="spectrogram-navigator-loop-range"
+            style={{
+              left: `${loopLeftPercent}%`,
+              width: `${Math.max(0, loopRightPercent - loopLeftPercent)}%`
+            }}
+          />
+        ) : null}
         <div
           className="spectrogram-navigator-thumb"
           data-testid="spectrogram-navigator-thumb"

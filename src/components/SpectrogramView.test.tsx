@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
@@ -109,6 +110,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -133,6 +140,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -161,6 +174,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -182,6 +201,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -211,6 +236,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -229,6 +260,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -247,6 +284,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -278,6 +321,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -295,6 +344,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -319,6 +374,12 @@ describe("SpectrogramView", () => {
         playbackRate={1}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
       />
     );
 
@@ -328,5 +389,101 @@ describe("SpectrogramView", () => {
     fireEvent.wheel(frame, { deltaX: 100, deltaY: 0, clientX: 500 });
 
     expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("50%");
+  });
+
+  it("renders playback rate choices and reports selected rate", async () => {
+    const user = userEvent.setup();
+    const onPlaybackRateChange = vi.fn();
+
+    render(
+      <SpectrogramView
+        currentTimeMs={3_000}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={onPlaybackRateChange}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "0.75x" }));
+
+    expect(onPlaybackRateChange).toHaveBeenCalledWith(0.75);
+  });
+
+  it("sets and clears a loop range from the current playback time", async () => {
+    const user = userEvent.setup();
+    const onLoopStartSet = vi.fn();
+    const onLoopEndSet = vi.fn();
+    const onLoopClear = vi.fn();
+
+    render(
+      <SpectrogramView
+        currentTimeMs={3_000}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        loopRange={{ startMs: 1_000, endMs: 4_000 }}
+        onLoopClear={onLoopClear}
+        onLoopEndSet={onLoopEndSet}
+        onLoopStartSet={onLoopStartSet}
+        onPlaybackRateChange={vi.fn()}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Set Loop Start" }));
+    await user.click(screen.getByRole("button", { name: "Set Loop End" }));
+    await user.click(screen.getByRole("button", { name: "Clear Loop" }));
+
+    expect(onLoopStartSet).toHaveBeenCalledWith(3_000);
+    expect(onLoopEndSet).toHaveBeenCalledWith(3_000);
+    expect(onLoopClear).toHaveBeenCalledOnce();
+    expect(screen.getByText("Loop 0:01-0:04")).toBeTruthy();
+    expect(screen.getByTestId("spectrogram-navigator-loop-range")).toBeTruthy();
+  });
+
+  it("reports viewport changes from wheel zoom", () => {
+    const onViewportChange = vi.fn();
+    const { container } = render(
+      <SpectrogramView
+        currentTimeMs={2_500}
+        durationMs={12_000}
+        spectrogramOverview={createLongSpectrogramOverview(12, 4)}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        onViewportChange={onViewportChange}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.wheel(frame, { ctrlKey: true, deltaY: -100, clientX: 250 });
+
+    expect(onViewportChange).toHaveBeenCalledWith(expect.objectContaining({
+      startMs: expect.any(Number),
+      durationMs: expect.any(Number)
+    }));
   });
 });

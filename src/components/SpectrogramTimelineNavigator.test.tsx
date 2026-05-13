@@ -144,4 +144,21 @@ describe("SpectrogramTimelineNavigator", () => {
       "spectrogram-navigator-thumb"
     );
   });
+
+  it("renders an active loop range on the full timeline", () => {
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={3_000}
+        durationMs={12_000}
+        loopRange={{ startMs: 3_000, endMs: 9_000 }}
+        onViewportChange={vi.fn()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+      />
+    );
+
+    const loopRange = screen.getByTestId("spectrogram-navigator-loop-range");
+
+    expect(loopRange.style.left).toBe("25%");
+    expect(loopRange.style.width).toBe("50%");
+  });
 });
