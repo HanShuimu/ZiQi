@@ -36,6 +36,16 @@ export interface TimelineAnnotation {
   kind: "marker" | "loop" | "note" | "review-point";
 }
 
+export interface LoopRange {
+  startMs: number;
+  endMs: number;
+}
+
+export interface WorkspaceSpectrogramViewport {
+  startMs: number;
+  durationMs: number;
+}
+
 export interface WorkspaceState {
   preset: "pure-spectrum" | "spectrum-analysis" | "wide-compare";
   activeDock: "analysis" | "stems" | "notes" | "compare" | "hidden";
@@ -43,6 +53,8 @@ export interface WorkspaceState {
   bpm: number;
   beatOffsetMs: number;
   playbackRate: number;
+  loopRange?: LoopRange;
+  spectrogramViewport?: WorkspaceSpectrogramViewport;
 }
 
 export interface ProjectSummary {

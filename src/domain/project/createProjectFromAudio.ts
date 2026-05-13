@@ -1,20 +1,12 @@
 import type { AudioMetadata } from "../audio/types";
-import type { ProjectSummary, SourceAudio, WorkspaceState } from "./types";
+import type { ProjectSummary, SourceAudio } from "./types";
+import { createDefaultWorkspaceState } from "./workspaceState";
 
 interface CreateProjectFromAudioOptions {
   filePath: string;
   metadata: AudioMetadata;
   now?: Date;
 }
-
-const defaultWorkspaceState: WorkspaceState = {
-  preset: "spectrum-analysis",
-  activeDock: "analysis",
-  gridEnabled: true,
-  bpm: 120,
-  beatOffsetMs: 0,
-  playbackRate: 1
-};
 
 export function createProjectFromAudio({
   filePath,
@@ -40,7 +32,7 @@ export function createProjectFromAudio({
     assets: [],
     analysisRuns: [],
     annotations: [],
-    workspace: { ...defaultWorkspaceState }
+    workspace: createDefaultWorkspaceState(metadata.durationMs)
   };
 }
 

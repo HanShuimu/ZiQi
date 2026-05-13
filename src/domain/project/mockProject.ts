@@ -1,4 +1,5 @@
 import type { ProjectSummary } from "./types";
+import { createDefaultWorkspaceState } from "./workspaceState";
 
 export function createMockProjectSummary(): ProjectSummary {
   return {
@@ -38,14 +39,7 @@ export function createMockProjectSummary(): ProjectSummary {
         kind: "marker"
       }
     ],
-    workspace: {
-      preset: "spectrum-analysis",
-      activeDock: "analysis",
-      gridEnabled: true,
-      bpm: 128,
-      beatOffsetMs: 42,
-      playbackRate: 0.8
-    }
+    workspace: createDefaultWorkspaceState(120_000)
   };
 }
 
