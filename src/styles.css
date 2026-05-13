@@ -35,8 +35,7 @@ button:disabled {
 }
 
 .topbar,
-.panel,
-.command-strip {
+.panel {
   border: 1px solid rgba(209, 185, 151, 0.9);
   background: rgba(255, 250, 243, 0.93);
   border-radius: 24px;
@@ -70,14 +69,6 @@ button:disabled {
   gap: 1rem;
   color: #6e6256;
   font-size: 0.94rem;
-}
-
-.command-strip {
-  margin-top: 1rem;
-  padding: 0.85rem 1rem;
-  display: flex;
-  gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
 .workspace-grid {
@@ -129,8 +120,7 @@ button:disabled {
   align-items: start;
 }
 
-.spectrum-meta,
-.transport-summary {
+.spectrum-meta {
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
@@ -182,22 +172,8 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
-.dock-grid .panel,
-.transport {
+.dock-grid .panel {
   padding: 1rem;
-}
-
-.transport-controls {
-  display: grid;
-  grid-template-columns: auto auto minmax(180px, 1fr);
-  gap: 0.75rem;
-  align-items: center;
-  margin-top: 0.8rem;
-}
-
-.transport-seek {
-  width: 100%;
-  accent-color: #b96a30;
 }
 
 .panel-copy {
@@ -221,21 +197,6 @@ button:disabled {
 .error-copy {
   color: #a23b2a;
   margin: 0.75rem 0 0;
-}
-
-.transport-bar {
-  margin-top: 0.8rem;
-  width: 100%;
-  height: 14px;
-  border-radius: 999px;
-  background: rgba(201, 174, 145, 0.45);
-  overflow: hidden;
-}
-
-.transport-progress {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #f2b06c, #b96a30);
 }
 
 .spectrogram-view {
@@ -397,11 +358,4 @@ button:disabled {
     flex-direction: column;
   }
 
-  .transport-controls {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .transport-seek {
-    grid-column: 1 / -1;
-  }
 }

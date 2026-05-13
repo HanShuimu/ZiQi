@@ -11,12 +11,6 @@ interface WorkbenchShellProps {
   waveformOverview?: WaveformOverview | null;
   spectrogramOverview?: SpectrogramOverview | null;
   importError?: string | null;
-  isImporting?: boolean;
-  isOpeningProject?: boolean;
-  isSavingProject?: boolean;
-  onImportAudio?: () => Promise<void> | void;
-  onOpenProject?: () => Promise<void> | void;
-  onSaveProject?: () => Promise<void> | void;
 }
 
 export function WorkbenchShell({
@@ -24,13 +18,7 @@ export function WorkbenchShell({
   audioFacade = mockProjectAudioFacade,
   waveformOverview,
   spectrogramOverview,
-  importError,
-  isImporting = false,
-  isOpeningProject = false,
-  isSavingProject = false,
-  onImportAudio,
-  onOpenProject,
-  onSaveProject
+  importError
 }: WorkbenchShellProps) {
   const [appVersion, setAppVersion] = useState<string>("...");
   const [playbackState, setPlaybackState] = useState<PlaybackState>(() =>
@@ -61,30 +49,7 @@ export function WorkbenchShell({
     return `${minutes}:${String(remainder).padStart(2, "0")}`;
   }, [playbackState.currentTimeMs]);
 
-  async function handlePlayFromCursor() {
-    await audioFacade.playback.play(playbackState.currentTimeMs);
-    setPlaybackState(audioFacade.playback.getState());
-  }
-
-  async function handlePause() {
-    await audioFacade.playback.pause();
-    setPlaybackState(audioFacade.playback.getState());
-  }
-
-  async function handleSeek(nextTimeMs: number) {
-    await audioFacade.playback.seek(nextTimeMs);
-    setPlaybackState(audioFacade.playback.getState());
-  }
-
   const durationMs = project?.sourceAudio.durationMs ?? 0;
-  const progressPercent =
-    durationMs > 0
-      ? Math.min(100, Math.max(0, (playbackState.currentTimeMs / durationMs) * 100))
-      : 0;
-  const importButtonLabel = isImporting ? "Importing..." : "Import Audio";
-  const openProjectButtonLabel = isOpeningProject ? "Opening..." : "Open Project";
-  const saveProjectButtonLabel = isSavingProject ? "Saving..." : "Save Project";
-
   return (
     <div className="app-shell">
       <header className="topbar">
@@ -98,22 +63,6 @@ export function WorkbenchShell({
         </div>
       </header>
 
-      <section className="command-strip">
-        <button disabled={isOpeningProject} onClick={onOpenProject}>
-          {openProjectButtonLabel}
-        </button>
-        <button disabled={!project || isSavingProject} onClick={onSaveProject}>
-          {saveProjectButtonLabel}
-        </button>
-        <button disabled={isImporting} onClick={onImportAudio}>
-          {importButtonLabel}
-        </button>
-        <button disabled={!project} onClick={handlePlayFromCursor}>Play from Cursor</button>
-        <button>Toggle Grid</button>
-        <button>Run Stem Provider</button>
-        <button>Run Analysis</button>
-      </section>
-
       {project && importError ? <p className="error-copy">{importError}</p> : null}
 
       {!project ? (
@@ -122,13 +71,10 @@ export function WorkbenchShell({
             <div className="section-label">Project</div>
             <h2>No project loaded</h2>
             <p className="panel-copy">
-              Import a local audio file to create a project and open the spectrum workspace.
+              Use the File menu to import audio or open an existing ZiQi project.
             </p>
             {importError ? <p className="error-copy">{importError}</p> : null}
           </div>
-          <button disabled={isImporting} onClick={onImportAudio}>
-            {importButtonLabel}
-          </button>
         </main>
       ) : (
       <main className="workspace-grid">
@@ -223,30 +169,6 @@ export function WorkbenchShell({
             </section>
           </div>
 
-          <footer className="transport panel">
-            <div className="transport-summary">
-              <span>Loop: off</span>
-              <span>Beat offset: {project.workspace.beatOffsetMs}ms</span>
-              <span>Channel mode: stereo</span>
-            </div>
-            <div className="transport-controls">
-              <button onClick={handlePlayFromCursor}>Play</button>
-              <button onClick={handlePause}>Pause</button>
-              <input
-                aria-label="Seek position"
-                className="transport-seek"
-                max={durationMs}
-                min={0}
-                onChange={(event) => void handleSeek(Number(event.currentTarget.value))}
-                step={100}
-                type="range"
-                value={playbackState.currentTimeMs}
-              />
-            </div>
-            <div className="transport-bar">
-              <div className="transport-progress" style={{ width: `${progressPercent}%` }} />
-            </div>
-          </footer>
         </section>
       </main>
       )}

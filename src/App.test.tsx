@@ -1,5 +1,4 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { SpectrogramOverview, WaveformOverview } from "./domain/audio/types";
@@ -119,11 +118,9 @@ describe("App local audio import", () => {
       })
     };
     const spectrogramService = createSpectrogramService();
-    const user = userEvent.setup();
-
     renderApp({ waveformService, spectrogramService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
@@ -151,11 +148,9 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     const { unmount } = renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
@@ -181,11 +176,9 @@ describe("App local audio import", () => {
         };
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
@@ -199,11 +192,9 @@ describe("App local audio import", () => {
     const waveformService = {
       buildOverviewFromAudioData: vi.fn()
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     expect(screen.getByText("No project loaded")).toBeTruthy();
     expect(waveformService.buildOverviewFromAudioData).not.toHaveBeenCalled();
@@ -216,11 +207,9 @@ describe("App local audio import", () => {
     const waveformService = {
       buildOverviewFromAudioData: vi.fn()
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to load audio file.")).toBeTruthy();
@@ -236,11 +225,9 @@ describe("App local audio import", () => {
         .fn()
         .mockRejectedValue(new Error("Failed to decode audio waveform."))
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to decode audio waveform.")).toBeTruthy();
@@ -275,11 +262,9 @@ describe("App local audio import", () => {
         })
         .mockRejectedValueOnce(new Error("Failed to decode audio waveform."))
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
@@ -287,7 +272,7 @@ describe("App local audio import", () => {
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenLastCalledWith(firstAudioData);
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to decode audio waveform.")).toBeTruthy();
@@ -321,18 +306,16 @@ describe("App local audio import", () => {
         .mockResolvedValueOnce(createSpectrogramOverview())
         .mockRejectedValueOnce(new Error("Failed to generate spectrogram."))
     });
-    const user = userEvent.setup();
-
     renderApp({ waveformService, spectrogramService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to generate spectrogram.")).toBeTruthy();
@@ -366,18 +349,16 @@ describe("App local audio import", () => {
         ]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to load audio file.")).toBeTruthy();
@@ -422,11 +403,9 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.2 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to load audio file.")).toBeTruthy();
@@ -460,16 +439,14 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
 
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
@@ -497,17 +474,15 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
+    menuCommandListener?.("save-project");
 
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledTimes(2);
@@ -550,16 +525,14 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
 
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
@@ -593,21 +566,19 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
     await waitFor(() => {
       expect(screen.getByText("Failed to write project.")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledTimes(2);
     });
@@ -644,21 +615,19 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("fresh take")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });
@@ -686,11 +655,9 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
 
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
@@ -710,11 +677,9 @@ describe("App local audio import", () => {
     const waveformService = {
       buildOverviewFromAudioData: vi.fn()
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
 
     expect(screen.getByText("No project loaded")).toBeTruthy();
     expect(waveformService.buildOverviewFromAudioData).not.toHaveBeenCalled();
@@ -744,17 +709,15 @@ describe("App local audio import", () => {
         })
         .mockRejectedValueOnce(new Error("Failed to decode project audio."))
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to decode project audio.")).toBeTruthy();
@@ -798,21 +761,19 @@ describe("App local audio import", () => {
         })
         .mockRejectedValueOnce(new Error("Failed to decode project audio."))
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("Failed to decode project audio.")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });
@@ -859,21 +820,19 @@ describe("App local audio import", () => {
         .mockResolvedValueOnce(createSpectrogramOverview())
         .mockRejectedValueOnce(new Error("Failed to generate spectrogram."))
     });
-    const user = userEvent.setup();
-
     renderApp({ waveformService, spectrogramService });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("Failed to generate spectrogram.")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });
@@ -909,18 +868,16 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
     FakeAudioElement.throwOnCurrentTimeWrite = 2;
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to seek audio.")).toBeTruthy();
@@ -963,17 +920,15 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to open project.")).toBeTruthy();
@@ -982,7 +937,7 @@ describe("App local audio import", () => {
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });
@@ -1011,17 +966,15 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
+    menuCommandListener?.("open-project");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to read project.")).toBeTruthy();
@@ -1055,21 +1008,19 @@ describe("App local audio import", () => {
         })
         .mockRejectedValueOnce(new Error("Failed to decode audio waveform."))
     };
-    const user = userEvent.setup();
-
     renderApp({ waveformService });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
 
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
+    menuCommandListener?.("import-audio");
     await waitFor(() => {
       expect(screen.getByText("Failed to decode audio waveform.")).toBeTruthy();
     });
 
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
+    menuCommandListener?.("save-project");
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });

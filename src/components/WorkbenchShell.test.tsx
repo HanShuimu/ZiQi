@@ -1,5 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
@@ -28,105 +27,25 @@ describe("WorkbenchShell transport controls", () => {
     });
   });
 
-  it("starts playback through the injected audio facade when play from cursor is clicked", async () => {
-    const user = userEvent.setup();
+  it("does not render the mixed command strip actions", () => {
     const project = createMockProjectSummary();
-    const play = vi.fn().mockResolvedValue(undefined);
-    const audioFacade = {
-      ...mockProjectAudioFacade,
-      playback: {
-        ...mockProjectAudioFacade.playback,
-        play
-      }
-    };
 
-    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+    render(<WorkbenchShell project={project} />);
 
-    await user.click(screen.getByRole("button", { name: "Play from Cursor" }));
-
-    expect(play).toHaveBeenCalledWith(43_120);
+    expect(screen.queryByRole("button", { name: "Open Project" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Save Project" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Import Audio" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Play from Cursor" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Toggle Grid" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Run Stem Provider" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Run Analysis" })).toBeNull();
   });
 
-  it("pauses and seeks through the injected audio facade from the transport", async () => {
-    const user = userEvent.setup();
-    const project = createMockProjectSummary();
-    const pause = vi.fn().mockResolvedValue(undefined);
-    const seek = vi.fn().mockResolvedValue(undefined);
-    const audioFacade = {
-      ...mockProjectAudioFacade,
-      playback: {
-        ...mockProjectAudioFacade.playback,
-        pause,
-        seek
-      }
-    };
-
-    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
-
-    await user.click(screen.getByRole("button", { name: "Pause" }));
-    fireEvent.change(screen.getByRole("slider", { name: "Seek position" }), {
-      target: { value: "64000" }
-    });
-
-    expect(pause).toHaveBeenCalledOnce();
-    expect(seek).toHaveBeenCalledWith(64_000);
-  });
-
-  it("shows an empty state and starts audio import from the command strip", async () => {
-    const user = userEvent.setup();
-    const onImportAudio = vi.fn().mockResolvedValue(undefined);
-
-    render(<WorkbenchShell project={null} onImportAudio={onImportAudio} />);
-
-    expect(screen.getByText("No project loaded")).toBeTruthy();
-
-    await user.click(screen.getAllByRole("button", { name: "Import Audio" })[0]);
-
-    expect(onImportAudio).toHaveBeenCalledOnce();
-  });
-
-  it("disables save project when no project is loaded", () => {
+  it("renders an empty startup placeholder without an import button", () => {
     render(<WorkbenchShell project={null} />);
 
-    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Save Project" }).disabled).toBe(
-      true
-    );
-  });
-
-  it("runs project open and save commands from the command strip", async () => {
-    const user = userEvent.setup();
-    const project = createMockProjectSummary();
-    const onOpenProject = vi.fn().mockResolvedValue(undefined);
-    const onSaveProject = vi.fn().mockResolvedValue(undefined);
-
-    render(
-      <WorkbenchShell
-        project={project}
-        onOpenProject={onOpenProject}
-        onSaveProject={onSaveProject}
-      />
-    );
-
-    await user.click(screen.getByRole("button", { name: "Save Project" }));
-    await user.click(screen.getByRole("button", { name: "Open Project" }));
-
-    expect(onSaveProject).toHaveBeenCalledOnce();
-    expect(onOpenProject).toHaveBeenCalledOnce();
-  });
-
-  it("shows busy labels and disables project open and save commands", () => {
-    const project = createMockProjectSummary();
-
-    render(
-      <WorkbenchShell project={project} isOpeningProject={true} isSavingProject={true} />
-    );
-
-    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Opening..." }).disabled).toBe(
-      true
-    );
-    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Saving..." }).disabled).toBe(
-      true
-    );
+    expect(screen.getByText("No project loaded")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Import Audio" })).toBeNull();
   });
 
   it("renders real waveform overview data when a project is loaded", async () => {

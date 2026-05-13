@@ -207,12 +207,6 @@ export function App({ waveformService, spectrogramService }: AppProps) {
     <WorkbenchShell
       audioFacade={audioFacade}
       importError={importError}
-      isImporting={isImporting}
-      isOpeningProject={isOpeningProject}
-      isSavingProject={isSavingProject}
-      onImportAudio={handleImportAudio}
-      onOpenProject={handleOpenProject}
-      onSaveProject={handleSaveProject}
       project={project}
       spectrogramOverview={spectrogramOverview}
       waveformOverview={waveformOverview}
