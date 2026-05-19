@@ -11,6 +11,7 @@ import {
 } from "./projectFiles.js";
 import type { SerializableProject } from "./projectFiles.js";
 import { createApplicationMenuTemplate, type MenuCommand } from "./appMenu.js";
+import { createUserSettingsStore, type UserSettings } from "./userSettings.js";
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -31,6 +32,8 @@ const rendererDistDir = path.join(__dirname, "../dist");
 let currentProjectLocation: ProjectLocation | null = null;
 const trustedImportedAudioPaths = new Set<string>();
 let pendingOpenedProjectLocation: ProjectLocation | null = null;
+let currentUserSettings: UserSettings = { uiSkin: "default" };
+let userSettingsStore: ReturnType<typeof createUserSettingsStore> | null = null;
 
 interface ProjectLocation {
   projectFilePath: string;
@@ -69,6 +72,7 @@ function createWindow() {
 
 function installApplicationMenu() {
   const template = createApplicationMenuTemplate({
+    activeSkin: currentUserSettings.uiSkin,
     platform: process.platform,
     dispatch: dispatchMenuCommand
   });
@@ -80,7 +84,10 @@ function dispatchMenuCommand(command: MenuCommand) {
   BrowserWindow.getFocusedWindow()?.webContents.send("menu:command", command);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  userSettingsStore = createUserSettingsStore(app.getPath("userData"));
+  currentUserSettings = await userSettingsStore.read();
+
   protocol.handle("ziqi", async (request) => {
     const requestUrl = new URL(request.url);
     const requestedPath = decodeURIComponent(requestUrl.pathname);
@@ -104,6 +111,16 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle("app:get-version", () => app.getVersion());
+  ipcMain.handle("settings:get-user-settings", async () => currentUserSettings);
+  ipcMain.handle("settings:update-user-settings", async (_event, patch) => {
+    if (!userSettingsStore || !isUserSettingsPatch(patch)) {
+      throw new Error("Failed to update user settings.");
+    }
+
+    currentUserSettings = await userSettingsStore.update(patch);
+    installApplicationMenu();
+    return currentUserSettings;
+  });
   ipcMain.handle("audio:select-file", async () => {
     const result = await dialog.showOpenDialog({
       properties: ["openFile"],
@@ -291,6 +308,18 @@ function isProjectLocationRequest(value: unknown): value is ProjectLocation {
     typeof value.projectFilePath === "string" &&
     typeof value.projectRootPath === "string"
   );
+}
+
+function isUserSettingsPatch(value: unknown): value is Partial<UserSettings> {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  if (!("uiSkin" in value)) {
+    return true;
+  }
+
+  return value.uiSkin === "default" || value.uiSkin === "animal-island";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

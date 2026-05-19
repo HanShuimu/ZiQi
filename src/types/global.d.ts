@@ -1,4 +1,5 @@
 import type { ProjectSummary } from "../domain/project/types";
+import type { UserSettings } from "../domain/userSettings/types";
 
 export interface ProjectLocation {
   projectFilePath: string;
@@ -17,12 +18,19 @@ export interface OpenProjectResult extends SaveProjectResult {
   audioData: ArrayBuffer;
 }
 
-export type MenuCommand = "open-project" | "save-project" | "import-audio";
+export type MenuCommand =
+  | "open-project"
+  | "save-project"
+  | "import-audio"
+  | "set-skin-default"
+  | "set-skin-animal-island";
 
 declare global {
   interface Window {
     ziqiApp: {
       getVersion(): Promise<string>;
+      getUserSettings(): Promise<UserSettings>;
+      updateUserSettings(patch: Partial<UserSettings>): Promise<UserSettings>;
       selectAudioFile(): Promise<{ audioData: ArrayBuffer; filePath: string } | null>;
       saveProject(request: SaveProjectRequest): Promise<SaveProjectResult | null>;
       openProject(): Promise<OpenProjectResult | null>;
