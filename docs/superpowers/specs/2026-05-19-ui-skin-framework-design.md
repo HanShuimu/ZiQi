@@ -52,6 +52,7 @@ UiProvider
   receives skinId
   sets data-skin
   provides current adapter
+  renders adapter.Background
 
 UI Primitives
   Button, Panel, Tabs, ListItem
@@ -79,7 +80,7 @@ Use `animal-island` for the Animal Island skin.
 
 Each skin owns a token stylesheet. Tokens cover shared visual decisions such as:
 
-- Backgrounds
+- Static app background fallback
 - Panel surfaces
 - Text colors
 - Accent colors
@@ -94,7 +95,10 @@ Example token names:
 ```css
 :root,
 [data-skin="default"] {
-  --skin-bg: #f3efe8;
+  --skin-app-bg:
+    radial-gradient(circle at top left, rgba(247, 231, 205, 0.9), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(231, 214, 195, 0.85), transparent 26%),
+    #f3efe8;
   --skin-surface: rgba(255, 250, 243, 0.93);
   --skin-surface-strong: #fff7ef;
   --skin-text: #1f1a17;
@@ -106,6 +110,8 @@ Example token names:
   --skin-shadow-panel: 0 20px 40px rgba(94, 63, 31, 0.09);
 }
 ```
+
+`--skin-app-bg` is a CSS background value, not a color-only token. It may be a color, gradient, image, or layered background.
 
 Current hard-coded values in `src/styles.css` should be migrated to tokens where they represent skin-level styling.
 
@@ -149,10 +155,11 @@ If a feature needs a special control, add it deliberately to the project primiti
 
 ## Skin Adapters
 
-Each skin provides an adapter that satisfies the same project-level UI contract.
+Each skin provides an adapter that satisfies the same project-level UI contract. The adapter represents skin rendering capability, including both app-level decorative layers and shared UI primitives.
 
 ```ts
 interface UiAdapter {
+  Background: ComponentType<BackgroundProps>;
   Button: ComponentType<ButtonProps>;
   Panel: ComponentType<PanelProps>;
   Tabs: ComponentType<TabsProps>;
@@ -171,12 +178,40 @@ export function Button(props: ButtonProps) {
 
 This prevents business components from branching on the active skin.
 
+`Background` is part of the adapter so all skin-owned rendering differences are centralized. It is required, but it is not exported as a normal UI primitive. Only `UiProvider` or the app shell may render it.
+
+Default skins can implement:
+
+```tsx
+function DefaultBackground() {
+  return null;
+}
+```
+
+Dynamic skins can implement their own decorative layer:
+
+```tsx
+function AnimalIslandBackground() {
+  return <div className="animal-island-background" aria-hidden="true" />;
+}
+```
+
+Background implementations must follow these rules:
+
+- They must be decorative and must not carry business state.
+- They must not affect layout size or document flow.
+- They must not intercept pointer input.
+- They must sit behind app content.
+- They must respect `prefers-reduced-motion`.
+- They must preserve contrast and readability for the workbench, especially around analysis visuals.
+
 ## Default Skin
 
 The default skin is the baseline implementation. It should preserve the current ZiQi interface closely.
 
 Default skin adapter behavior:
 
+- Provide `Background` as a no-op component unless the default skin later needs a decorative layer.
 - Render standard HTML elements.
 - Use current semantic class names where practical.
 - Consume design tokens for colors, radius, borders, and shadows.
@@ -198,6 +233,7 @@ src/skins/animalIsland/
 
 Acceptable uses of `animal-island-ui`:
 
+- Decorative app background through the skin adapter `Background`
 - Common buttons
 - Panel/card-like containers
 - Basic tab or segmented controls if the library has a suitable primitive
@@ -215,6 +251,8 @@ Do not use `animal-island-ui` for:
 - Project or audio domain data structures
 
 The Animal Island skin should make the surrounding workbench softer and more playful while keeping the central analysis area precise and readable.
+
+If the Animal Island skin needs dynamic background motion, implement it in `animalIslandAdapter.Background`, not in business components and not as ad hoc page markup.
 
 ## Skin Registry
 
@@ -235,7 +273,7 @@ const skins = {
 } satisfies Record<SkinId, SkinDefinition>;
 ```
 
-The registry should be the source for menu labels, validation, and adapter lookup.
+The registry should be the source for menu labels, validation, and adapter lookup. It should not own app-level rendering hooks such as `Background`; those belong to the adapter.
 
 ## User Settings
 
@@ -337,6 +375,7 @@ settings.json
   -> App state
   -> UiProvider
   -> adapter + data-skin
+  -> adapter.Background
   -> UI primitives and tokenized CSS
 ```
 
@@ -394,6 +433,7 @@ Unit tests:
 - `appMenu` includes `File > Skins` with checked state for the active skin.
 - Menu clicks dispatch the expected skin commands.
 - `UiProvider` selects the correct adapter for each skin.
+- `UiProvider` renders the active adapter `Background`.
 - UI primitives pass common props through to the active adapter.
 - `App` initializes from `getUserSettings()`.
 - `App` handles skin menu commands and persists selected skin.
