@@ -39,7 +39,16 @@ class FakeAudioElement {
   load() {}
 }
 
-let menuCommandListener: ((command: "open-project" | "save-project" | "import-audio") => void) | null;
+let menuCommandListener:
+  | ((
+      command:
+        | "open-project"
+        | "save-project"
+        | "import-audio"
+        | "set-skin-default"
+        | "set-skin-animal-island"
+    ) => void)
+  | null;
 
 describe("App local audio import", () => {
   beforeEach(() => {
@@ -68,7 +77,9 @@ describe("App local audio import", () => {
               menuCommandListener = null;
             }
           };
-        })
+        }),
+        getUserSettings: vi.fn().mockResolvedValue({ uiSkin: "default" }),
+        updateUserSettings: vi.fn().mockResolvedValue({ uiSkin: "default" })
       }
     });
     Object.defineProperty(URL, "createObjectURL", {
@@ -1143,6 +1154,31 @@ describe("App local audio import", () => {
         })
       }));
     });
+  });
+
+  it("initializes the UI skin from user settings", async () => {
+    window.ziqiApp.getUserSettings = vi.fn().mockResolvedValue({ uiSkin: "animal-island" });
+
+    renderApp({});
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-skin="animal-island"]')).toBeTruthy();
+    });
+  });
+
+  it("persists skin changes from native menu commands", async () => {
+    window.ziqiApp.updateUserSettings = vi.fn().mockResolvedValue({ uiSkin: "animal-island" });
+
+    renderApp({});
+
+    menuCommandListener?.("set-skin-animal-island");
+
+    await waitFor(() => {
+      expect(window.ziqiApp.updateUserSettings).toHaveBeenCalledWith({
+        uiSkin: "animal-island"
+      });
+    });
+    expect(document.querySelector('[data-skin="animal-island"]')).toBeTruthy();
   });
 
   it("restores focused workspace playback state after opening a project", async () => {
