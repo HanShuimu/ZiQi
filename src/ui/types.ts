@@ -6,6 +6,7 @@ export interface ButtonProps {
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md";
   disabled?: boolean;
+  loading?: boolean;
   className?: string;
   onClick?: () => void;
   children: ReactNode;
