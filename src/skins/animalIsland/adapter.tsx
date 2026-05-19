@@ -25,7 +25,7 @@ function Background(_props: BackgroundProps) {
 function Button({ className, children, disabled, activating, onClick, variant = "secondary" }: ButtonProps) {
   return (
     <AnimalButton
-      className={joinClassNames("ui-button", `ui-button-${variant}`, className)}
+      className={joinClassNames(`ui-button-${variant}`, className)}
       disabled={disabled}
       loading={activating}
       onClick={onClick}
