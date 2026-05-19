@@ -4,6 +4,7 @@ import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
 import type { ProjectAudioFacade } from "../domain/audio/interfaces";
 import type { PlaybackState, SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
+import { ListItem, Panel, Tabs } from "../ui";
 
 interface WorkbenchShellProps {
   project: ProjectSummary | null;
@@ -132,7 +133,7 @@ export function WorkbenchShell({
       {project && importError ? <p className="error-copy">{importError}</p> : null}
 
       {!project ? (
-        <main className="empty-workspace panel">
+        <Panel className="empty-workspace">
           <div>
             <div className="section-label">Project</div>
             <h2>No project loaded</h2>
@@ -141,10 +142,10 @@ export function WorkbenchShell({
             </p>
             {importError ? <p className="error-copy">{importError}</p> : null}
           </div>
-        </main>
+        </Panel>
       ) : (
       <main className="workspace-grid">
-        <aside className="left-rail panel">
+        <Panel className="left-rail">
           <section>
             <div className="section-label">Project</div>
             <h2>{project.name}</h2>
@@ -155,26 +156,26 @@ export function WorkbenchShell({
           <section>
             <div className="section-label">Assets</div>
             {project.assets.map((asset) => (
-              <div key={asset.id} className="list-item">
+              <ListItem key={asset.id}>
                 <strong>{asset.name}</strong>
                 <span>{asset.kind}</span>
-              </div>
+              </ListItem>
             ))}
           </section>
 
           <section>
             <div className="section-label">Annotations</div>
             {project.annotations.map((annotation) => (
-              <div key={annotation.id} className="list-item">
+              <ListItem key={annotation.id}>
                 <strong>{annotation.label}</strong>
                 <span>{Math.round(annotation.startMs / 1000)}s</span>
-              </div>
+              </ListItem>
             ))}
           </section>
-        </aside>
+        </Panel>
 
         <section className="main-column">
-          <div className="panel spectrum-panel">
+          <Panel className="spectrum-panel">
             <div className="spectrum-head">
               <div>
                 <div className="section-label">Primary Workspace</div>
@@ -203,46 +204,46 @@ export function WorkbenchShell({
               viewport={project?.workspace.spectrogramViewport}
               waveformOverview={waveformOverview}
             />
-          </div>
+          </Panel>
 
-          <div className="dock-tabs panel">
+          <Tabs className="panel">
             <span className="active">Analysis</span>
             <span>Stems</span>
             <span>Notes</span>
             <span>Compare</span>
             <span>Hidden</span>
-          </div>
+          </Tabs>
 
           <div className="dock-grid">
-            <section className="panel">
+            <Panel>
               <div className="section-label">Analysis</div>
               {project.analysisRuns.map((run) => (
-                <div key={run.id} className="list-item">
+                <ListItem key={run.id}>
                   <strong>{run.name}</strong>
                   <span>{run.status}</span>
-                </div>
+                </ListItem>
               ))}
-            </section>
+            </Panel>
 
-            <section className="panel">
+            <Panel>
               <div className="section-label">Stems</div>
-              <div className="list-item">
+              <ListItem>
                 <strong>Local Demucs Slot</strong>
                 <span>pending</span>
-              </div>
-              <div className="list-item">
+              </ListItem>
+              <ListItem>
                 <strong>Remote API Slot</strong>
                 <span>pending</span>
-              </div>
-            </section>
+              </ListItem>
+            </Panel>
 
-            <section className="panel">
+            <Panel>
               <div className="section-label">Session Notes</div>
               <p className="panel-copy">
                 This dock will later host markers, saved viewpoints, and quick
                 comparison notes without replacing the raw spectrum workspace.
               </p>
-            </section>
+            </Panel>
           </div>
 
         </section>

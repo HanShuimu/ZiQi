@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
+import { getSkinDefinition } from "../skins/registry";
+import { UiProvider } from "../ui";
 
 const drawCalls: Array<{
   fillStyle: string;
@@ -11,6 +13,15 @@ const drawCalls: Array<{
   width: number;
   height: number;
 }> = [];
+
+function renderSpectrogramView(ui: React.ReactElement) {
+  const skin = getSkinDefinition("default");
+  return render(
+    <UiProvider skinId={skin.id} adapter={skin.adapter}>
+      {ui}
+    </UiProvider>
+  );
+}
 
 function createWaveformOverview(): WaveformOverview {
   return {
@@ -100,7 +111,7 @@ describe("SpectrogramView", () => {
   });
 
   it("renders waveform strip, piano rail, time grid, and spectrogram canvas", () => {
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={3_000}
         durationMs={12_000}
@@ -130,7 +141,7 @@ describe("SpectrogramView", () => {
   });
 
   it("limits long spectrogram bin drawing to the canvas pixel columns", () => {
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={0}
         durationMs={60_000}
@@ -164,7 +175,7 @@ describe("SpectrogramView", () => {
   });
 
   it("uses a stable shared spectrogram display height", () => {
-    const { container } = render(
+    const { container } = renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={0}
         durationMs={12_000}
@@ -191,7 +202,7 @@ describe("SpectrogramView", () => {
   });
 
   it("keeps the lowest and highest piano keys inside the pitch axis", () => {
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={0}
         durationMs={12_000}
@@ -226,7 +237,7 @@ describe("SpectrogramView", () => {
   });
 
   it("shows an empty spectrogram state without drawing bins", () => {
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={0}
         durationMs={12_000}
@@ -250,7 +261,7 @@ describe("SpectrogramView", () => {
   });
 
   it("treats an overview with no frames as an empty spectrogram", () => {
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={0}
         durationMs={12_000}
@@ -274,7 +285,7 @@ describe("SpectrogramView", () => {
   });
 
   it("defaults long audio to a 10 second viewport for drawing and waveform points", () => {
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={3_000}
         durationMs={12_000}
@@ -311,7 +322,7 @@ describe("SpectrogramView", () => {
   });
 
   it("hides the main spectrogram cursor when playback is outside the viewport", () => {
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={11_000}
         durationMs={12_000}
@@ -334,7 +345,7 @@ describe("SpectrogramView", () => {
   });
 
   it("zooms horizontally with ctrl wheel around the mouse position", () => {
-    const { container } = render(
+    const { container } = renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={2_500}
         durationMs={12_000}
@@ -364,7 +375,7 @@ describe("SpectrogramView", () => {
   });
 
   it("pans horizontally with horizontal wheel movement", () => {
-    const { container } = render(
+    const { container } = renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={6_000}
         durationMs={12_000}
@@ -395,7 +406,7 @@ describe("SpectrogramView", () => {
     const user = userEvent.setup();
     const onPlaybackRateChange = vi.fn();
 
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={3_000}
         durationMs={12_000}
@@ -425,7 +436,7 @@ describe("SpectrogramView", () => {
     const onLoopEndSet = vi.fn();
     const onLoopClear = vi.fn();
 
-    render(
+    renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={3_000}
         durationMs={12_000}
@@ -457,7 +468,7 @@ describe("SpectrogramView", () => {
 
   it("reports viewport changes from wheel zoom", () => {
     const onViewportChange = vi.fn();
-    const { container } = render(
+    const { container } = renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={2_500}
         durationMs={12_000}

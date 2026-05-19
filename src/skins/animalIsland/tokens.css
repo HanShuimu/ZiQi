@@ -1,0 +1,33 @@
+[data-skin="animal-island"] {
+  --skin-app-bg:
+    radial-gradient(circle at 15% 10%, rgba(255, 246, 184, 0.9), transparent 24%),
+    radial-gradient(circle at 85% 18%, rgba(181, 232, 172, 0.78), transparent 22%),
+    linear-gradient(180deg, #f9f0c9 0%, #d9f1d3 52%, #bfe7e3 100%);
+  --skin-surface: rgba(255, 252, 225, 0.95);
+  --skin-surface-strong: #fff6c7;
+  --skin-text: #3f3320;
+  --skin-text-muted: #716349;
+  --skin-accent: #6aa84f;
+  --skin-accent-strong: #3d7d3b;
+  --skin-border: rgba(123, 174, 103, 0.72);
+  --skin-border-strong: #7bae67;
+  --skin-radius-panel: 22px;
+  --skin-radius-item: 18px;
+  --skin-radius-control: 999px;
+  --skin-shadow-panel: 0 18px 34px rgba(65, 107, 72, 0.16);
+}
+
+[data-skin="animal-island"] .anim-btn-activating {
+  cursor: default;
+  background: #0ec4b6;
+  border: 4px solid #4de2da;
+  color: #fff;
+  background-image: repeating-linear-gradient(-45deg, #0ec4b6, #0ec4b6 10px, #01b0a7 10px 20px);
+  background-size: 28.28px 28.28px;
+  animation: anim-btn-stripe 1s linear infinite;
+}
+
+@keyframes anim-btn-stripe {
+  0% { background-position: 0 0; }
+  to { background-position: -28.28px 0; }
+}

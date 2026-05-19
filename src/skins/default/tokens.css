@@ -1,0 +1,19 @@
+:root,
+[data-skin="default"] {
+  --skin-app-bg:
+    radial-gradient(circle at top left, rgba(247, 231, 205, 0.9), transparent 30%),
+    radial-gradient(circle at bottom right, rgba(231, 214, 195, 0.85), transparent 26%),
+    #f3efe8;
+  --skin-surface: rgba(255, 250, 243, 0.93);
+  --skin-surface-strong: #fff7ef;
+  --skin-text: #1f1a17;
+  --skin-text-muted: #6e6256;
+  --skin-accent: #b96a30;
+  --skin-accent-strong: #8b4a14;
+  --skin-border: rgba(209, 185, 151, 0.9);
+  --skin-border-strong: #d1b997;
+  --skin-radius-panel: 24px;
+  --skin-radius-item: 16px;
+  --skin-radius-control: 999px;
+  --skin-shadow-panel: 0 20px 40px rgba(94, 63, 31, 0.09);
+}

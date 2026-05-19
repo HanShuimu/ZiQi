@@ -13,6 +13,10 @@ import {
   type SpectrogramService
 } from "./domain/audio/browserSpectrogramService";
 import type { SpectrogramOverview, WaveformOverview } from "./domain/audio/types";
+import type { SkinId } from "./domain/userSettings/types";
+import { DEFAULT_USER_SETTINGS } from "./domain/userSettings/types";
+import { getSkinDefinition } from "./skins/registry";
+import { UiProvider } from "./ui";
 
 interface AppProps {
   waveformService?: WaveformService;
@@ -33,6 +37,7 @@ export function App({ waveformService, spectrogramService }: AppProps) {
   const [isOpeningProject, setIsOpeningProject] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [uiSkin, setUiSkin] = useState<SkinId>(DEFAULT_USER_SETTINGS.uiSkin);
   const activePlaybackUrl = useRef<string | null>(null);
   const audioFacade = useMemo(
     () => createBrowserProjectAudioFacade(new Audio()),
@@ -47,11 +52,27 @@ export function App({ waveformService, spectrogramService }: AppProps) {
     [spectrogramService]
   );
 
+  const skinDefinition = getSkinDefinition(uiSkin);
+
   useEffect(() => {
     return () => {
       if (activePlaybackUrl.current) {
         URL.revokeObjectURL(activePlaybackUrl.current);
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    let isActive = true;
+
+    void window.ziqiApp.getUserSettings().then((settings) => {
+      if (isActive) {
+        setUiSkin(settings.uiSkin);
+      }
+    });
+
+    return () => {
+      isActive = false;
     };
   }, []);
 
@@ -211,6 +232,16 @@ export function App({ waveformService, spectrogramService }: AppProps) {
     }
   }
 
+  async function handleSkinChange(nextSkin: SkinId) {
+    setUiSkin(nextSkin);
+    try {
+      const savedSettings = await window.ziqiApp.updateUserSettings({ uiSkin: nextSkin });
+      setUiSkin(savedSettings.uiSkin);
+    } catch (error) {
+      setImportError(error instanceof Error ? error.message : "Failed to update user settings.");
+    }
+  }
+
   useEffect(() => {
     if (typeof window.ziqiApp.onMenuCommand !== "function") {
       return;
@@ -229,6 +260,17 @@ export function App({ waveformService, spectrogramService }: AppProps) {
 
       if (command === "save-project") {
         void handleSaveProject();
+        return;
+      }
+
+      if (command === "set-skin-default") {
+        void handleSkinChange("default");
+        return;
+      }
+
+      if (command === "set-skin-animal-island") {
+        void handleSkinChange("animal-island");
+        return;
       }
     });
   }, [project, projectLocation, activeWaveformService, activeSpectrogramService, audioFacade]);
@@ -250,13 +292,15 @@ export function App({ waveformService, spectrogramService }: AppProps) {
   }
 
   return (
-    <WorkbenchShell
-      audioFacade={audioFacade}
-      importError={importError}
-      onWorkspaceChange={handleWorkspaceChange}
-      project={project}
-      spectrogramOverview={spectrogramOverview}
-      waveformOverview={waveformOverview}
-    />
+    <UiProvider skinId={skinDefinition.id} adapter={skinDefinition.adapter}>
+      <WorkbenchShell
+        audioFacade={audioFacade}
+        importError={importError}
+        onWorkspaceChange={handleWorkspaceChange}
+        project={project}
+        spectrogramOverview={spectrogramOverview}
+        waveformOverview={waveformOverview}
+      />
+    </UiProvider>
   );
 }

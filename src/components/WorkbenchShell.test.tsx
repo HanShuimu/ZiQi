@@ -5,6 +5,8 @@ import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import { createMockProjectSummary } from "../domain/project/mockProject";
 import { WorkbenchShell } from "./WorkbenchShell";
+import { getSkinDefinition } from "../skins/registry";
+import { UiProvider } from "../ui";
 
 describe("WorkbenchShell transport controls", () => {
   afterEach(() => {
@@ -31,7 +33,7 @@ describe("WorkbenchShell transport controls", () => {
   it("does not render the mixed command strip actions", () => {
     const project = createMockProjectSummary();
 
-    render(<WorkbenchShell project={project} />);
+    renderWorkbenchShell(<WorkbenchShell project={project} />);
 
     expect(screen.queryByRole("button", { name: "Open Project" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Save Project" })).toBeNull();
@@ -43,7 +45,7 @@ describe("WorkbenchShell transport controls", () => {
   });
 
   it("renders an empty startup placeholder without an import button", () => {
-    render(<WorkbenchShell project={null} />);
+    renderWorkbenchShell(<WorkbenchShell project={null} />);
 
     expect(screen.getByText("No project loaded")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Import Audio" })).toBeNull();
@@ -61,7 +63,7 @@ describe("WorkbenchShell transport controls", () => {
       ]
     };
 
-    render(
+    renderWorkbenchShell(
       <WorkbenchShell
         project={project}
         audioFacade={mockProjectAudioFacade}
@@ -95,7 +97,7 @@ describe("WorkbenchShell transport controls", () => {
       }
     };
 
-    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+    renderWorkbenchShell(<WorkbenchShell project={project} audioFacade={audioFacade} />);
 
     expect(screen.getByRole("button", { name: "Play" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Pause" })).toBeNull();
@@ -123,7 +125,7 @@ describe("WorkbenchShell transport controls", () => {
       }
     };
 
-    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+    renderWorkbenchShell(<WorkbenchShell project={project} audioFacade={audioFacade} />);
 
     expect(screen.getByRole("button", { name: "Pause" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Play" })).toBeNull();
@@ -150,7 +152,7 @@ describe("WorkbenchShell transport controls", () => {
       }
     };
 
-    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+    renderWorkbenchShell(<WorkbenchShell project={project} audioFacade={audioFacade} />);
 
     await user.keyboard(" ");
 
@@ -174,7 +176,7 @@ describe("WorkbenchShell transport controls", () => {
       }
     };
 
-    render(<WorkbenchShell project={project} audioFacade={audioFacade} />);
+    renderWorkbenchShell(<WorkbenchShell project={project} audioFacade={audioFacade} />);
 
     screen.getByRole("button", { name: "Play" }).focus();
     await user.keyboard(" ");
@@ -200,7 +202,7 @@ describe("WorkbenchShell transport controls", () => {
       }
     };
 
-    render(
+    renderWorkbenchShell(
       <WorkbenchShell
         project={project}
         audioFacade={audioFacade}
@@ -249,7 +251,7 @@ describe("WorkbenchShell transport controls", () => {
       }
     };
 
-    render(
+    renderWorkbenchShell(
       <WorkbenchShell
         project={project}
         audioFacade={audioFacade}
@@ -279,7 +281,7 @@ describe("WorkbenchShell transport controls", () => {
     const project = createMockProjectSummary();
     const onWorkspaceChange = vi.fn();
 
-    render(
+    renderWorkbenchShell(
       <WorkbenchShell
         project={project}
         audioFacade={mockProjectAudioFacade}
@@ -314,7 +316,7 @@ describe("WorkbenchShell transport controls", () => {
       }))
     };
 
-    render(
+    renderWorkbenchShell(
       <WorkbenchShell
         project={project}
         audioFacade={mockProjectAudioFacade}
@@ -326,6 +328,15 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(500);
   });
 });
+
+function renderWorkbenchShell(ui: React.ReactElement) {
+  const skin = getSkinDefinition("default");
+  return render(
+    <UiProvider skinId={skin.id} adapter={skin.adapter}>
+      {ui}
+    </UiProvider>
+  );
+}
 
 function createSpectrogramOverview(): SpectrogramOverview {
   return {
