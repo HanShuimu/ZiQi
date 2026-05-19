@@ -16,3 +16,18 @@
   --skin-radius-control: 999px;
   --skin-shadow-panel: 0 18px 34px rgba(65, 107, 72, 0.16);
 }
+
+[data-skin="animal-island"] .anim-btn-activating {
+  cursor: default;
+  background: #0ec4b6;
+  border: 4px solid #4de2da;
+  color: #fff;
+  background-image: repeating-linear-gradient(-45deg, #0ec4b6, #0ec4b6 10px, #01b0a7 10px 20px);
+  background-size: 28.28px 28.28px;
+  animation: anim-btn-stripe 1s linear infinite;
+}
+
+@keyframes anim-btn-stripe {
+  0% { background-position: 0 0; }
+  to { background-position: -28.28px 0; }
+}
