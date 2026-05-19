@@ -427,6 +427,20 @@ button:disabled {
   animation: animal-background-drift 18s ease-in-out infinite alternate;
 }
 
+.animal-island-background > .animal-footer-5DMOR {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.animal-island-background > .animal-tree-KZ8hX {
+  position: absolute;
+  bottom: 72px;
+  left: 0;
+  right: 0;
+}
+
 @keyframes animal-background-drift {
   from {
     transform: translate3d(-8px, -6px, 0);

@@ -1,4 +1,4 @@
-import { Button as AnimalButton, Card as AnimalCard } from "animal-island-ui";
+import { Button as AnimalButton, Card as AnimalCard, Footer } from "animal-island-ui";
 import "animal-island-ui/style";
 import type {
   BackgroundProps,
@@ -14,7 +14,12 @@ function joinClassNames(...classNames: Array<string | undefined>) {
 }
 
 function Background(_props: BackgroundProps) {
-  return <div className="animal-island-background" aria-hidden="true" />;
+  return (
+    <div className="animal-island-background" aria-hidden="true">
+      <Footer type="sea" />
+      <Footer type="tree" />
+    </div>
+  );
 }
 
 function Button({ className, children, disabled, onClick, variant = "secondary" }: ButtonProps) {
