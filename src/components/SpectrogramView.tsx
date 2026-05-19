@@ -17,6 +17,7 @@ import {
 } from "./spectrogramViewport";
 import type { SpectrogramViewport } from "./spectrogramViewport";
 import { SpectrogramTimelineNavigator } from "./SpectrogramTimelineNavigator";
+import { Button } from "../ui";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 420;
@@ -268,9 +269,9 @@ export function SpectrogramView({
       </div>
 
       <div className="playback-timeline-control" aria-label="Playback timeline controls">
-        <button className="playback-toggle" onClick={onPlaybackToggle}>
+        <Button className="playback-toggle" onClick={onPlaybackToggle}>
           {isPlaying ? "Pause" : "Play"}
-        </button>
+        </Button>
         <div className="playback-time">
           <span>{formatTime(currentTimeMs)}</span>
           <span>/</span>
