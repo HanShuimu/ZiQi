@@ -15,7 +15,7 @@ function Background(_props: BackgroundProps) {
   return null;
 }
 
-function Button({ className, variant = "secondary", size = "md", loading: _loading, ...props }: ButtonProps) {
+function Button({ className, variant = "secondary", size = "md", activating: _activating, ...props }: ButtonProps) {
   return (
     <button
       {...props}

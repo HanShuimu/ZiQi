@@ -269,7 +269,7 @@ export function SpectrogramView({
       </div>
 
       <div className="playback-timeline-control" aria-label="Playback timeline controls">
-        <Button className="playback-toggle" loading={isPlaying} onClick={onPlaybackToggle}>
+        <Button className="playback-toggle" activating={isPlaying} onClick={onPlaybackToggle}>
           {isPlaying ? "Pause" : "Play"}
         </Button>
         <div className="playback-time">
