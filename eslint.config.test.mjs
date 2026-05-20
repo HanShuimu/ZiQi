@@ -114,6 +114,50 @@ describe("architecture lint boundaries", () => {
       })
     );
   });
+
+  it("blocks services from importing React", async () => {
+    const messages = await lintText({
+      filePath: "src/services/playback/createPlaybackService.ts",
+      code: 'import { useState } from "react";\nexport const value = useState;\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({ ruleId: "no-restricted-imports" })
+    );
+  });
+
+  it("blocks features from importing legacy components", async () => {
+    const messages = await lintText({
+      filePath: "src/features/spectrogramViewer/SpectrogramViewer.tsx",
+      code: 'import { WorkbenchShell } from "../../components/WorkbenchShell";\nexport const value = WorkbenchShell;\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({ ruleId: "no-restricted-imports" })
+    );
+  });
+
+  it("blocks electron/platform from importing src renderer files", async () => {
+    const messages = await lintText({
+      filePath: "electron/platform/ipc/settingsHandlers.ts",
+      code: 'import { App } from "../../src/App";\nexport const value = App;\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({ ruleId: "no-restricted-imports" })
+    );
+  });
+
+  it("allows workspaces to import features", async () => {
+    const messages = await lintText({
+      filePath: "src/workspaces/transcription/TranscriptionWorkspace.tsx",
+      code: 'import { ProjectSidebar } from "../../features/projectSidebar";\nexport const value = ProjectSidebar;\n'
+    });
+
+    expect(messages).not.toContainEqual(
+      expect.objectContaining({ ruleId: "no-restricted-imports" })
+    );
+  });
 });
 
 async function lintText({ filePath, code }) {
