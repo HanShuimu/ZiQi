@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
 import type { PlaybackState, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
@@ -33,7 +33,7 @@ export function SpectrogramViewer({
     return () => window.clearInterval(intervalId);
   }, [audioFacade]);
 
-  async function handlePlaybackToggle() {
+  const handlePlaybackToggle = useCallback(async () => {
     if (playbackState.isPlaying) {
       await audioFacade.playback.pause();
     } else {
@@ -41,7 +41,7 @@ export function SpectrogramViewer({
     }
 
     setPlaybackState(audioFacade.playback.getState());
-  }
+  }, [audioFacade, playbackState.currentTimeMs, playbackState.isPlaying]);
 
   async function handleSeek(timeMs: number) {
     await audioFacade.playback.seek(timeMs);
@@ -98,7 +98,7 @@ export function SpectrogramViewer({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [project, playbackState, audioFacade]);
+  }, [handlePlaybackToggle]);
 
   const durationMs = project.sourceAudio.durationMs;
 

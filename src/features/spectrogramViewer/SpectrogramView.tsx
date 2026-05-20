@@ -31,6 +31,10 @@ const SPECTROGRAM_VIEW_STYLE = {
 
 const PLAYBACK_RATE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5] as const;
 
+function getViewportResetKey(durationMs: number, spectrogramOverview: SpectrogramOverview | null | undefined) {
+  return `${durationMs}:${spectrogramOverview?.durationMs ?? "none"}`;
+}
+
 interface SpectrogramViewProps {
   currentTimeMs: number;
   durationMs: number;
@@ -67,30 +71,27 @@ export function SpectrogramView({
   onViewportChange
 }: SpectrogramViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [internalViewport, setInternalViewport] = useState(() =>
-    controlledViewport ?? createDefaultSpectrogramViewport(durationMs)
-  );
+  const viewportResetKey = getViewportResetKey(durationMs, spectrogramOverview);
+  const [internalViewportState, setInternalViewportState] = useState(() => ({
+    resetKey: viewportResetKey,
+    viewport: createDefaultSpectrogramViewport(durationMs)
+  }));
+  const internalViewport =
+    internalViewportState.resetKey === viewportResetKey
+      ? internalViewportState.viewport
+      : createDefaultSpectrogramViewport(durationMs);
   const activeViewport = controlledViewport ?? internalViewport;
 
   function updateViewport(nextViewport: SpectrogramViewport) {
     if (!controlledViewport) {
-      setInternalViewport(nextViewport);
+      setInternalViewportState({
+        resetKey: viewportResetKey,
+        viewport: nextViewport
+      });
     }
     onViewportChange(nextViewport);
   }
 
-  useEffect(() => {
-    if (controlledViewport) {
-      return;
-    }
-    setInternalViewport((prev) => {
-      const next = createDefaultSpectrogramViewport(durationMs);
-      if (prev.startMs === next.startMs && prev.durationMs === next.durationMs) {
-        return prev;
-      }
-      return next;
-    });
-  }, [durationMs, spectrogramOverview, controlledViewport]);
   const visibleWaveformPoints = useMemo(
     () => filterWaveformPointsForViewport(waveformOverview, activeViewport),
     [activeViewport, waveformOverview]
@@ -156,7 +157,7 @@ export function SpectrogramView({
         );
       }
     }
-  }, [visibleFrames]);
+  }, [hasSpectrogramFrames, spectrogramOverview, visibleFrames]);
 
   function handleSpectrogramWheel(event: React.WheelEvent<HTMLDivElement>) {
     if (durationMs <= 0) {
