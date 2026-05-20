@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { SkinId } from "../../domain/userSettings/types";
+import type { SkinId } from "../../core/userSettings/types";
 import type { UiAdapter } from "../types";
 import { UiAdapterContext } from "./UiAdapterContext";
 

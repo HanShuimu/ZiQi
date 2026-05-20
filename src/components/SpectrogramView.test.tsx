@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
+import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
 import { getSkinDefinition } from "../skins/registry";
 import { UiProvider } from "../ui";

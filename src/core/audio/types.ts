@@ -34,5 +34,5 @@ export interface EqBandSetting {
   q: number;
 }
 
-export type { WaveformOverview, WaveformPoint } from "./waveform";
-export type { SpectrogramFrame, SpectrogramOverview } from "./spectrogram";
+export type { WaveformOverview, WaveformPoint } from "../../domain/audio/waveform";
+export type { SpectrogramFrame, SpectrogramOverview } from "../../domain/audio/spectrogram";

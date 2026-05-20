@@ -5,7 +5,7 @@ import {
   frequencyToLogPosition,
   magnitudeToSpectrogramColor
 } from "../domain/audio/spectrogram";
-import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
+import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import {
   createDefaultSpectrogramViewport,
   isTimeInsideViewport,

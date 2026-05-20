@@ -1,5 +1,5 @@
 import { clampSpectrogramViewport, createDefaultSpectrogramViewport } from "../../core/spectrogramViewport";
-import type { LoopRange, WorkspaceState } from "./types";
+import type { LoopRange, WorkspaceState } from "../project/types";
 
 export const SUPPORTED_PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5] as const;
 type SupportedPlaybackRate = (typeof SUPPORTED_PLAYBACK_RATES)[number];

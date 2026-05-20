@@ -1,6 +1,6 @@
 import type { AudioMetadata } from "../audio/types";
 import type { ProjectSummary, SourceAudio } from "./types";
-import { createDefaultWorkspaceState } from "./workspaceState";
+import { createDefaultWorkspaceState } from "../workspace/workspaceState";
 
 interface CreateProjectFromAudioOptions {
   filePath: string;

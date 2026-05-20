@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { WorkbenchShell } from "./components/WorkbenchShell";
 import { createBrowserProjectAudioFacade } from "./domain/audio/browserProjectAudioFacade";
-import type { ProjectSummary, WorkspaceState } from "./domain/project/types";
-import { createProjectFromAudio } from "./domain/project/createProjectFromAudio";
-import { normalizeWorkspaceState } from "./domain/project/workspaceState";
+import type { ProjectSummary, WorkspaceState } from "./core/project/types";
+import { createProjectFromAudio } from "./core/project/createProjectFromAudio";
+import { normalizeWorkspaceState } from "./core/workspace/workspaceState";
 import {
   createBrowserWaveformService,
   type WaveformService
@@ -12,9 +12,9 @@ import {
   createBrowserSpectrogramService,
   type SpectrogramService
 } from "./domain/audio/browserSpectrogramService";
-import type { SpectrogramOverview, WaveformOverview } from "./domain/audio/types";
-import type { SkinId } from "./domain/userSettings/types";
-import { DEFAULT_USER_SETTINGS } from "./domain/userSettings/types";
+import type { SpectrogramOverview, WaveformOverview } from "./core/audio/types";
+import type { SkinId } from "./core/userSettings/types";
+import { DEFAULT_USER_SETTINGS } from "./core/userSettings/types";
 import { getSkinDefinition } from "./skins/registry";
 import { UiProvider } from "./ui";
 

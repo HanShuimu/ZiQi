@@ -1,5 +1,5 @@
 import type { ProjectSummary } from "./types";
-import { createDefaultWorkspaceState } from "./workspaceState";
+import { createDefaultWorkspaceState } from "../workspace/workspaceState";
 
 export function createMockProjectSummary(): ProjectSummary {
   return {
@@ -42,4 +42,3 @@ export function createMockProjectSummary(): ProjectSummary {
     workspace: createDefaultWorkspaceState(120_000)
   };
 }
-

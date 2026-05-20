@@ -66,4 +66,3 @@ export interface ProjectSummary {
   annotations: TimelineAnnotation[];
   workspace: WorkspaceState;
 }
-
