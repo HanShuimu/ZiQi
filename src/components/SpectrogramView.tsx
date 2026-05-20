@@ -8,14 +8,16 @@ import {
 import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import {
   createDefaultSpectrogramViewport,
-  filterSpectrogramFramesForViewport,
-  filterWaveformPointsForViewport,
   isTimeInsideViewport,
   panSpectrogramViewport,
   timeToViewportPercent,
   zoomSpectrogramViewport
+} from "../core/spectrogramViewport";
+import type { SpectrogramViewport } from "../core/spectrogramViewport";
+import {
+  filterSpectrogramFramesForViewport,
+  filterWaveformPointsForViewport
 } from "./spectrogramViewport";
-import type { SpectrogramViewport } from "./spectrogramViewport";
 import { SpectrogramTimelineNavigator } from "./SpectrogramTimelineNavigator";
 import { Button } from "../ui";
 

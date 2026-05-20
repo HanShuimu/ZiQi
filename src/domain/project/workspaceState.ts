@@ -1,4 +1,4 @@
-import { clampSpectrogramViewport, createDefaultSpectrogramViewport } from "../../components/spectrogramViewport";
+import { clampSpectrogramViewport, createDefaultSpectrogramViewport } from "../../core/spectrogramViewport";
 import type { LoopRange, WorkspaceState } from "./types";
 
 export const SUPPORTED_PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5] as const;
