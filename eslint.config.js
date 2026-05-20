@@ -354,6 +354,12 @@ export default tseslint.config(
     }
   },
   {
+    files: ["src/skins/**/adapter.tsx"],
+    rules: {
+      "react-refresh/only-export-components": "off"
+    }
+  },
+  {
     files: ["electron/platform/**/*.{ts,cts}"],
     rules: {
       "no-restricted-imports": ["error", {

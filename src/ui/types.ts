@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from "react";
 
-export interface BackgroundProps {}
+export type BackgroundProps = Record<string, never>;
 
 export interface ButtonProps {
   variant?: "primary" | "secondary" | "ghost";
