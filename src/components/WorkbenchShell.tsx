@@ -14,6 +14,20 @@ interface WorkbenchShellProps {
   onWorkspaceChange?: (workspacePatch: Partial<WorkspaceState>) => void;
 }
 
+function formatDuration(ms: number) {
+  const totalSeconds = Math.floor(ms / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatSampleRate(sampleRate: number) {
+  if (sampleRate % 1000 === 0) {
+    return `${sampleRate / 1000}kHz`;
+  }
+  return `${Math.round((sampleRate / 1000) * 10) / 10}kHz`;
+}
+
 export function WorkbenchShell({
   project,
   audioFacade = mockProjectAudioFacade,
@@ -48,12 +62,15 @@ export function WorkbenchShell({
   return (
     <div className="app-shell">
       <header className="topbar">
-        <div>
+        <div className="topbar-title">
           <div className="eyebrow">ZiQi Workbench</div>
-          <h1>Transcription Workbench</h1>
+          <h1>{project.name}</h1>
+          <p>{project.sourceAudio.name}</p>
         </div>
-        <div className="topbar-meta">
-          <span>Preset: {project.workspace.preset}</span>
+        <div className="topbar-meta" aria-label="Source audio metadata">
+          <span>{formatDuration(project.sourceAudio.durationMs)}</span>
+          <span>{project.sourceAudio.channelCount}ch</span>
+          <span>{formatSampleRate(project.sourceAudio.sampleRate)}</span>
         </div>
       </header>
       {importError ? <p className="error-copy">{importError}</p> : null}

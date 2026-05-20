@@ -62,11 +62,27 @@ button:disabled {
   text-transform: uppercase;
 }
 
+.topbar-title {
+  min-width: 0;
+}
+
+.topbar-title p {
+  color: var(--skin-text-muted);
+  margin: 0.25rem 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .topbar-meta {
   display: flex;
   gap: 1rem;
   color: var(--skin-text-muted);
   font-size: 0.94rem;
+}
+
+.workspace-grid-focused {
+  grid-template-columns: 1fr;
 }
 
 .workspace-grid {

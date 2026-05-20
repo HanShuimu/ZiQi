@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProjectAudioFacade } from "../services/projectAudio/mockFacade";
@@ -51,9 +51,10 @@ describe("WorkbenchShell transport controls", () => {
 
     expect(screen.getByRole("heading", { name: "Demo Track Study" })).toBeTruthy();
     expect(screen.getByText("demo-track.wav")).toBeTruthy();
-    expect(screen.getByText("4:02")).toBeTruthy();
-    expect(screen.getByText("2ch")).toBeTruthy();
-    expect(screen.getByText("48kHz")).toBeTruthy();
+    const meta = screen.getByLabelText("Source audio metadata");
+    expect(within(meta).getByText("4:02")).toBeTruthy();
+    expect(within(meta).getByText("2ch")).toBeTruthy();
+    expect(within(meta).getByText("48kHz")).toBeTruthy();
     expect(screen.queryByText(/Preset:/)).toBeNull();
     expect(screen.queryByRole("heading", { name: "Transcription Workbench" })).toBeNull();
   });
