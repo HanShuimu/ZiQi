@@ -109,6 +109,20 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
   });
 
+  it("renders grouped workspace controls above the waveform", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(<WorkbenchShell project={project} />);
+
+    const controlZone = screen.getByLabelText("Workspace controls");
+    const waveform = screen.getByRole("img", { name: "Audio waveform overview" });
+
+    expect(controlZone.compareDocumentPosition(waveform) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("Playback")).toBeTruthy();
+    expect(screen.getByText("Speed")).toBeTruthy();
+    expect(screen.getByText("Loop")).toBeTruthy();
+  });
+
   it("renders a single play toggle in the spectrum timeline controls", async () => {
     const user = userEvent.setup();
     const project = createMockProjectSummary();
