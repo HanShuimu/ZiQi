@@ -1,7 +1,7 @@
+import type { SpectrogramOverview } from "../../core/audio/types";
 import {
   createSpectrogramOverviewFromBuffer,
-  type SpectrogramBuildOptions,
-  type SpectrogramOverview
+  type SpectrogramBuildOptions
 } from "./spectrogram";
 
 export interface SpectrogramService {

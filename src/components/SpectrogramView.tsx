@@ -4,7 +4,7 @@ import {
   PIANO_KEYS,
   frequencyToLogPosition,
   magnitudeToSpectrogramColor
-} from "../domain/audio/spectrogram";
+} from "../services/audio/spectrogram";
 import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import {
   createDefaultSpectrogramViewport,

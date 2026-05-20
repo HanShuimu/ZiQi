@@ -1,5 +1,5 @@
-import type { PlaybackService } from "./interfaces";
-import type { PlaybackState } from "./types";
+import type { PlaybackService } from "../projectAudio/interfaces";
+import type { PlaybackState } from "../../core/audio/types";
 
 export interface BrowserPlaybackMedia {
   currentTime: number;

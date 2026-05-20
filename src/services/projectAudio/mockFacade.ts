@@ -1,5 +1,5 @@
 import type { ProjectAudioFacade } from "./interfaces";
-import type { AudioMetadata, PlaybackState, SpectrumViewport } from "./types";
+import type { AudioMetadata, PlaybackState, SpectrumViewport } from "../../core/audio/types";
 
 const state: PlaybackState = {
   isPlaying: false,
@@ -74,4 +74,3 @@ export const mockProjectAudioFacade: ProjectAudioFacade = {
     async resetEq() {}
   }
 };
-

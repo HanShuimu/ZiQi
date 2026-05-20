@@ -1,7 +1,7 @@
+import type { WaveformOverview } from "../../core/audio/types";
 import {
   createWaveformOverviewFromBuffer,
-  type WaveformBuildOptions,
-  type WaveformOverview
+  type WaveformBuildOptions
 } from "./waveform";
 
 export interface WaveformService {

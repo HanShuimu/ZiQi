@@ -4,7 +4,7 @@ import type {
   PlaybackState,
   SpectrumFrame,
   SpectrumViewport
-} from "./types";
+} from "../../core/audio/types";
 
 export interface AudioSourceService {
   load(filePath: string, sourceUrl?: string): Promise<AudioMetadata>;

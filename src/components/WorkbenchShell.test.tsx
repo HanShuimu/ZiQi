@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
+import { mockProjectAudioFacade } from "../services/projectAudio/mockFacade";
 import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import { createMockProjectSummary } from "../core/project/mockProject";
 import { WorkbenchShell } from "./WorkbenchShell";

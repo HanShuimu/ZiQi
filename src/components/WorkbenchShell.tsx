@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ProjectSummary, WorkspaceState } from "../core/project/types";
-import { mockProjectAudioFacade } from "../domain/audio/mockFacade";
-import type { ProjectAudioFacade } from "../domain/audio/interfaces";
+import { mockProjectAudioFacade } from "../services/projectAudio/mockFacade";
+import type { ProjectAudioFacade } from "../services/projectAudio/interfaces";
 import type { PlaybackState, SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
 import { ListItem, Panel, Tabs } from "../ui";

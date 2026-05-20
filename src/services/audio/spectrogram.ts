@@ -1,17 +1,4 @@
-export interface SpectrogramOverview {
-  durationMs: number;
-  framesPerSecond: number;
-  minFrequencyHz: number;
-  maxFrequencyHz: number;
-  binsPerFrame: number;
-  frames: SpectrogramFrame[];
-}
-
-export interface SpectrogramFrame {
-  startMs: number;
-  endMs: number;
-  magnitudes: number[];
-}
+import type { SpectrogramOverview, SpectrogramFrame } from "../../core/audio/types";
 
 export interface SpectrogramBuildOptions {
   binsPerFrame?: number;

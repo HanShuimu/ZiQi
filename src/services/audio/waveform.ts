@@ -1,14 +1,4 @@
-export interface WaveformOverview {
-  pointsPerSecond: number;
-  durationMs: number;
-  points: WaveformPoint[];
-}
-
-export interface WaveformPoint {
-  startMs: number;
-  endMs: number;
-  peak: number;
-}
+import type { WaveformOverview } from "../../core/audio/types";
 
 export interface WaveformBuildOptions {
   pointsPerSecond?: number;
