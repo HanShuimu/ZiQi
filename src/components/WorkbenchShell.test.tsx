@@ -44,6 +44,36 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.queryByRole("button", { name: "Run Analysis" })).toBeNull();
   });
 
+  it("renders loaded project metadata in the topbar without preset", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(<WorkbenchShell project={project} />);
+
+    expect(screen.getByRole("heading", { name: "Demo Track Study" })).toBeTruthy();
+    expect(screen.getByText("demo-track.wav")).toBeTruthy();
+    expect(screen.getByText("4:02")).toBeTruthy();
+    expect(screen.getByText("2ch")).toBeTruthy();
+    expect(screen.getByText("48kHz")).toBeTruthy();
+    expect(screen.queryByText(/Preset:/)).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Transcription Workbench" })).toBeNull();
+  });
+
+  it("does not render the project rail or bottom docks in the focused workspace", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(<WorkbenchShell project={project} />);
+
+    expect(screen.queryByText("Assets")).toBeNull();
+    expect(screen.queryByText("Annotations")).toBeNull();
+    expect(screen.queryByText("Vocals Stem")).toBeNull();
+    expect(screen.queryByText("Possible tonic shift")).toBeNull();
+    expect(screen.queryByText("Analysis")).toBeNull();
+    expect(screen.queryByText("Stems")).toBeNull();
+    expect(screen.queryByText("Session Notes")).toBeNull();
+    expect(screen.queryByText("Compare")).toBeNull();
+    expect(screen.queryByText("Hidden")).toBeNull();
+  });
+
   it("renders an empty startup placeholder without an import button", () => {
     renderWorkbenchShell(<WorkbenchShell project={null} />);
 
