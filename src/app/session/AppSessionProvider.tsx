@@ -53,9 +53,11 @@ export function AppSessionProvider({
   );
 
   useEffect(() => {
+    const playbackUrlRef = activePlaybackUrl;
+
     return () => {
-      if (activePlaybackUrl.current) {
-        URL.revokeObjectURL(activePlaybackUrl.current);
+      if (playbackUrlRef.current) {
+        URL.revokeObjectURL(playbackUrlRef.current);
       }
     };
   }, []);

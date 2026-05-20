@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import {
   clampSpectrogramViewport,
   formatTimeLabel,
@@ -24,12 +24,15 @@ export function SpectrogramTimelineNavigator({
   onSeek,
   onViewportChange
 }: SpectrogramTimelineNavigatorProps) {
+  const onViewportChangeRef = useRef(onViewportChange);
+
+  useEffect(() => {
+    onViewportChangeRef.current = onViewportChange;
+  }, [onViewportChange]);
+
   if (durationMs <= 0 || viewport.durationMs <= 0) {
     return null;
   }
-
-  const onViewportChangeRef = useRef(onViewportChange);
-  onViewportChangeRef.current = onViewportChange;
 
   const viewportLeftPercent = timeToTrackPercent(viewport.startMs, durationMs);
   const viewportWidthPercent = Math.min(100, (viewport.durationMs / durationMs) * 100);
