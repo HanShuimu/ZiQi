@@ -137,17 +137,6 @@ describe("architecture lint boundaries", () => {
     );
   });
 
-  it("allows spectrogramViewer to import SpectrogramView during transition", async () => {
-    const messages = await lintText({
-      filePath: "src/features/spectrogramViewer/SpectrogramViewer.tsx",
-      code: 'import { SpectrogramView } from "../../components/SpectrogramView";\nexport const value = SpectrogramView;\n'
-    });
-
-    expect(messages).not.toContainEqual(
-      expect.objectContaining({ ruleId: "no-restricted-imports" })
-    );
-  });
-
   it("blocks electron/platform from importing src renderer files", async () => {
     const messages = await lintText({
       filePath: "electron/platform/ipc/settingsHandlers.ts",

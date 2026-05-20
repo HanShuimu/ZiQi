@@ -4,22 +4,22 @@ import {
   PIANO_KEYS,
   frequencyToLogPosition,
   magnitudeToSpectrogramColor
-} from "../services/audio/spectrogram";
-import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
+} from "../../services/audio/spectrogram";
+import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import {
   createDefaultSpectrogramViewport,
   isTimeInsideViewport,
   panSpectrogramViewport,
   timeToViewportPercent,
   zoomSpectrogramViewport
-} from "../core/spectrogramViewport";
-import type { SpectrogramViewport } from "../core/spectrogramViewport";
+} from "../../core/spectrogramViewport";
+import type { SpectrogramViewport } from "../../core/spectrogramViewport";
 import {
   filterSpectrogramFramesForViewport,
   filterWaveformPointsForViewport
 } from "./spectrogramViewport";
-import { SpectrogramTimelineNavigator } from "./SpectrogramTimelineNavigator";
-import { Button } from "../ui";
+import { SpectrogramTimelineNavigator } from "../../capabilities/timelineViewport";
+import { Button } from "../../ui";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 420;

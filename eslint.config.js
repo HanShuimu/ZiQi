@@ -303,14 +303,14 @@ export default tseslint.config(
     }
   },
   {
-    files: ["src/components/SpectrogramTimelineNavigator.tsx"],
+    files: ["src/capabilities/timelineViewport/SpectrogramTimelineNavigator.tsx"],
     rules: {
       "react-hooks/rules-of-hooks": "warn",
       "react-hooks/refs": "warn"
     }
   },
   {
-    files: ["src/components/SpectrogramView.tsx", "src/components/WorkbenchShell.tsx"],
+    files: ["src/features/spectrogramViewer/SpectrogramView.tsx", "src/components/WorkbenchShell.tsx"],
     rules: {
       "react-hooks/set-state-in-effect": "warn"
     }
@@ -359,12 +359,6 @@ export default tseslint.config(
       }]
     }
   },
-  {
-    files: ["src/features/spectrogramViewer/SpectrogramViewer.tsx"],
-    rules: {
-      "no-restricted-imports": ["off"]
-    }
-  }
 );
 
 function toProjectPath(filePath) {

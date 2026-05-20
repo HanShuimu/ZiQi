@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
 import type { PlaybackState, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
-import { SpectrogramView } from "../../components/SpectrogramView";
+import { SpectrogramView } from "./SpectrogramView";
 import { Panel } from "../../ui";
 
 export interface SpectrogramViewerProps {

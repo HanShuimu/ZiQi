@@ -4,8 +4,8 @@ import {
   formatTimeLabel,
   formatViewportRange,
   timeToTrackPercent
-} from "../core/spectrogramViewport";
-import type { SpectrogramViewport } from "../core/spectrogramViewport";
+} from "../../core/spectrogramViewport";
+import type { SpectrogramViewport } from "../../core/spectrogramViewport";
 
 interface SpectrogramTimelineNavigatorProps {
   currentTimeMs: number;
