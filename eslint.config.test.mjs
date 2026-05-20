@@ -115,6 +115,20 @@ describe("architecture lint boundaries", () => {
     );
   });
 
+  it("allows concrete skin adapters to import concrete skin libraries", async () => {
+    const messages = await lintText({
+      filePath: "src/skins/animalIsland/adapter.tsx",
+      code:
+        'import { Button } from "animal-island-ui";\nimport "animal-island-ui/style";\nexport const value = Button;\n'
+    });
+
+    expect(messages).not.toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-business-skin-imports"
+      })
+    );
+  });
+
   it("blocks services from importing React", async () => {
     const messages = await lintText({
       filePath: "src/services/playback/createPlaybackService.ts",
@@ -157,6 +171,14 @@ describe("architecture lint boundaries", () => {
     expect(messages).not.toContainEqual(
       expect.objectContaining({ ruleId: "no-restricted-imports" })
     );
+  });
+
+  it("ignores files under .worktrees", async () => {
+    const ignored = await eslint.isPathIgnored(
+      path.join(process.cwd(), ".worktrees/example/src/App.tsx")
+    );
+
+    expect(ignored).toBe(true);
   });
 });
 

@@ -85,7 +85,12 @@ const architecturePlugin = {
 
 export default tseslint.config(
   {
-    ignores: ["dist/**", "dist-electron/**", "node_modules/**"]
+    ignores: [
+    "**/.worktrees/**",
+    "**/dist/**",
+    "**/dist-electron/**",
+    "**/node_modules/**"
+  ]
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -364,6 +369,17 @@ export default tseslint.config(
 function toProjectPath(filePath) {
   if (!filePath || filePath === "<text>") {
     return "";
+  }
+
+  const normalized = normalizePath(filePath);
+  const srcIndex = normalized.lastIndexOf("/src/");
+  if (srcIndex >= 0) {
+    return normalized.slice(srcIndex + 1);
+  }
+
+  const electronIndex = normalized.lastIndexOf("/electron/");
+  if (electronIndex >= 0) {
+    return normalized.slice(electronIndex + 1);
   }
 
   return normalizePath(path.relative(workspaceRoot, filePath));
