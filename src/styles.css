@@ -390,7 +390,23 @@ button:disabled {
   justify-self: end;
 }
 
-.spectrogram-navigator-track {
+.spectrogram-navigator-playback-track {
+  cursor: pointer;
+  height: 18px;
+  position: relative;
+}
+
+.spectrogram-navigator-playback-track::before {
+  background: #d8c8b3;
+  content: "";
+  height: 2px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 8px;
+}
+
+.spectrogram-navigator-viewport-track {
   position: relative;
   height: 28px;
   border: 1px solid #d8c8b3;
@@ -420,7 +436,7 @@ button:disabled {
   top: 0;
   bottom: 0;
   width: 2px;
-  background: rgba(53, 34, 18, 0.72);
+  background: #0ea5e9;
   pointer-events: none;
 }
 

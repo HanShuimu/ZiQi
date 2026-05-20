@@ -53,7 +53,7 @@ describe("SpectrogramTimelineNavigator", () => {
       />
     );
 
-    const track = screen.getByTestId("spectrogram-navigator-playback-track");
+    const track = screen.getByTestId("spectrogram-navigator-viewport-track");
     stubTrackRect(track);
 
     fireEvent.pointerDown(track, { clientX: 750 });
