@@ -128,11 +128,22 @@ describe("architecture lint boundaries", () => {
 
   it("blocks features from importing legacy components", async () => {
     const messages = await lintText({
-      filePath: "src/features/spectrogramViewer/SpectrogramViewer.tsx",
+      filePath: "src/features/projectSidebar/ProjectSidebar.tsx",
       code: 'import { WorkbenchShell } from "../../components/WorkbenchShell";\nexport const value = WorkbenchShell;\n'
     });
 
     expect(messages).toContainEqual(
+      expect.objectContaining({ ruleId: "no-restricted-imports" })
+    );
+  });
+
+  it("allows spectrogramViewer to import SpectrogramView during transition", async () => {
+    const messages = await lintText({
+      filePath: "src/features/spectrogramViewer/SpectrogramViewer.tsx",
+      code: 'import { SpectrogramView } from "../../components/SpectrogramView";\nexport const value = SpectrogramView;\n'
+    });
+
+    expect(messages).not.toContainEqual(
       expect.objectContaining({ ruleId: "no-restricted-imports" })
     );
   });

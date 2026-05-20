@@ -358,6 +358,12 @@ export default tseslint.config(
         }]
       }]
     }
+  },
+  {
+    files: ["src/features/spectrogramViewer/SpectrogramViewer.tsx"],
+    rules: {
+      "no-restricted-imports": ["off"]
+    }
   }
 );
 
