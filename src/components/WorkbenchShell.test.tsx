@@ -109,6 +109,44 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
   });
 
+  it("aligns waveform, spectrum, and navigator in the shared time grid", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    expect(document.querySelector(".spectrogram-time-grid")).toBeTruthy();
+    expect(document.querySelector(".spectrogram-waveform-row")).toBeTruthy();
+    expect(document.querySelector(".spectrogram-body")).toBeTruthy();
+    expect(document.querySelector(".spectrogram-navigator-row")).toBeTruthy();
+  });
+
+  it("uses high-contrast playhead classes for waveform and spectrogram cursors", () => {
+    const project = createMockProjectSummary();
+    const waveformOverview: WaveformOverview = {
+      pointsPerSecond: 50,
+      durationMs: 120_000,
+      points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+    };
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={waveformOverview}
+      />
+    );
+
+    expect(document.querySelector(".waveform-cursor")).toBeTruthy();
+    expect(document.querySelector(".spectrogram-cursor")).toBeTruthy();
+  });
+
   it("renders grouped workspace controls above the waveform", () => {
     const project = createMockProjectSummary();
 
