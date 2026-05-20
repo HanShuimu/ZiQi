@@ -177,84 +177,93 @@ export function SpectrogramView({
 
   return (
     <div className="spectrogram-view" style={SPECTROGRAM_VIEW_STYLE}>
-      <div className="waveform-overview" aria-label="Audio waveform overview" role="img">
-        <div className="waveform-grid waveform-grid-compact">
-          {renderedWaveformPoints.map((point) => (
-            <div
-              key={`${point.startMs}-${point.endMs}`}
-              className="waveform-point"
-              data-testid="waveform-point"
-              style={{ height: `${Math.max(2, point.peak * 100)}%` }}
-            />
-          ))}
-        </div>
-        {isPlaybackVisible ? (
-          <div className="cursor-line cursor-line-vertical" style={{ left: `${progressPercent}%` }} />
-        ) : null}
-      </div>
-
-      <div className="spectrogram-body">
-        <div className="piano-axis" aria-label="Piano pitch axis">
-          {PIANO_KEYS.map((key) => {
-            const logPosition = frequencyToLogPosition(key.frequencyHz);
-            const bottomPercent = getPianoKeyBottomPercent(logPosition);
-
-            return (
+      <div className="spectrogram-time-grid">
+        <div className="spectrogram-axis-spacer" />
+        <div className="waveform-overview spectrogram-waveform-row" aria-label="Audio waveform overview" role="img">
+          <div className="waveform-grid waveform-grid-compact">
+            {renderedWaveformPoints.map((point) => (
               <div
-                key={key.midiNumber}
-                className={
-                  key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"
-                }
-                data-bottom-percent={bottomPercent}
-                data-log-position={logPosition}
-                data-testid="piano-key"
-                style={{
-                  bottom: `${bottomPercent}%`
-                }}
-                title={key.name}
+                key={`${point.startMs}-${point.endMs}`}
+                className="waveform-point"
+                data-testid="waveform-point"
+                style={{ height: `${Math.max(2, point.peak * 100)}%` }}
               />
-            );
-          })}
-        </div>
-
-        <div className="spectrogram-canvas-frame" onWheel={handleSpectrogramWheel}>
-          <canvas
-            aria-label="Audio spectrogram"
-            className="spectrogram-canvas"
-            height={CANVAS_HEIGHT}
-            ref={canvasRef}
-            role="img"
-            width={CANVAS_WIDTH}
-          />
-          {!hasSpectrogramFrames ? (
-            <div className="spectrogram-empty">Generating spectrogram...</div>
-          ) : null}
-          {timeGridLines.map((position) => (
-            <div
-              key={position}
-              className="spectrogram-time-grid-line"
-              data-testid="spectrogram-time-grid-line"
-              style={{ left: `${position}%` }}
-            />
-          ))}
+            ))}
+          </div>
           {isPlaybackVisible ? (
             <div
-              className="cursor-line cursor-line-vertical"
-              data-testid="spectrogram-cursor"
+              className="cursor-line cursor-line-vertical waveform-cursor"
               style={{ left: `${progressPercent}%` }}
             />
           ) : null}
         </div>
-      </div>
 
-      <SpectrogramTimelineNavigator
-        currentTimeMs={currentTimeMs}
-        durationMs={durationMs}
-        loopRange={loopRange}
-        onSeek={onSeek}
-        onViewportChange={updateViewport}
-        viewport={activeViewport}
-      />
+        <div className="spectrogram-body">
+          <div className="piano-axis" aria-label="Piano pitch axis">
+            {PIANO_KEYS.map((key) => {
+              const logPosition = frequencyToLogPosition(key.frequencyHz);
+              const bottomPercent = getPianoKeyBottomPercent(logPosition);
+
+              return (
+                <div
+                  key={key.midiNumber}
+                  className={
+                    key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"
+                  }
+                  data-bottom-percent={bottomPercent}
+                  data-log-position={logPosition}
+                  data-testid="piano-key"
+                  style={{
+                    bottom: `${bottomPercent}%`
+                  }}
+                  title={key.name}
+                />
+              );
+            })}
+          </div>
+
+          <div className="spectrogram-canvas-frame" onWheel={handleSpectrogramWheel}>
+            <canvas
+              aria-label="Audio spectrogram"
+              className="spectrogram-canvas"
+              height={CANVAS_HEIGHT}
+              ref={canvasRef}
+              role="img"
+              width={CANVAS_WIDTH}
+            />
+            {!hasSpectrogramFrames ? (
+              <div className="spectrogram-empty">Generating spectrogram...</div>
+            ) : null}
+            {timeGridLines.map((position) => (
+              <div
+                key={position}
+                className="spectrogram-time-grid-line"
+                data-testid="spectrogram-time-grid-line"
+                style={{ left: `${position}%` }}
+              />
+            ))}
+            {isPlaybackVisible ? (
+              <div
+                className="cursor-line cursor-line-vertical spectrogram-cursor"
+                data-testid="spectrogram-cursor"
+                style={{ left: `${progressPercent}%` }}
+              />
+            ) : null}
+          </div>
+        </div>
+
+        <div className="spectrogram-axis-spacer" />
+        <div className="spectrogram-navigator-row">
+          <SpectrogramTimelineNavigator
+            currentTimeMs={currentTimeMs}
+            durationMs={durationMs}
+            loopRange={loopRange}
+            onSeek={onSeek}
+            onViewportChange={updateViewport}
+            viewport={activeViewport}
+          />
+        </div>
+      </div>
     </div>
   );
 }

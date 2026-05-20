@@ -167,7 +167,18 @@ button:disabled {
   bottom: 0;
   left: 38%;
   width: 2px;
-  background: rgba(53, 34, 18, 0.58);
+  background: #0ea5e9;
+}
+
+.spectrogram-cursor {
+  background: #38bdf8;
+  box-shadow:
+    0 0 8px rgba(56, 189, 248, 0.8),
+    0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.waveform-cursor {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
 .dock-tabs {
@@ -247,6 +258,21 @@ button:disabled {
   margin-top: 1rem;
 }
 
+.spectrogram-time-grid {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
+.spectrogram-axis-spacer {
+  min-width: 0;
+}
+
+.spectrogram-waveform-row,
+.spectrogram-navigator-row {
+  min-width: 0;
+}
+
 .playback-timeline-control {
   display: flex;
   flex-wrap: wrap;
@@ -300,10 +326,7 @@ button:disabled {
 }
 
 .spectrogram-body {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 0.5rem;
-  height: var(--spectrogram-display-height);
+  display: contents;
 }
 
 .piano-axis {

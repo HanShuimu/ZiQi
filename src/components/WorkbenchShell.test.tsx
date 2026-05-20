@@ -134,10 +134,18 @@ describe("WorkbenchShell transport controls", () => {
       points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
     };
 
+    const playbackVisibleFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        getState: () => ({ ...mockProjectAudioFacade.playback.getState(), currentTimeMs: 5000 })
+      }
+    };
+
     renderWorkbenchShell(
       <WorkbenchShell
         project={project}
-        audioFacade={mockProjectAudioFacade}
+        audioFacade={playbackVisibleFacade}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={waveformOverview}
       />
