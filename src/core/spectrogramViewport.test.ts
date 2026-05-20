@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
 import {
   createDefaultSpectrogramViewport,
-  filterSpectrogramFramesForViewport,
-  filterWaveformPointsForViewport,
+  filterItemsForViewport,
   formatTimeLabel,
   formatViewportRange,
   isTimeInsideViewport,
@@ -13,36 +11,7 @@ import {
   zoomSpectrogramViewport
 } from "./spectrogramViewport";
 
-function createSpectrogramOverview(): SpectrogramOverview {
-  return {
-    durationMs: 20_000,
-    framesPerSecond: 10,
-    minFrequencyHz: 27.5,
-    maxFrequencyHz: 4186,
-    binsPerFrame: 2,
-    frames: [
-      { startMs: 0, endMs: 100, magnitudes: [0.1, 0.2] },
-      { startMs: 9_900, endMs: 10_000, magnitudes: [0.3, 0.4] },
-      { startMs: 10_000, endMs: 10_100, magnitudes: [0.5, 0.6] },
-      { startMs: 19_900, endMs: 20_000, magnitudes: [0.7, 0.8] }
-    ]
-  };
-}
-
-function createWaveformOverview(): WaveformOverview {
-  return {
-    durationMs: 20_000,
-    pointsPerSecond: 2,
-    points: [
-      { startMs: 0, endMs: 500, peak: 0.2 },
-      { startMs: 9_500, endMs: 10_000, peak: 0.4 },
-      { startMs: 10_000, endMs: 10_500, peak: 0.8 },
-      { startMs: 19_500, endMs: 20_000, peak: 0.5 }
-    ]
-  };
-}
-
-describe("spectrogram viewport helpers", () => {
+describe("spectrogram viewport core helpers", () => {
   it("defaults long audio to a 10 second viewport", () => {
     expect(createDefaultSpectrogramViewport(20_000)).toEqual({
       startMs: 0,
@@ -116,16 +85,17 @@ describe("spectrogram viewport helpers", () => {
     ).toEqual({ startMs: 10_000, durationMs: 10_000 });
   });
 
-  it("filters frames and waveform points to the viewport", () => {
-    const viewport = { startMs: 9_900, durationMs: 200 };
+  it("filters time-ranged items to the viewport", () => {
+    const items = [
+      { id: "before", startMs: 0, endMs: 500 },
+      { id: "left-edge", startMs: 9_500, endMs: 10_000 },
+      { id: "visible", startMs: 10_000, endMs: 10_500 },
+      { id: "after", startMs: 19_500, endMs: 20_000 }
+    ];
 
-    expect(filterSpectrogramFramesForViewport(createSpectrogramOverview(), viewport)).toEqual([
-      { startMs: 9_900, endMs: 10_000, magnitudes: [0.3, 0.4] },
-      { startMs: 10_000, endMs: 10_100, magnitudes: [0.5, 0.6] }
-    ]);
-    expect(filterWaveformPointsForViewport(createWaveformOverview(), viewport)).toEqual([
-      { startMs: 9_500, endMs: 10_000, peak: 0.4 },
-      { startMs: 10_000, endMs: 10_500, peak: 0.8 }
+    expect(filterItemsForViewport(items, { startMs: 9_900, durationMs: 200 })).toEqual([
+      { id: "left-edge", startMs: 9_500, endMs: 10_000 },
+      { id: "visible", startMs: 10_000, endMs: 10_500 }
     ]);
   });
 

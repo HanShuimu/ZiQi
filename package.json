@@ -9,6 +9,7 @@
     "dev": "vite",
     "test": "vitest run --environment jsdom",
     "build": "tsc -p tsconfig.electron.json && vite build",
+    "lint": "eslint .",
     "start": "electron dist-electron/main.js"
   },
   "dependencies": {
@@ -17,6 +18,7 @@
     "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.0.0",
@@ -24,8 +26,13 @@
     "@types/react-dom": "^19.1.2",
     "@vitejs/plugin-react": "^5.0.0",
     "electron": "^37.2.0",
+    "eslint": "^10.4.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
     "jsdom": "^29.1.0",
     "typescript": "^5.8.3",
+    "typescript-eslint": "^8.59.4",
     "vite": "^7.0.0",
     "vitest": "^4.1.5"
   }
