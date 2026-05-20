@@ -1,5 +1,5 @@
-import type { ProjectSummary } from "../domain/project/types";
-import type { UserSettings } from "../domain/userSettings/types";
+import type { ProjectSummary } from "../core/project/types";
+import type { UserSettings } from "../core/userSettings/types";
 
 export interface ProjectLocation {
   projectFilePath: string;

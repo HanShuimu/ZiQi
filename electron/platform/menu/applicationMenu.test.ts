@@ -3,7 +3,7 @@ import {
   createApplicationMenuTemplate,
   MENU_COMMANDS,
   type MenuCommand
-} from "./appMenu.js";
+} from "./applicationMenu.js";
 
 describe("app menu", () => {
   it("creates File menu items for project actions and skins", () => {

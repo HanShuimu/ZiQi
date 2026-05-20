@@ -1,7 +1,7 @@
 import type { ProjectAudioFacade } from "./interfaces";
 import { mockProjectAudioFacade } from "./mockFacade";
-import { BrowserPlaybackService, type BrowserPlaybackMedia } from "./browserPlaybackService";
-import { toAudioUrl } from "./audioFileUrl";
+import { BrowserPlaybackService, type BrowserPlaybackMedia } from "../playback/browserPlaybackService";
+import { toAudioUrl } from "../audio/audioFileUrl";
 
 interface BrowserProjectAudioMedia extends BrowserPlaybackMedia {
   duration?: number;

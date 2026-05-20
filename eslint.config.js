@@ -216,6 +216,12 @@ export default tseslint.config(
       "no-restricted-imports": [
         "error",
         {
+          paths: [
+            {
+              name: "react",
+              message: "Services must not import React."
+            }
+          ],
           patterns: [
             {
               group: [
@@ -307,6 +313,56 @@ export default tseslint.config(
     files: ["src/components/SpectrogramView.tsx", "src/components/WorkbenchShell.tsx"],
     rules: {
       "react-hooks/set-state-in-effect": "warn"
+    }
+  },
+  {
+    files: ["src/app/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["../components/*", "../../components/*"],
+          message: "App composition may not import legacy components directly."
+        }]
+      }]
+    }
+  },
+  {
+    files: ["src/workspaces/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["../components/*", "../../components/*", "../skins/*", "../../skins/*"],
+          message: "Workspaces may only import features, capabilities, core, services, ui, and app/session."
+        }]
+      }]
+    }
+  },
+  {
+    files: ["src/features/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["../components/*", "../../components/*"],
+          message: "Features must not import legacy components. Move shared code elsewhere."
+        }]
+      }]
+    }
+  },
+  {
+    files: ["electron/platform/**/*.{ts,cts}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [{
+          group: ["../../src/*", "../src/*"],
+          message: "Electron platform modules must not import renderer source files."
+        }]
+      }]
+    }
+  },
+  {
+    files: ["src/features/spectrogramViewer/SpectrogramViewer.tsx"],
+    rules: {
+      "no-restricted-imports": ["off"]
     }
   }
 );

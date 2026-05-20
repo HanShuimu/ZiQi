@@ -1,4 +1,4 @@
-import type { SkinId } from "../domain/userSettings/types";
+import type { SkinId } from "../core/userSettings/types";
 import type { UiAdapter } from "../ui";
 import { animalIslandAdapter } from "./animalIsland/adapter";
 import { defaultAdapter } from "./default/adapter";

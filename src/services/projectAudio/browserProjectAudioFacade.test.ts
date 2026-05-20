@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createBrowserProjectAudioFacade } from "./browserProjectAudioFacade";
-import type { BrowserPlaybackMedia } from "./browserPlaybackService";
+import type { BrowserPlaybackMedia } from "../playback/browserPlaybackService";
 
 class FakeMediaElement implements BrowserPlaybackMedia {
   currentTime = 0;

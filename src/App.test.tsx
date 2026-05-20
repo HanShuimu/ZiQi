@@ -2,8 +2,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import type { SpectrogramOverview, WaveformOverview } from "./domain/audio/types";
-import type { ProjectSummary } from "./domain/project/types";
+import type { SpectrogramOverview, WaveformOverview } from "./core/audio/types";
+import type { ProjectSummary } from "./core/project/types";
 
 class FakeAudioElement {
   static instances: FakeAudioElement[] = [];

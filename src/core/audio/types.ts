@@ -34,5 +34,29 @@ export interface EqBandSetting {
   q: number;
 }
 
-export type { WaveformOverview, WaveformPoint } from "./waveform";
-export type { SpectrogramFrame, SpectrogramOverview } from "./spectrogram";
+export interface WaveformPoint {
+  startMs: number;
+  endMs: number;
+  peak: number;
+}
+
+export interface WaveformOverview {
+  pointsPerSecond: number;
+  durationMs: number;
+  points: WaveformPoint[];
+}
+
+export interface SpectrogramFrame {
+  startMs: number;
+  endMs: number;
+  magnitudes: number[];
+}
+
+export interface SpectrogramOverview {
+  durationMs: number;
+  framesPerSecond: number;
+  minFrequencyHz: number;
+  maxFrequencyHz: number;
+  binsPerFrame: number;
+  frames: SpectrogramFrame[];
+}

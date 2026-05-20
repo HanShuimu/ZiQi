@@ -1,4 +1,4 @@
-import type { SpectrogramOverview, WaveformOverview } from "../domain/audio/types";
+import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import {
   filterItemsForViewport,
   type SpectrogramViewport
