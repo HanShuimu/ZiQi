@@ -81,15 +81,15 @@ button:disabled {
   font-size: 0.94rem;
 }
 
-.workspace-grid-focused {
-  grid-template-columns: 1fr;
-}
-
 .workspace-grid {
   margin-top: 1rem;
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 1rem;
+}
+
+.workspace-grid-focused {
+  grid-template-columns: 1fr;
 }
 
 .left-rail,
