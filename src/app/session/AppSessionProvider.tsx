@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import type { ProjectSummary } from "../../core/project/types";
+import type { ProjectAnalysisView, ProjectSummary } from "../../core/project/types";
+import { normalizeProjectAnalysisView } from "../../core/project/analysisView";
 import {
   createBrowserWaveformService,
   type WaveformService
@@ -109,6 +110,21 @@ export function AppSessionProvider({
         setImportError
       });
       const skinCommands = createSkinCommands({ setUiSkin, setImportError });
+      const updateProjectAnalysisView = (analysisViewPatch: Partial<ProjectAnalysisView>) => {
+        setProject((currentProject) => {
+          if (!currentProject) {
+            return currentProject;
+          }
+
+          return {
+            ...currentProject,
+            analysisView: normalizeProjectAnalysisView({
+              ...currentProject.analysisView,
+              ...analysisViewPatch
+            })
+          };
+        });
+      };
 
       return {
         project,
@@ -129,6 +145,7 @@ export function AppSessionProvider({
         saveProject: projectCommands.saveProject,
         openProject: projectCommands.openProject,
         changeSkin: skinCommands.changeSkin,
+        updateProjectAnalysisView,
         updateWorkspace: projectCommands.updateWorkspace
       };
     },

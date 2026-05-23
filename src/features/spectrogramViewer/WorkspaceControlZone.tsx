@@ -1,4 +1,6 @@
 import { Button } from "../../ui";
+import type { PitchHeatmapDisplaySettings } from "../../core/audio/types";
+import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../../core/audio/pitchHeatmap";
 
 const PLAYBACK_RATE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5] as const;
 
@@ -13,6 +15,8 @@ export interface WorkspaceControlZoneProps {
   onLoopStartSet: (timeMs: number) => Promise<void> | void;
   onPlaybackRateChange: (rate: number) => Promise<void> | void;
   onPlaybackToggle: () => Promise<void> | void;
+  onPitchHeatmapDisplayChange: (settings: PitchHeatmapDisplaySettings) => void;
+  pitchHeatmapDisplay: PitchHeatmapDisplaySettings;
 }
 
 export function WorkspaceControlZone({
@@ -25,7 +29,9 @@ export function WorkspaceControlZone({
   onLoopEndSet,
   onLoopStartSet,
   onPlaybackRateChange,
-  onPlaybackToggle
+  onPlaybackToggle,
+  onPitchHeatmapDisplayChange,
+  pitchHeatmapDisplay
 }: WorkspaceControlZoneProps) {
   return (
     <div className="workspace-control-zone" aria-label="Workspace controls">
@@ -67,6 +73,98 @@ export function WorkspaceControlZone({
             Loop {formatTime(loopRange.startMs)}-{formatTime(loopRange.endMs)}
           </span>
         ) : null}
+      </div>
+
+      <div className="workspace-control-group heatmap-display-controls" aria-label="Heatmap Display">
+        <div className="workspace-control-label">Heatmap Display</div>
+        <label>
+          Gain
+          <input
+            aria-label="Gain"
+            max={36}
+            min={-24}
+            onChange={(event) =>
+              onPitchHeatmapDisplayChange({
+                ...pitchHeatmapDisplay,
+                gainDb: Number(event.currentTarget.value)
+              })
+            }
+            step={1}
+            type="range"
+            value={pitchHeatmapDisplay.gainDb}
+          />
+        </label>
+        <label>
+          Contrast
+          <input
+            aria-label="Contrast"
+            max={3}
+            min={0.5}
+            onChange={(event) =>
+              onPitchHeatmapDisplayChange({
+                ...pitchHeatmapDisplay,
+                contrast: Number(event.currentTarget.value)
+              })
+            }
+            step={0.1}
+            type="range"
+            value={pitchHeatmapDisplay.contrast}
+          />
+        </label>
+        <label>
+          Range
+          <input
+            aria-label="Range"
+            max={120}
+            min={40}
+            onChange={(event) =>
+              onPitchHeatmapDisplayChange({
+                ...pitchHeatmapDisplay,
+                dynamicRangeDb: Number(event.currentTarget.value)
+              })
+            }
+            step={1}
+            type="range"
+            value={pitchHeatmapDisplay.dynamicRangeDb}
+          />
+        </label>
+        <label>
+          Floor
+          <input
+            aria-label="Floor"
+            max={-40}
+            min={-120}
+            onChange={(event) =>
+              onPitchHeatmapDisplayChange({
+                ...pitchHeatmapDisplay,
+                noiseFloorDb: Number(event.currentTarget.value)
+              })
+            }
+            step={1}
+            type="range"
+            value={pitchHeatmapDisplay.noiseFloorDb}
+          />
+        </label>
+        <label>
+          Intensity
+          <input
+            aria-label="Intensity"
+            max={2}
+            min={0.5}
+            onChange={(event) =>
+              onPitchHeatmapDisplayChange({
+                ...pitchHeatmapDisplay,
+                colorIntensity: Number(event.currentTarget.value)
+              })
+            }
+            step={0.1}
+            type="range"
+            value={pitchHeatmapDisplay.colorIntensity}
+          />
+        </label>
+        <button onClick={() => onPitchHeatmapDisplayChange(DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS)}>
+          Reset
+        </button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
-import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
+import type { ProjectAnalysisView, ProjectSummary, WorkspaceState } from "../../core/project/types";
 import type { SkinId } from "../../core/userSettings/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
 import type { PitchEnergyService } from "../../services/audio/browserPitchEnergyService";
@@ -36,6 +36,7 @@ export interface AppSessionActions {
   saveProject: () => Promise<void>;
   openProject: () => Promise<void>;
   changeSkin: (nextSkin: SkinId) => Promise<void>;
+  updateProjectAnalysisView: (analysisViewPatch: Partial<ProjectAnalysisView>) => void;
   updateWorkspace: (workspacePatch: Partial<WorkspaceState>) => void;
 }
 

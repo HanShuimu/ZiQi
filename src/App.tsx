@@ -41,6 +41,7 @@ function AppContent() {
       <WorkbenchShell
         audioFacade={session.audioFacade}
         importError={session.importError}
+        onProjectAnalysisViewChange={session.updateProjectAnalysisView}
         onWorkspaceChange={session.updateWorkspace}
         project={session.project}
         pitchEnergyOverview={session.pitchEnergyOverview}

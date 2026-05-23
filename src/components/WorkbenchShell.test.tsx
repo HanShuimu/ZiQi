@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../core/audio/pitchHeatmap";
 import { mockProjectAudioFacade } from "../services/projectAudio/mockFacade";
 import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import { createMockProjectSummary } from "../core/project/mockProject";
@@ -392,6 +393,29 @@ describe("WorkbenchShell transport controls", () => {
         startMs: expect.any(Number),
         durationMs: expect.any(Number)
       })
+    });
+  });
+
+  it("reports pitch heatmap display changes for persistence", () => {
+    const project = createMockProjectSummary();
+    const onProjectAnalysisViewChange = vi.fn();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onProjectAnalysisViewChange={onProjectAnalysisViewChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Gain"), { target: { value: "6" } });
+
+    expect(onProjectAnalysisViewChange).toHaveBeenCalledWith({
+      pitchHeatmapDisplay: {
+        ...DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
+        gainDb: 6
+      }
     });
   });
 

@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
+import type { ProjectAnalysisView } from "../../core/project/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
-import type { PitchEnergyOverview, PlaybackState, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
-import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../../core/audio/pitchHeatmap";
+import type {
+  PitchEnergyOverview,
+  PitchHeatmapDisplaySettings,
+  PlaybackState,
+  SpectrogramOverview,
+  WaveformOverview
+} from "../../core/audio/types";
+import {
+  DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
+  clampPitchHeatmapDisplaySettings
+} from "../../core/audio/pitchHeatmap";
 import { SpectrogramView } from "./SpectrogramView";
 import { WorkspaceControlZone } from "./WorkspaceControlZone";
 import { Panel } from "../../ui";
@@ -13,6 +23,7 @@ export interface SpectrogramViewerProps {
   waveformOverview?: WaveformOverview | null;
   spectrogramOverview?: SpectrogramOverview | null;
   pitchEnergyOverview?: PitchEnergyOverview | null;
+  onProjectAnalysisViewChange: (analysisViewPatch: Partial<ProjectAnalysisView>) => void;
   onWorkspaceChange: (workspacePatch: Partial<WorkspaceState>) => void;
 }
 
@@ -22,6 +33,7 @@ export function SpectrogramViewer({
   waveformOverview,
   spectrogramOverview,
   pitchEnergyOverview,
+  onProjectAnalysisViewChange,
   onWorkspaceChange
 }: SpectrogramViewerProps) {
   const [playbackState, setPlaybackState] = useState<PlaybackState>(() =>
@@ -108,6 +120,12 @@ export function SpectrogramViewer({
   const pitchHeatmapDisplay =
     project.analysisView?.pitchHeatmapDisplay ?? DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS;
 
+  function handlePitchHeatmapDisplayChange(nextSettings: PitchHeatmapDisplaySettings) {
+    onProjectAnalysisViewChange({
+      pitchHeatmapDisplay: clampPitchHeatmapDisplaySettings(nextSettings)
+    });
+  }
+
   return (
     <Panel className="spectrum-panel">
       <div className="spectrum-head">
@@ -131,7 +149,9 @@ export function SpectrogramViewer({
         onLoopStartSet={handleLoopStartSet}
         onPlaybackRateChange={handlePlaybackRateChange}
         onPlaybackToggle={handlePlaybackToggle}
+        onPitchHeatmapDisplayChange={handlePitchHeatmapDisplayChange}
         playbackRate={playbackState.playbackRate}
+        pitchHeatmapDisplay={pitchHeatmapDisplay}
       />
 
       <SpectrogramView

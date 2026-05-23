@@ -244,6 +244,22 @@ button:disabled {
   min-height: 2.6rem;
 }
 
+.heatmap-display-controls {
+  display: grid;
+  gap: 0.5rem 0.75rem;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+}
+
+.heatmap-display-controls label {
+  display: grid;
+  font-size: 0.72rem;
+  gap: 0.2rem;
+}
+
+.heatmap-display-controls input[type="range"] {
+  width: 100%;
+}
+
 .workspace-control-label {
   color: var(--skin-accent);
   font-size: 0.72rem;
