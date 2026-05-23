@@ -104,7 +104,7 @@ describe("WorkbenchShell transport controls", () => {
     );
 
     expect(screen.getByRole("img", { name: "Audio waveform overview" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Audio spectrogram" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Pitch heatmap" })).toBeTruthy();
     expect(screen.getByLabelText("Piano pitch axis")).toBeTruthy();
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
   });
@@ -439,3 +439,4 @@ function createSpectrogramOverview(): SpectrogramOverview {
     frames: [{ startMs: 0, endMs: 42, magnitudes: [0, 0.25, 0.5, 1] }]
   };
 }
+

@@ -43,6 +43,7 @@ function AppContent() {
         importError={session.importError}
         onWorkspaceChange={session.updateWorkspace}
         project={session.project}
+        pitchEnergyOverview={session.pitchEnergyOverview}
         spectrogramOverview={session.spectrogramOverview}
         waveformOverview={session.waveformOverview}
       />

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
-import type { PlaybackState, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
+import type { PitchEnergyOverview, PlaybackState, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
+import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../../core/audio/pitchHeatmap";
 import { SpectrogramView } from "./SpectrogramView";
 import { WorkspaceControlZone } from "./WorkspaceControlZone";
 import { Panel } from "../../ui";
@@ -11,6 +12,7 @@ export interface SpectrogramViewerProps {
   audioFacade: ProjectAudioFacade;
   waveformOverview?: WaveformOverview | null;
   spectrogramOverview?: SpectrogramOverview | null;
+  pitchEnergyOverview?: PitchEnergyOverview | null;
   onWorkspaceChange: (workspacePatch: Partial<WorkspaceState>) => void;
 }
 
@@ -19,6 +21,7 @@ export function SpectrogramViewer({
   audioFacade,
   waveformOverview,
   spectrogramOverview,
+  pitchEnergyOverview,
   onWorkspaceChange
 }: SpectrogramViewerProps) {
   const [playbackState, setPlaybackState] = useState<PlaybackState>(() =>
@@ -102,13 +105,15 @@ export function SpectrogramViewer({
   }, [handlePlaybackToggle]);
 
   const durationMs = project.sourceAudio.durationMs;
+  const pitchHeatmapDisplay =
+    project.analysisView?.pitchHeatmapDisplay ?? DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS;
 
   return (
     <Panel className="spectrum-panel">
       <div className="spectrum-head">
         <div>
           <div className="section-label">Primary Workspace</div>
-          <h2>Raw Spectrum</h2>
+          <h2>Pitch Heatmap</h2>
         </div>
         <div className="spectrum-meta">
           <span>{project.workspace.bpm} BPM</span>
@@ -135,6 +140,8 @@ export function SpectrogramViewer({
         loopRange={playbackState.loopRange ?? project.workspace.loopRange}
         onSeek={handleSeek}
         onViewportChange={(spectrogramViewport) => onWorkspaceChange({ spectrogramViewport })}
+        pitchEnergyOverview={pitchEnergyOverview}
+        pitchHeatmapDisplay={pitchHeatmapDisplay}
         spectrogramOverview={spectrogramOverview}
         viewport={project.workspace.spectrogramViewport}
         waveformOverview={waveformOverview}

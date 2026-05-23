@@ -1,4 +1,4 @@
-import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
+import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import {
   filterItemsForViewport,
   type SpectrogramViewport
@@ -9,6 +9,13 @@ export function filterSpectrogramFramesForViewport(
   viewport: SpectrogramViewport
 ) {
   return filterItemsForViewport(spectrogramOverview.frames, viewport);
+}
+
+export function filterPitchEnergyFramesForViewport(
+  pitchEnergyOverview: PitchEnergyOverview | null | undefined,
+  viewport: SpectrogramViewport
+) {
+  return filterItemsForViewport(pitchEnergyOverview?.frames ?? [], viewport);
 }
 
 export function filterWaveformPointsForViewport(

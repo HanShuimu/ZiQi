@@ -130,7 +130,7 @@ describe("SpectrogramView", () => {
     );
 
     expect(screen.getByRole("img", { name: "Audio waveform overview" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Audio spectrogram" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Pitch heatmap" })).toBeTruthy();
     expect(screen.getByLabelText("Piano pitch axis")).toBeTruthy();
     expect(screen.getAllByTestId("piano-key")).toHaveLength(88);
     expect(screen.getAllByTestId("spectrogram-time-grid-line").length).toBe(1);
@@ -159,7 +159,7 @@ describe("SpectrogramView", () => {
       />
     );
 
-    const canvas = screen.getByRole("img", { name: "Audio spectrogram" }) as HTMLCanvasElement;
+    const canvas = screen.getByRole("img", { name: "Pitch heatmap" }) as HTMLCanvasElement;
     const binDrawCalls = drawCalls.filter(
       (call) =>
         !(
@@ -170,7 +170,7 @@ describe("SpectrogramView", () => {
         )
     );
 
-    expect(binDrawCalls.length).toBeLessThanOrEqual(canvas.width * 4);
+    expect(binDrawCalls.length).toBeLessThanOrEqual(canvas.width * 88);
   });
 
   it("uses a stable shared spectrogram display height", () => {
@@ -193,11 +193,11 @@ describe("SpectrogramView", () => {
       />
     );
 
-    const canvas = screen.getByRole("img", { name: "Audio spectrogram" }) as HTMLCanvasElement;
+    const canvas = screen.getByRole("img", { name: "Pitch heatmap" }) as HTMLCanvasElement;
     const spectrogramView = container.querySelector(".spectrogram-view") as HTMLElement;
 
-    expect(canvas.height).toBe(420);
-    expect(spectrogramView.style.getPropertyValue("--spectrogram-display-height")).toBe("420px");
+    expect(canvas.height).toBe(528);
+    expect(spectrogramView.style.getPropertyValue("--spectrogram-display-height")).toBe("528px");
   });
 
   it("keeps the lowest and highest piano keys inside the pitch axis", () => {
@@ -255,7 +255,7 @@ describe("SpectrogramView", () => {
       />
     );
 
-    expect(screen.getByText("Generating spectrogram...")).toBeTruthy();
+    expect(screen.getByText("Generating pitch heatmap...")).toBeTruthy();
     expect(drawCalls).toEqual([]);
   });
 
@@ -279,7 +279,7 @@ describe("SpectrogramView", () => {
       />
     );
 
-    expect(screen.getByText("Generating spectrogram...")).toBeTruthy();
+    expect(screen.getByText("Generating pitch heatmap...")).toBeTruthy();
     expect(drawCalls).toEqual([]);
   });
 
@@ -306,7 +306,7 @@ describe("SpectrogramView", () => {
     const waveform = screen.getByRole("img", { name: "Audio waveform overview" });
     expect(within(waveform).getAllByTestId("waveform-point")).toHaveLength(2);
 
-    const canvas = screen.getByRole("img", { name: "Audio spectrogram" }) as HTMLCanvasElement;
+    const canvas = screen.getByRole("img", { name: "Pitch heatmap" }) as HTMLCanvasElement;
     const binDrawCalls = drawCalls.filter(
       (call) =>
         !(
@@ -317,7 +317,7 @@ describe("SpectrogramView", () => {
         )
     );
 
-    expect(binDrawCalls).toHaveLength(8);
+    expect(binDrawCalls).toHaveLength(176);
   });
 
   it("hides the main spectrogram cursor when playback is outside the viewport", () => {
@@ -433,3 +433,4 @@ describe("SpectrogramView", () => {
     }));
   });
 });
+

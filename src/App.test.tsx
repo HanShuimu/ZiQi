@@ -140,7 +140,7 @@ describe("App local audio import", () => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
-    expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
+    expect(screen.getByLabelText("Pitch heatmap")).toBeTruthy();
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(audioData);
     const [spectrogramAudioData] = spectrogramService.buildOverviewFromAudioData.mock.calls[0];
     expect(spectrogramAudioData).toBeInstanceOf(ArrayBuffer);
@@ -692,7 +692,7 @@ describe("App local audio import", () => {
     expect(pitchEnergyService.buildOverviewFromAudioData.mock.calls[0][0]).not.toBe(openedAudioData);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
-    expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
+    expect(screen.getByLabelText("Pitch heatmap")).toBeTruthy();
     expect(window.ziqiApp.activateOpenedProject).toHaveBeenCalledWith({
       projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
       projectRootPath: "D:\\ZiQi Projects\\Demo"
@@ -1323,3 +1323,4 @@ function createProjectSummary(filePath: string): ProjectSummary {
     }
   };
 }
+
