@@ -7,6 +7,13 @@ export const PROJECT_SCHEMA_VERSION = 1;
 const PROJECT_FOLDER_EXTENSION = ".ziqiproject";
 const PROJECT_FILE_EXTENSION = ".ziqi";
 const AUDIO_DIRECTORY_NAME = "audio";
+const DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS = {
+  gainDb: 0,
+  contrast: 1,
+  dynamicRangeDb: 80,
+  noiseFloorDb: -90,
+  colorIntensity: 1
+};
 
 export interface SerializableProject {
   id: string;
@@ -22,6 +29,7 @@ export interface SerializableProject {
   assets: unknown[];
   analysisRuns: unknown[];
   annotations: unknown[];
+  analysisView?: Record<string, unknown>;
   workspace: Record<string, unknown>;
 }
 
@@ -181,7 +189,7 @@ export async function openProjectFromFile(projectFilePath: string): Promise<Open
     const audioFile = await fs.readFile(audioPath);
 
     return {
-      project: payload.project,
+      project: normalizeSerializableProject(payload.project),
       projectFilePath,
       projectRootPath,
       audioData: toArrayBuffer(audioFile)
@@ -204,6 +212,58 @@ function withSourceAudioPath(project: SerializableProject, filePath: string): Se
       filePath
     }
   };
+}
+
+function normalizeSerializableProject(project: SerializableProject): SerializableProject {
+  return {
+    ...project,
+    analysisView: {
+      ...project.analysisView,
+      pitchHeatmapDisplay: normalizePitchHeatmapDisplaySettings(
+        project.analysisView?.pitchHeatmapDisplay
+      )
+    }
+  };
+}
+
+function normalizePitchHeatmapDisplaySettings(value: unknown) {
+  const settings = isRecord(value) ? value : {};
+
+  return {
+    gainDb: clampNumber(settings.gainDb, -24, 36, DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.gainDb),
+    contrast: clampNumber(
+      settings.contrast,
+      0.5,
+      3,
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.contrast
+    ),
+    dynamicRangeDb: clampNumber(
+      settings.dynamicRangeDb,
+      40,
+      120,
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.dynamicRangeDb
+    ),
+    noiseFloorDb: clampNumber(
+      settings.noiseFloorDb,
+      -120,
+      -40,
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.noiseFloorDb
+    ),
+    colorIntensity: clampNumber(
+      settings.colorIntensity,
+      0.5,
+      2,
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.colorIntensity
+    )
+  };
+}
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, value));
 }
 
 function toProjectRelativePath(...segments: string[]) {

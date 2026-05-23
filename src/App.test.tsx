@@ -699,6 +699,51 @@ describe("App local audio import", () => {
     });
   });
 
+  it("fills missing pitch heatmap display settings when opening old projects", async () => {
+    const { analysisView: _analysisView, ...oldProject } = createProjectSummary(
+      "audio/demo track.wav"
+    );
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: new ArrayBuffer(16),
+      project: oldProject,
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+    window.ziqiApp.saveProject = vi.fn().mockImplementation(async (request) => ({
+      project: request.project,
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    }));
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+      })
+    };
+    renderApp({ waveformService });
+
+    menuCommandListener?.("open-project");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    menuCommandListener?.("save-project");
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
+    });
+
+    expect(window.ziqiApp.saveProject).toHaveBeenCalledWith({
+      project: expect.objectContaining({
+        analysisView: {
+          pitchHeatmapDisplay: DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS
+        }
+      }),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+  });
+
   it("open cancel does nothing", async () => {
     window.ziqiApp.openProject = vi.fn().mockResolvedValue(null);
     const waveformService = {

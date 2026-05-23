@@ -11,6 +11,14 @@ import {
   saveNewProject
 } from "./projectFiles.js";
 
+const DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS = {
+  gainDb: 0,
+  contrast: 1,
+  dynamicRangeDb: 80,
+  noiseFloorDb: -90,
+  colorIntensity: 1
+};
+
 const project = {
   id: "project-2026-05-07T12:00:00.000Z",
   name: "Demo Track",
@@ -25,6 +33,15 @@ const project = {
   assets: [],
   analysisRuns: [],
   annotations: [],
+  analysisView: {
+    pitchHeatmapDisplay: {
+      gainDb: 6,
+      contrast: 1.5,
+      dynamicRangeDb: 70,
+      noiseFloorDb: -80,
+      colorIntensity: 1.2
+    }
+  },
   workspace: {
     preset: "spectrum-analysis",
     activeDock: "analysis",
@@ -212,6 +229,7 @@ describe("projectFiles", () => {
 
     const projectFile = JSON.parse(await fs.readFile(result.projectFilePath, "utf8"));
     expect(projectFile.project.sourceAudio.filePath).toBe("audio/demo track.wav");
+    expect(projectFile.project.analysisView.pitchHeatmapDisplay.gainDb).toBe(6);
   });
 
   it("does not overwrite an existing project folder when saving a new project", async () => {
@@ -354,9 +372,42 @@ describe("projectFiles", () => {
     const opened = await openProjectFromFile(saved.projectFilePath);
 
     expect(opened.project).toEqual(saved.project);
+    expect(
+      (
+        opened.project.analysisView?.pitchHeatmapDisplay as {
+          gainDb: number;
+        }
+      ).gainDb
+    ).toBe(6);
     expect(opened.projectFilePath).toBe(saved.projectFilePath);
     expect(opened.projectRootPath).toBe(saved.projectRootPath);
     expect(Buffer.from(opened.audioData)).toEqual(Buffer.from([8, 7, 6, 5]));
+  });
+
+  it("opens old project files with default pitch heatmap display settings", async () => {
+    const projectRootPath = path.join(tempDir, "Old Project.ziqiproject");
+    await fs.mkdir(projectRootPath);
+    await fs.mkdir(path.join(projectRootPath, "audio"));
+    await fs.writeFile(path.join(projectRootPath, "audio", "demo track.wav"), Buffer.from([1, 2]));
+    const projectFilePath = path.join(projectRootPath, "Old Project.ziqi");
+    const { analysisView: _analysisView, ...oldProject } = {
+      ...project,
+      name: "Old Project",
+      sourceAudio: {
+        ...project.sourceAudio,
+        filePath: "audio/demo track.wav"
+      }
+    };
+    await fs.writeFile(
+      projectFilePath,
+      JSON.stringify(createZiqiProjectPayload(oldProject))
+    );
+
+    const opened = await openProjectFromFile(projectFilePath);
+
+    expect(opened.project.analysisView?.pitchHeatmapDisplay).toEqual(
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS
+    );
   });
 
   it("throws a stable error when project audio is missing", async () => {

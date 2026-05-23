@@ -1,4 +1,5 @@
 import { normalizeWorkspaceState } from "../../core/workspace/workspaceState";
+import { normalizeProjectAnalysisView } from "../../core/project/analysisView";
 import type { ProjectCommandDependencies } from "./projectCommandTypes";
 
 export function createOpenProjectCommand({
@@ -40,6 +41,7 @@ export function createOpenProjectCommand({
         await audioFacade.source.load(openedProject.project.sourceAudio.filePath, nextPlaybackUrl);
         const normalizedProject = {
           ...openedProject.project,
+          analysisView: normalizeProjectAnalysisView(openedProject.project.analysisView),
           workspace: normalizeWorkspaceState(
             openedProject.project.workspace,
             openedProject.project.sourceAudio.durationMs
