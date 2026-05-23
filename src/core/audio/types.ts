@@ -60,3 +60,26 @@ export interface SpectrogramOverview {
   binsPerFrame: number;
   frames: SpectrogramFrame[];
 }
+
+export interface PitchEnergyFrame {
+  startMs: number;
+  endMs: number;
+  energies: number[];
+}
+
+export interface PitchEnergyOverview {
+  durationMs: number;
+  framesPerSecond: number;
+  minMidiNumber: 21;
+  maxMidiNumber: 108;
+  notesPerFrame: 88;
+  frames: PitchEnergyFrame[];
+}
+
+export interface PitchHeatmapDisplaySettings {
+  gainDb: number;
+  contrast: number;
+  dynamicRangeDb: number;
+  noiseFloorDb: number;
+  colorIntensity: number;
+}
