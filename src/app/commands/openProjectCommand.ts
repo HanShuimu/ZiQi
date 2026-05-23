@@ -7,10 +7,12 @@ export function createOpenProjectCommand({
   audioFacade,
   waveformService,
   spectrogramService,
+  pitchEnergyService,
   setProject,
   setProjectLocation,
   setWaveformOverview,
   setSpectrogramOverview,
+  setPitchEnergyOverview,
   setIsOpeningProject,
   setImportError
 }: ProjectCommandDependencies) {
@@ -27,11 +29,14 @@ export function createOpenProjectCommand({
       const previousPlaybackUrl = activePlaybackUrl.current;
       const nextPlaybackUrl = URL.createObjectURL(new Blob([openedProject.audioData]));
       const spectrogramAudioData = openedProject.audioData.slice(0);
+      const pitchAudioData = openedProject.audioData.slice(0);
       try {
         const nextWaveformOverview =
           await waveformService.buildOverviewFromAudioData(openedProject.audioData);
         const nextSpectrogramOverview =
           await spectrogramService.buildOverviewFromAudioData(spectrogramAudioData);
+        const nextPitchEnergyOverview =
+          await pitchEnergyService.buildOverviewFromAudioData(pitchAudioData);
         await audioFacade.source.load(openedProject.project.sourceAudio.filePath, nextPlaybackUrl);
         const normalizedProject = {
           ...openedProject.project,
@@ -57,6 +62,7 @@ export function createOpenProjectCommand({
         setProject(normalizedProject);
         setWaveformOverview(nextWaveformOverview);
         setSpectrogramOverview(nextSpectrogramOverview);
+        setPitchEnergyOverview(nextPitchEnergyOverview);
         setProjectLocation({
           projectFilePath: openedProject.projectFilePath,
           projectRootPath: openedProject.projectRootPath

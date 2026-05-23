@@ -2,7 +2,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import type { SpectrogramOverview, WaveformOverview } from "./core/audio/types";
+import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "./core/audio/types";
+import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "./core/audio/pitchHeatmap";
 import type { ProjectSummary } from "./core/project/types";
 
 class FakeAudioElement {
@@ -130,7 +131,8 @@ describe("App local audio import", () => {
       })
     };
     const spectrogramService = createSpectrogramService();
-    renderApp({ waveformService, spectrogramService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, spectrogramService, pitchEnergyService });
 
     menuCommandListener?.("import-audio");
 
@@ -144,6 +146,10 @@ describe("App local audio import", () => {
     expect(spectrogramAudioData).toBeInstanceOf(ArrayBuffer);
     expect(spectrogramAudioData).not.toBe(audioData);
     expect(spectrogramAudioData.byteLength).toBe(audioData.byteLength);
+    const [pitchAudioData] = pitchEnergyService.buildOverviewFromAudioData.mock.calls[0];
+    expect(pitchAudioData).toBeInstanceOf(ArrayBuffer);
+    expect(pitchAudioData).not.toBe(audioData);
+    expect(pitchAudioData.byteLength).toBe(audioData.byteLength);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
   });
 
@@ -451,7 +457,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("import-audio");
     await waitFor(() => {
@@ -486,7 +493,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("import-audio");
     await waitFor(() => {
@@ -537,7 +545,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("open-project");
     await waitFor(() => {
@@ -578,7 +587,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("open-project");
     await waitFor(() => {
@@ -667,7 +677,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("open-project");
 
@@ -675,6 +686,10 @@ describe("App local audio import", () => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(openedAudioData);
+    expect(pitchEnergyService.buildOverviewFromAudioData).toHaveBeenCalledWith(
+      expect.any(ArrayBuffer)
+    );
+    expect(pitchEnergyService.buildOverviewFromAudioData.mock.calls[0][0]).not.toBe(openedAudioData);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
     expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
@@ -1220,7 +1235,13 @@ describe("App local audio import", () => {
 });
 
 function renderApp(props: Parameters<typeof App>[0]) {
-  return render(<App spectrogramService={createSpectrogramService()} {...props} />);
+  return render(
+    <App
+      pitchEnergyService={createPitchEnergyService()}
+      spectrogramService={createSpectrogramService()}
+      {...props}
+    />
+  );
 }
 
 function createWaveformOverview(): WaveformOverview {
@@ -1245,12 +1266,32 @@ function createSpectrogramOverview(): SpectrogramOverview {
   };
 }
 
+function createPitchEnergyOverview(): PitchEnergyOverview {
+  return {
+    durationMs: 12_000,
+    framesPerSecond: 24,
+    minMidiNumber: 21,
+    maxMidiNumber: 108,
+    notesPerFrame: 88,
+    frames: []
+  };
+}
+
 function createSpectrogramService(overrides?: {
   buildOverviewFromAudioData?: ReturnType<typeof vi.fn>;
 }) {
   return {
     buildOverviewFromAudioData:
       overrides?.buildOverviewFromAudioData ?? vi.fn().mockResolvedValue(createSpectrogramOverview())
+  };
+}
+
+function createPitchEnergyService(overrides?: {
+  buildOverviewFromAudioData?: ReturnType<typeof vi.fn>;
+}) {
+  return {
+    buildOverviewFromAudioData:
+      overrides?.buildOverviewFromAudioData ?? vi.fn().mockResolvedValue(createPitchEnergyOverview())
   };
 }
 
@@ -1269,6 +1310,9 @@ function createProjectSummary(filePath: string): ProjectSummary {
     assets: [],
     analysisRuns: [],
     annotations: [],
+    analysisView: {
+      pitchHeatmapDisplay: DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS
+    },
     workspace: {
       preset: "spectrum-analysis",
       activeDock: "analysis",

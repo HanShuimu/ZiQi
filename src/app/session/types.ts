@@ -1,7 +1,8 @@
-import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
+import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
 import type { SkinId } from "../../core/userSettings/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
+import type { PitchEnergyService } from "../../services/audio/browserPitchEnergyService";
 import type { SpectrogramService } from "../../services/audio/browserSpectrogramService";
 import type { WaveformService } from "../../services/audio/browserWaveformService";
 
@@ -15,6 +16,7 @@ export interface AppSessionState {
   projectLocation: ProjectLocation | null;
   waveformOverview: WaveformOverview | null;
   spectrogramOverview: SpectrogramOverview | null;
+  pitchEnergyOverview: PitchEnergyOverview | null;
   isImporting: boolean;
   isOpeningProject: boolean;
   isSavingProject: boolean;
@@ -26,6 +28,7 @@ export interface AppSessionServices {
   audioFacade: ProjectAudioFacade;
   waveformService: WaveformService;
   spectrogramService: SpectrogramService;
+  pitchEnergyService: PitchEnergyService;
 }
 
 export interface AppSessionActions {

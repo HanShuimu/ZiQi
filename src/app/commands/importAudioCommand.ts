@@ -7,10 +7,12 @@ export function createImportAudioCommand({
   audioFacade,
   waveformService,
   spectrogramService,
+  pitchEnergyService,
   setProject,
   setProjectLocation,
   setWaveformOverview,
   setSpectrogramOverview,
+  setPitchEnergyOverview,
   setIsImporting,
   setImportError
 }: ProjectCommandDependencies) {
@@ -26,11 +28,14 @@ export function createImportAudioCommand({
 
       const nextPlaybackUrl = URL.createObjectURL(new Blob([selectedFile.audioData]));
       const spectrogramAudioData = selectedFile.audioData.slice(0);
+      const pitchAudioData = selectedFile.audioData.slice(0);
       try {
         const nextWaveformOverview =
           await waveformService.buildOverviewFromAudioData(selectedFile.audioData);
         const nextSpectrogramOverview =
           await spectrogramService.buildOverviewFromAudioData(spectrogramAudioData);
+        const nextPitchEnergyOverview =
+          await pitchEnergyService.buildOverviewFromAudioData(pitchAudioData);
         const metadata = await audioFacade.source.load(selectedFile.filePath, nextPlaybackUrl);
         const importedProject = createProjectFromAudio({
           filePath: selectedFile.filePath,
@@ -46,6 +51,7 @@ export function createImportAudioCommand({
         setProjectLocation(null);
         setWaveformOverview(nextWaveformOverview);
         setSpectrogramOverview(nextSpectrogramOverview);
+        setPitchEnergyOverview(nextPitchEnergyOverview);
         if (activePlaybackUrl.current) {
           URL.revokeObjectURL(activePlaybackUrl.current);
         }
