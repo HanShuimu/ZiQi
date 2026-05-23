@@ -60,13 +60,16 @@ export function SpectrogramTimelineNavigator({
     );
   }
 
-  function handleTrackPointerDown(event: React.PointerEvent<HTMLDivElement>) {
-    if (event.target !== event.currentTarget) {
+  function handlePlaybackTrackPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget || !onSeek) {
       return;
     }
 
-    if (onSeek) {
-      onSeek(timeForClientX(event.clientX, event.currentTarget));
+    onSeek(timeForClientX(event.clientX, event.currentTarget));
+  }
+
+  function handleViewportTrackPointerDown(event: React.PointerEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) {
       return;
     }
 
@@ -121,9 +124,20 @@ export function SpectrogramTimelineNavigator({
         <span>{formatTimeLabel(durationMs)}</span>
       </div>
       <div
-        className="spectrogram-navigator-track"
-        data-testid="spectrogram-navigator-track"
-        onPointerDown={handleTrackPointerDown}
+        className="spectrogram-navigator-playback-track"
+        data-testid="spectrogram-navigator-playback-track"
+        onPointerDown={handlePlaybackTrackPointerDown}
+      >
+        <div
+          className="spectrogram-navigator-playhead"
+          data-testid="spectrogram-navigator-playhead"
+          style={{ left: `${playheadPercent}%` }}
+        />
+      </div>
+      <div
+        className="spectrogram-navigator-viewport-track"
+        data-testid="spectrogram-navigator-viewport-track"
+        onPointerDown={handleViewportTrackPointerDown}
       >
         {loopRange ? (
           <div
@@ -143,11 +157,6 @@ export function SpectrogramTimelineNavigator({
             left: `${viewportLeftPercent}%`,
             width: `${viewportWidthPercent}%`
           }}
-        />
-        <div
-          className="spectrogram-navigator-playhead"
-          data-testid="spectrogram-navigator-playhead"
-          style={{ left: `${playheadPercent}%` }}
         />
       </div>
     </div>

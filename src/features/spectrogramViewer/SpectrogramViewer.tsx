@@ -3,6 +3,7 @@ import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
 import type { PlaybackState, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
+import { WorkspaceControlZone } from "./WorkspaceControlZone";
 import { Panel } from "../../ui";
 
 export interface SpectrogramViewerProps {
@@ -115,7 +116,7 @@ export function SpectrogramViewer({
         </div>
       </div>
 
-      <SpectrogramView
+      <WorkspaceControlZone
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
         isPlaying={playbackState.isPlaying}
@@ -125,9 +126,15 @@ export function SpectrogramViewer({
         onLoopStartSet={handleLoopStartSet}
         onPlaybackRateChange={handlePlaybackRateChange}
         onPlaybackToggle={handlePlaybackToggle}
+        playbackRate={playbackState.playbackRate}
+      />
+
+      <SpectrogramView
+        currentTimeMs={playbackState.currentTimeMs}
+        durationMs={durationMs}
+        loopRange={playbackState.loopRange ?? project.workspace.loopRange}
         onSeek={handleSeek}
         onViewportChange={(spectrogramViewport) => onWorkspaceChange({ spectrogramViewport })}
-        playbackRate={playbackState.playbackRate}
         spectrogramOverview={spectrogramOverview}
         viewport={project.workspace.spectrogramViewport}
         waveformOverview={waveformOverview}

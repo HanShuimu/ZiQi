@@ -22,7 +22,7 @@ describe("SpectrogramTimelineNavigator", () => {
     vi.restoreAllMocks();
   });
 
-  it("renders track labels, viewport range, playhead, and viewport thumb", () => {
+  it("renders labels, a playback track, a viewport track, playhead, and viewport thumb", () => {
     render(
       <SpectrogramTimelineNavigator
         currentTimeMs={6_000}
@@ -35,6 +35,8 @@ describe("SpectrogramTimelineNavigator", () => {
     expect(screen.getByText("0:00")).toBeTruthy();
     expect(screen.getByText("0:12")).toBeTruthy();
     expect(screen.getByText("0:00-0:10")).toBeTruthy();
+    expect(screen.getByTestId("spectrogram-navigator-playback-track")).toBeTruthy();
+    expect(screen.getByTestId("spectrogram-navigator-viewport-track")).toBeTruthy();
     expect(screen.getByTestId("spectrogram-navigator-playhead").style.left).toBe("50%");
     expect(screen.getByTestId("spectrogram-navigator-thumb").style.left).toBe("0%");
     expect(screen.getByTestId("spectrogram-navigator-thumb").style.width).toBe("83.33333333333334%");
@@ -51,7 +53,7 @@ describe("SpectrogramTimelineNavigator", () => {
       />
     );
 
-    const track = screen.getByTestId("spectrogram-navigator-track");
+    const track = screen.getByTestId("spectrogram-navigator-viewport-track");
     stubTrackRect(track);
 
     fireEvent.pointerDown(track, { clientX: 750 });
@@ -71,7 +73,7 @@ describe("SpectrogramTimelineNavigator", () => {
       />
     );
 
-    const track = screen.getByTestId("spectrogram-navigator-track");
+    const track = screen.getByTestId("spectrogram-navigator-playback-track");
     stubTrackRect(track);
 
     fireEvent.pointerDown(track, { clientX: 750 });
@@ -92,7 +94,7 @@ describe("SpectrogramTimelineNavigator", () => {
       />
     );
 
-    const track = screen.getByTestId("spectrogram-navigator-track");
+    const track = screen.getByTestId("spectrogram-navigator-viewport-track");
     const thumb = screen.getByTestId("spectrogram-navigator-thumb");
     stubTrackRect(track);
 
@@ -117,7 +119,7 @@ describe("SpectrogramTimelineNavigator", () => {
       />
     );
 
-    const track = screen.getByTestId("spectrogram-navigator-track");
+    const track = screen.getByTestId("spectrogram-navigator-viewport-track");
     const thumb = screen.getByTestId("spectrogram-navigator-thumb");
     stubTrackRect(track);
 

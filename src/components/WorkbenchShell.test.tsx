@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mockProjectAudioFacade } from "../services/projectAudio/mockFacade";
@@ -44,6 +44,37 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.queryByRole("button", { name: "Run Analysis" })).toBeNull();
   });
 
+  it("renders loaded project metadata in the topbar without preset", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(<WorkbenchShell project={project} />);
+
+    expect(screen.getByRole("heading", { name: "Demo Track Study" })).toBeTruthy();
+    expect(screen.getByText("demo-track.wav")).toBeTruthy();
+    const meta = screen.getByLabelText("Source audio metadata");
+    expect(within(meta).getByText("4:02")).toBeTruthy();
+    expect(within(meta).getByText("2ch")).toBeTruthy();
+    expect(within(meta).getByText("48kHz")).toBeTruthy();
+    expect(screen.queryByText(/Preset:/)).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Transcription Workbench" })).toBeNull();
+  });
+
+  it("does not render the project rail or bottom docks in the focused workspace", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(<WorkbenchShell project={project} />);
+
+    expect(screen.queryByText("Assets")).toBeNull();
+    expect(screen.queryByText("Annotations")).toBeNull();
+    expect(screen.queryByText("Vocals Stem")).toBeNull();
+    expect(screen.queryByText("Possible tonic shift")).toBeNull();
+    expect(screen.queryByText("Analysis")).toBeNull();
+    expect(screen.queryByText("Stems")).toBeNull();
+    expect(screen.queryByText("Session Notes")).toBeNull();
+    expect(screen.queryByText("Compare")).toBeNull();
+    expect(screen.queryByText("Hidden")).toBeNull();
+  });
+
   it("renders an empty startup placeholder without an import button", () => {
     renderWorkbenchShell(<WorkbenchShell project={null} />);
 
@@ -76,6 +107,66 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.getByRole("img", { name: "Audio spectrogram" })).toBeTruthy();
     expect(screen.getByLabelText("Piano pitch axis")).toBeTruthy();
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
+  });
+
+  it("aligns waveform, spectrum, and navigator in the shared time grid", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    expect(document.querySelector(".spectrogram-time-grid")).toBeTruthy();
+    expect(document.querySelector(".spectrogram-waveform-row")).toBeTruthy();
+    expect(document.querySelector(".spectrogram-body")).toBeTruthy();
+    expect(document.querySelector(".spectrogram-navigator-row")).toBeTruthy();
+  });
+
+  it("uses high-contrast playhead classes for waveform and spectrogram cursors", () => {
+    const project = createMockProjectSummary();
+    const waveformOverview: WaveformOverview = {
+      pointsPerSecond: 50,
+      durationMs: 120_000,
+      points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+    };
+
+    const playbackVisibleFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        getState: () => ({ ...mockProjectAudioFacade.playback.getState(), currentTimeMs: 5000 })
+      }
+    };
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={playbackVisibleFacade}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={waveformOverview}
+      />
+    );
+
+    expect(document.querySelector(".waveform-cursor")).toBeTruthy();
+    expect(document.querySelector(".spectrogram-cursor")).toBeTruthy();
+  });
+
+  it("renders grouped workspace controls above the waveform", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(<WorkbenchShell project={project} />);
+
+    const controlZone = screen.getByLabelText("Workspace controls");
+    const waveform = screen.getByRole("img", { name: "Audio waveform overview" });
+
+    expect(controlZone.compareDocumentPosition(waveform) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText("Playback")).toBeTruthy();
+    expect(screen.getByText("Speed")).toBeTruthy();
+    expect(screen.getByText("Loop")).toBeTruthy();
   });
 
   it("renders a single play toggle in the spectrum timeline controls", async () => {

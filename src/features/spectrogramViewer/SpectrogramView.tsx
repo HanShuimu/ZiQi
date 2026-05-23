@@ -19,7 +19,6 @@ import {
   filterWaveformPointsForViewport
 } from "./spectrogramViewport";
 import { SpectrogramTimelineNavigator } from "../../capabilities/timelineViewport";
-import { Button } from "../../ui";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = 420;
@@ -29,8 +28,6 @@ const SPECTROGRAM_VIEW_STYLE = {
   "--spectrogram-display-height": `${CANVAS_HEIGHT}px`
 } as CSSProperties;
 
-const PLAYBACK_RATE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5] as const;
-
 function getViewportResetKey(durationMs: number, spectrogramOverview: SpectrogramOverview | null | undefined) {
   return `${durationMs}:${spectrogramOverview?.durationMs ?? "none"}`;
 }
@@ -38,17 +35,10 @@ function getViewportResetKey(durationMs: number, spectrogramOverview: Spectrogra
 interface SpectrogramViewProps {
   currentTimeMs: number;
   durationMs: number;
-  isPlaying: boolean;
-  playbackRate: number;
   loopRange: { startMs: number; endMs: number } | undefined;
   spectrogramOverview: SpectrogramOverview | null | undefined;
   viewport?: SpectrogramViewport;
   waveformOverview: WaveformOverview | null | undefined;
-  onLoopClear: () => Promise<void> | void;
-  onLoopEndSet: (timeMs: number) => Promise<void> | void;
-  onLoopStartSet: (timeMs: number) => Promise<void> | void;
-  onPlaybackRateChange: (rate: number) => Promise<void> | void;
-  onPlaybackToggle: () => Promise<void> | void;
   onSeek: (timeMs: number) => Promise<void> | void;
   onViewportChange: (viewport: SpectrogramViewport) => void;
 }
@@ -56,17 +46,10 @@ interface SpectrogramViewProps {
 export function SpectrogramView({
   currentTimeMs,
   durationMs,
-  isPlaying,
-  playbackRate,
   loopRange,
   spectrogramOverview,
   viewport: controlledViewport,
   waveformOverview,
-  onLoopClear,
-  onLoopEndSet,
-  onLoopStartSet,
-  onPlaybackRateChange,
-  onPlaybackToggle,
   onSeek,
   onViewportChange
 }: SpectrogramViewProps) {
@@ -192,126 +175,95 @@ export function SpectrogramView({
     }
   }
 
-  function formatTime(ms: number) {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainder = seconds % 60;
-    return `${minutes}:${String(remainder).padStart(2, "0")}`;
-  }
-
   return (
     <div className="spectrogram-view" style={SPECTROGRAM_VIEW_STYLE}>
-      <div className="waveform-overview" aria-label="Audio waveform overview" role="img">
-        <div className="waveform-grid waveform-grid-compact">
-          {renderedWaveformPoints.map((point) => (
-            <div
-              key={`${point.startMs}-${point.endMs}`}
-              className="waveform-point"
-              data-testid="waveform-point"
-              style={{ height: `${Math.max(2, point.peak * 100)}%` }}
-            />
-          ))}
-        </div>
-        {isPlaybackVisible ? (
-          <div className="cursor-line cursor-line-vertical" style={{ left: `${progressPercent}%` }} />
-        ) : null}
-      </div>
-
-      <div className="spectrogram-body">
-        <div className="piano-axis" aria-label="Piano pitch axis">
-          {PIANO_KEYS.map((key) => {
-            const logPosition = frequencyToLogPosition(key.frequencyHz);
-            const bottomPercent = getPianoKeyBottomPercent(logPosition);
-
-            return (
+      <div className="spectrogram-time-grid">
+        <div className="spectrogram-axis-spacer" />
+        <div className="waveform-overview spectrogram-waveform-row" aria-label="Audio waveform overview" role="img">
+          <div className="waveform-grid waveform-grid-compact">
+            {renderedWaveformPoints.map((point) => (
               <div
-                key={key.midiNumber}
-                className={
-                  key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"
-                }
-                data-bottom-percent={bottomPercent}
-                data-log-position={logPosition}
-                data-testid="piano-key"
-                style={{
-                  bottom: `${bottomPercent}%`
-                }}
-                title={key.name}
+                key={`${point.startMs}-${point.endMs}`}
+                className="waveform-point"
+                data-testid="waveform-point"
+                style={{ height: `${Math.max(2, point.peak * 100)}%` }}
               />
-            );
-          })}
-        </div>
-
-        <div className="spectrogram-canvas-frame" onWheel={handleSpectrogramWheel}>
-          <canvas
-            aria-label="Audio spectrogram"
-            className="spectrogram-canvas"
-            height={CANVAS_HEIGHT}
-            ref={canvasRef}
-            role="img"
-            width={CANVAS_WIDTH}
-          />
-          {!hasSpectrogramFrames ? (
-            <div className="spectrogram-empty">Generating spectrogram...</div>
-          ) : null}
-          {timeGridLines.map((position) => (
-            <div
-              key={position}
-              className="spectrogram-time-grid-line"
-              data-testid="spectrogram-time-grid-line"
-              style={{ left: `${position}%` }}
-            />
-          ))}
+            ))}
+          </div>
           {isPlaybackVisible ? (
             <div
-              className="cursor-line cursor-line-vertical"
-              data-testid="spectrogram-cursor"
+              className="cursor-line cursor-line-vertical waveform-cursor"
               style={{ left: `${progressPercent}%` }}
             />
           ) : null}
         </div>
-      </div>
 
-      <div className="playback-timeline-control" aria-label="Playback timeline controls">
-        <Button className="playback-toggle" activating={isPlaying} onClick={onPlaybackToggle}>
-          {isPlaying ? "Pause" : "Play"}
-        </Button>
-        <div className="playback-time">
-          <span>{formatTime(currentTimeMs)}</span>
-          <span>/</span>
-          <span>{formatTime(durationMs)}</span>
+        <div className="spectrogram-body">
+          <div className="piano-axis" aria-label="Piano pitch axis">
+            {PIANO_KEYS.map((key) => {
+              const logPosition = frequencyToLogPosition(key.frequencyHz);
+              const bottomPercent = getPianoKeyBottomPercent(logPosition);
+
+              return (
+                <div
+                  key={key.midiNumber}
+                  className={
+                    key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"
+                  }
+                  data-bottom-percent={bottomPercent}
+                  data-log-position={logPosition}
+                  data-testid="piano-key"
+                  style={{
+                    bottom: `${bottomPercent}%`
+                  }}
+                  title={key.name}
+                />
+              );
+            })}
+          </div>
+
+          <div className="spectrogram-canvas-frame" onWheel={handleSpectrogramWheel}>
+            <canvas
+              aria-label="Audio spectrogram"
+              className="spectrogram-canvas"
+              height={CANVAS_HEIGHT}
+              ref={canvasRef}
+              role="img"
+              width={CANVAS_WIDTH}
+            />
+            {!hasSpectrogramFrames ? (
+              <div className="spectrogram-empty">Generating spectrogram...</div>
+            ) : null}
+            {timeGridLines.map((position) => (
+              <div
+                key={position}
+                className="spectrogram-time-grid-line"
+                data-testid="spectrogram-time-grid-line"
+                style={{ left: `${position}%` }}
+              />
+            ))}
+            {isPlaybackVisible ? (
+              <div
+                className="cursor-line cursor-line-vertical spectrogram-cursor"
+                data-testid="spectrogram-cursor"
+                style={{ left: `${progressPercent}%` }}
+              />
+            ) : null}
+          </div>
         </div>
-        <div className="playback-rate-controls" aria-label="Playback speed">
-          {PLAYBACK_RATE_OPTIONS.map((rate) => (
-            <button
-              aria-pressed={playbackRate === rate}
-              className="playback-rate-button"
-              key={rate}
-              onClick={() => onPlaybackRateChange(rate)}
-            >
-              {rate}x
-            </button>
-          ))}
-        </div>
-        <div className="loop-controls" aria-label="Loop controls">
-          <button onClick={() => onLoopStartSet(currentTimeMs)}>Set Loop Start</button>
-          <button onClick={() => onLoopEndSet(currentTimeMs)}>Set Loop End</button>
-          {loopRange ? <button onClick={onLoopClear}>Clear Loop</button> : null}
-          {loopRange ? (
-            <span className="loop-summary">
-              Loop {formatTime(loopRange.startMs)}-{formatTime(loopRange.endMs)}
-            </span>
-          ) : null}
+
+        <div className="spectrogram-axis-spacer" />
+        <div className="spectrogram-navigator-row">
+          <SpectrogramTimelineNavigator
+            currentTimeMs={currentTimeMs}
+            durationMs={durationMs}
+            loopRange={loopRange}
+            onSeek={onSeek}
+            onViewportChange={updateViewport}
+            viewport={activeViewport}
+          />
         </div>
       </div>
-
-      <SpectrogramTimelineNavigator
-        currentTimeMs={currentTimeMs}
-        durationMs={durationMs}
-        loopRange={loopRange}
-        onSeek={onSeek}
-        onViewportChange={updateViewport}
-        viewport={activeViewport}
-      />
     </div>
   );
 }
