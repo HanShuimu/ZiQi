@@ -1,5 +1,6 @@
 import type { AudioMetadata } from "../audio/types";
 import type { ProjectSummary, SourceAudio } from "./types";
+import { createDefaultProjectAnalysisView } from "./analysisView";
 import { createDefaultWorkspaceState } from "../workspace/workspaceState";
 
 interface CreateProjectFromAudioOptions {
@@ -32,6 +33,7 @@ export function createProjectFromAudio({
     assets: [],
     analysisRuns: [],
     annotations: [],
+    analysisView: createDefaultProjectAnalysisView(),
     workspace: createDefaultWorkspaceState(metadata.durationMs)
   };
 }
