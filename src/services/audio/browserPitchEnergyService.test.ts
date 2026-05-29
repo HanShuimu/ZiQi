@@ -87,6 +87,37 @@ describe("createBrowserPitchEnergyService", () => {
     );
   });
 
+  it("continues analysis and closes the audio context when logging fails", async () => {
+    const close = vi.fn().mockResolvedValue(undefined);
+    const decodeAudioData = vi.fn().mockResolvedValue(new FakeAudioBuffer());
+    const analyzeFrame = vi.fn<PitchEnergyEngine["analyzeFrame"]>(() => new Array(88).fill(0));
+    const logger = {
+      trace: vi.fn(() => {
+        throw new Error("logger failed");
+      })
+    };
+
+    Object.defineProperty(globalThis, "AudioContext", {
+      configurable: true,
+      value: vi.fn(function () {
+        return { close, decodeAudioData };
+      })
+    });
+
+    const service = createBrowserPitchEnergyService({
+      loadEngine: async () => ({ analyzeFrame }),
+      logger
+    });
+
+    const overview = await service.buildOverviewFromAudioData(new ArrayBuffer(8), {
+      framesPerSecond: 4
+    });
+
+    expect(overview.frames).toHaveLength(4);
+    expect(decodeAudioData).toHaveBeenCalledOnce();
+    expect(close).toHaveBeenCalledOnce();
+  });
+
   it("throws a stable error when decoding fails", async () => {
     Object.defineProperty(globalThis, "AudioContext", {
       configurable: true,

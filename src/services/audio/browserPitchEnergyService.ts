@@ -6,7 +6,11 @@ import {
   createPitchEnergyFrame
 } from "../../core/audio/pitchHeatmap";
 import type { PitchEnergyOverview } from "../../core/audio/types";
-import { rendererLogger, type RendererLogger } from "../logging/rendererLogger";
+import {
+  rendererLogger,
+  type RendererLogDetails,
+  type RendererLogger
+} from "../logging/rendererLogger";
 
 export interface PitchEnergyBuildOptions {
   framesPerSecond?: number;
@@ -49,14 +53,14 @@ export function createBrowserPitchEnergyService({
       let decodedAudio: AudioBuffer;
 
       const decodeStartedAt = nowMs();
-      logger.trace("pitchHeatmap.decode.start", "Decoding audio for pitch heatmap", {
+      traceAudioLog(logger, "pitchHeatmap.decode.start", "Decoding audio for pitch heatmap", {
         byteLength,
         framesPerSecond
       });
 
       try {
         decodedAudio = await audioContext.decodeAudioData(audioData);
-        logger.trace("pitchHeatmap.decode.end", "Decoded audio for pitch heatmap", {
+        traceAudioLog(logger, "pitchHeatmap.decode.end", "Decoded audio for pitch heatmap", {
           byteLength,
           durationMs: elapsedMs(decodeStartedAt),
           audioDurationMs: Math.round(decodedAudio.duration * 1000),
@@ -65,12 +69,17 @@ export function createBrowserPitchEnergyService({
           framesPerSecond
         });
       } catch (error) {
-        logger.trace("pitchHeatmap.decode.fail", "Failed to decode audio for pitch heatmap", {
-          byteLength,
-          durationMs: elapsedMs(decodeStartedAt),
-          framesPerSecond,
-          errorMessage: getErrorMessage(error)
-        });
+        traceAudioLog(
+          logger,
+          "pitchHeatmap.decode.fail",
+          "Failed to decode audio for pitch heatmap",
+          {
+            byteLength,
+            durationMs: elapsedMs(decodeStartedAt),
+            framesPerSecond,
+            errorMessage: getErrorMessage(error)
+          }
+        );
         await closeAudioContext(audioContext);
         throw new Error("Failed to generate pitch heatmap.", { cause: error });
       }
@@ -79,17 +88,22 @@ export function createBrowserPitchEnergyService({
 
       let engine: PitchEnergyEngine;
       const engineStartedAt = nowMs();
-      logger.trace("pitchHeatmap.engine.load.start", "Loading pitch analysis engine", {
-        byteLength,
-        audioDurationMs: Math.round(decodedAudio.duration * 1000),
-        sampleRate: decodedAudio.sampleRate,
-        channelCount: decodedAudio.numberOfChannels,
-        framesPerSecond
-      });
+      traceAudioLog(
+        logger,
+        "pitchHeatmap.engine.load.start",
+        "Loading pitch analysis engine",
+        {
+          byteLength,
+          audioDurationMs: Math.round(decodedAudio.duration * 1000),
+          sampleRate: decodedAudio.sampleRate,
+          channelCount: decodedAudio.numberOfChannels,
+          framesPerSecond
+        }
+      );
 
       try {
         engine = await loadEngine();
-        logger.trace("pitchHeatmap.engine.load.end", "Loaded pitch analysis engine", {
+        traceAudioLog(logger, "pitchHeatmap.engine.load.end", "Loaded pitch analysis engine", {
           byteLength,
           durationMs: elapsedMs(engineStartedAt),
           audioDurationMs: Math.round(decodedAudio.duration * 1000),
@@ -98,21 +112,26 @@ export function createBrowserPitchEnergyService({
           framesPerSecond
         });
       } catch (error) {
-        logger.trace("pitchHeatmap.engine.load.fail", "Failed to load pitch analysis engine", {
-          byteLength,
-          durationMs: elapsedMs(engineStartedAt),
-          audioDurationMs: Math.round(decodedAudio.duration * 1000),
-          sampleRate: decodedAudio.sampleRate,
-          channelCount: decodedAudio.numberOfChannels,
-          framesPerSecond,
-          errorMessage: getErrorMessage(error)
-        });
+        traceAudioLog(
+          logger,
+          "pitchHeatmap.engine.load.fail",
+          "Failed to load pitch analysis engine",
+          {
+            byteLength,
+            durationMs: elapsedMs(engineStartedAt),
+            audioDurationMs: Math.round(decodedAudio.duration * 1000),
+            sampleRate: decodedAudio.sampleRate,
+            channelCount: decodedAudio.numberOfChannels,
+            framesPerSecond,
+            errorMessage: getErrorMessage(error)
+          }
+        );
         throw new Error("Failed to load pitch analysis engine.", { cause: error });
       }
 
       const frameCount = Math.ceil(decodedAudio.duration * framesPerSecond);
       const overviewStartedAt = nowMs();
-      logger.trace("pitchHeatmap.overview.start", "Building pitch heatmap overview", {
+      traceAudioLog(logger, "pitchHeatmap.overview.start", "Building pitch heatmap overview", {
         byteLength,
         audioDurationMs: Math.round(decodedAudio.duration * 1000),
         sampleRate: decodedAudio.sampleRate,
@@ -127,7 +146,7 @@ export function createBrowserPitchEnergyService({
           onProgress(progress) {
             options.onProgress?.(progress);
             if (shouldLogProgress(progress.frameIndex, progress.frameCount)) {
-              logger.trace("pitchHeatmap.progress", "Analyzed pitch heatmap frame", {
+              traceAudioLog(logger, "pitchHeatmap.progress", "Analyzed pitch heatmap frame", {
                 frameIndex: progress.frameIndex,
                 frameCount: progress.frameCount,
                 percent: Math.round((progress.frameIndex / progress.frameCount) * 100)
@@ -135,7 +154,7 @@ export function createBrowserPitchEnergyService({
             }
           }
         });
-        logger.trace("pitchHeatmap.overview.end", "Built pitch heatmap overview", {
+        traceAudioLog(logger, "pitchHeatmap.overview.end", "Built pitch heatmap overview", {
           byteLength,
           durationMs: elapsedMs(overviewStartedAt),
           audioDurationMs: Math.round(decodedAudio.duration * 1000),
@@ -146,16 +165,21 @@ export function createBrowserPitchEnergyService({
         });
         return overview;
       } catch (error) {
-        logger.trace("pitchHeatmap.overview.fail", "Failed to build pitch heatmap overview", {
-          byteLength,
-          durationMs: elapsedMs(overviewStartedAt),
-          audioDurationMs: Math.round(decodedAudio.duration * 1000),
-          sampleRate: decodedAudio.sampleRate,
-          channelCount: decodedAudio.numberOfChannels,
-          framesPerSecond,
-          frameCount,
-          errorMessage: getErrorMessage(error)
-        });
+        traceAudioLog(
+          logger,
+          "pitchHeatmap.overview.fail",
+          "Failed to build pitch heatmap overview",
+          {
+            byteLength,
+            durationMs: elapsedMs(overviewStartedAt),
+            audioDurationMs: Math.round(decodedAudio.duration * 1000),
+            sampleRate: decodedAudio.sampleRate,
+            channelCount: decodedAudio.numberOfChannels,
+            framesPerSecond,
+            frameCount,
+            errorMessage: getErrorMessage(error)
+          }
+        );
         throw new Error("Failed to generate pitch heatmap.", { cause: error });
       }
     }
@@ -286,6 +310,19 @@ async function closeAudioContext(audioContext: AudioContext) {
 
 function shouldLogProgress(frameIndex: number, frameCount: number) {
   return frameIndex === 1 || frameIndex === frameCount || frameIndex % 24 === 0;
+}
+
+function traceAudioLog(
+  logger: RendererLogger,
+  event: string,
+  message: string,
+  details?: RendererLogDetails
+) {
+  try {
+    logger.trace(event, message, details);
+  } catch {
+    // Audio analysis logs are diagnostic only; ignore logger failures.
+  }
 }
 
 function nowMs() {

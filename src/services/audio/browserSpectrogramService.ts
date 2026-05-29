@@ -1,5 +1,9 @@
 import type { SpectrogramOverview } from "../../core/audio/types";
-import { rendererLogger, type RendererLogger } from "../logging/rendererLogger";
+import {
+  rendererLogger,
+  type RendererLogDetails,
+  type RendererLogger
+} from "../logging/rendererLogger";
 import {
   createSpectrogramOverviewFromBuffer,
   type SpectrogramBuildOptions
@@ -22,14 +26,14 @@ export function createBrowserSpectrogramService(
       let decodedAudio: AudioBuffer;
       const decodeStartedAt = nowMs();
 
-      logger.trace("spectrogram.decode.start", "Decoding audio for spectrogram", {
+      traceAudioLog(logger, "spectrogram.decode.start", "Decoding audio for spectrogram", {
         byteLength,
         framesPerSecond: options?.framesPerSecond
       });
 
       try {
         decodedAudio = await audioContext.decodeAudioData(audioData);
-        logger.trace("spectrogram.decode.end", "Decoded audio for spectrogram", {
+        traceAudioLog(logger, "spectrogram.decode.end", "Decoded audio for spectrogram", {
           byteLength,
           durationMs: elapsedMs(decodeStartedAt),
           audioDurationMs: Math.round(decodedAudio.duration * 1000),
@@ -38,19 +42,24 @@ export function createBrowserSpectrogramService(
           framesPerSecond: options?.framesPerSecond
         });
       } catch (error) {
-        logger.trace("spectrogram.decode.fail", "Failed to decode audio for spectrogram", {
-          byteLength,
-          durationMs: elapsedMs(decodeStartedAt),
-          framesPerSecond: options?.framesPerSecond,
-          errorMessage: getErrorMessage(error)
-        });
+        traceAudioLog(
+          logger,
+          "spectrogram.decode.fail",
+          "Failed to decode audio for spectrogram",
+          {
+            byteLength,
+            durationMs: elapsedMs(decodeStartedAt),
+            framesPerSecond: options?.framesPerSecond,
+            errorMessage: getErrorMessage(error)
+          }
+        );
         throw new Error("Failed to generate spectrogram.", { cause: error });
       } finally {
         await closeAudioContext(audioContext);
       }
 
       const overviewStartedAt = nowMs();
-      logger.trace("spectrogram.overview.start", "Building spectrogram overview", {
+      traceAudioLog(logger, "spectrogram.overview.start", "Building spectrogram overview", {
         byteLength,
         audioDurationMs: Math.round(decodedAudio.duration * 1000),
         sampleRate: decodedAudio.sampleRate,
@@ -60,7 +69,7 @@ export function createBrowserSpectrogramService(
 
       try {
         const overview = createSpectrogramOverviewFromBuffer(decodedAudio, options);
-        logger.trace("spectrogram.overview.end", "Built spectrogram overview", {
+        traceAudioLog(logger, "spectrogram.overview.end", "Built spectrogram overview", {
           byteLength,
           durationMs: elapsedMs(overviewStartedAt),
           audioDurationMs: Math.round(decodedAudio.duration * 1000),
@@ -71,15 +80,20 @@ export function createBrowserSpectrogramService(
         });
         return overview;
       } catch (error) {
-        logger.trace("spectrogram.overview.fail", "Failed to build spectrogram overview", {
-          byteLength,
-          durationMs: elapsedMs(overviewStartedAt),
-          audioDurationMs: Math.round(decodedAudio.duration * 1000),
-          sampleRate: decodedAudio.sampleRate,
-          channelCount: decodedAudio.numberOfChannels,
-          framesPerSecond: options?.framesPerSecond,
-          errorMessage: getErrorMessage(error)
-        });
+        traceAudioLog(
+          logger,
+          "spectrogram.overview.fail",
+          "Failed to build spectrogram overview",
+          {
+            byteLength,
+            durationMs: elapsedMs(overviewStartedAt),
+            audioDurationMs: Math.round(decodedAudio.duration * 1000),
+            sampleRate: decodedAudio.sampleRate,
+            channelCount: decodedAudio.numberOfChannels,
+            framesPerSecond: options?.framesPerSecond,
+            errorMessage: getErrorMessage(error)
+          }
+        );
         throw error;
       }
     }
@@ -91,6 +105,19 @@ async function closeAudioContext(audioContext: AudioContext) {
     await audioContext.close?.();
   } catch {
     // Ignore cleanup failures so they do not mask the primary result or error.
+  }
+}
+
+function traceAudioLog(
+  logger: RendererLogger,
+  event: string,
+  message: string,
+  details?: RendererLogDetails
+) {
+  try {
+    logger.trace(event, message, details);
+  } catch {
+    // Audio analysis logs are diagnostic only; ignore logger failures.
   }
 }
 
