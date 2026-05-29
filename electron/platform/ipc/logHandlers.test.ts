@@ -30,7 +30,42 @@ describe("log IPC handlers", () => {
     handler({}, entry);
 
     expect(logger.appendRendererEntry).toHaveBeenCalledOnce();
-    expect(logger.appendRendererEntry).toHaveBeenCalledWith(entry);
+    expect(logger.appendRendererEntry).toHaveBeenCalledWith({
+      ...entry,
+      level: "trace"
+    });
+    expect(logger.trace).not.toHaveBeenCalled();
+  });
+
+  it("sanitizes valid renderer log entries before appending them", () => {
+    const logger = createLogger();
+    const handler = getRegisteredHandler(logger);
+    const entry = {
+      area: "renderer",
+      level: "debug",
+      event: "project.open.start",
+      message: "Open project command started",
+      details: { projectLoaded: false },
+      timestamp: "x\nfake line",
+      extra: "spoofed"
+    };
+
+    handler({}, entry);
+
+    expect(logger.appendRendererEntry).toHaveBeenCalledOnce();
+    expect(logger.appendRendererEntry).toHaveBeenCalledWith({
+      area: "renderer",
+      level: "trace",
+      event: "project.open.start",
+      message: "Open project command started",
+      details: { projectLoaded: false }
+    });
+    expect(logger.appendRendererEntry).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        timestamp: expect.anything(),
+        extra: expect.anything()
+      })
+    );
     expect(logger.trace).not.toHaveBeenCalled();
   });
 
