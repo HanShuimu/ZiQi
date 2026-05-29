@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   createZiqiProjectPayload,
   isSerializableProject,
@@ -358,6 +358,9 @@ describe("projectFiles", () => {
   it("opens a project from a .ziqi file and reads project audio bytes", async () => {
     const sourceAudioPath = path.join(tempDir, "demo track.wav");
     await fs.writeFile(sourceAudioPath, Buffer.from([8, 7, 6, 5]));
+    const logger = {
+      trace: vi.fn()
+    };
     const saved = await saveNewProject({
       parentDirectoryPath: tempDir,
       project: {
@@ -369,7 +372,7 @@ describe("projectFiles", () => {
       }
     });
 
-    const opened = await openProjectFromFile(saved.projectFilePath);
+    const opened = await openProjectFromFile(saved.projectFilePath, { logger });
 
     expect(opened.project).toEqual(saved.project);
     expect(
@@ -382,6 +385,16 @@ describe("projectFiles", () => {
     expect(opened.projectFilePath).toBe(saved.projectFilePath);
     expect(opened.projectRootPath).toBe(saved.projectRootPath);
     expect(Buffer.from(opened.audioData)).toEqual(Buffer.from([8, 7, 6, 5]));
+    expect(logger.trace).toHaveBeenCalledWith(
+      "project.file.read.start",
+      "Reading project file",
+      { projectFilePath: saved.projectFilePath }
+    );
+    expect(logger.trace).toHaveBeenCalledWith(
+      "project.audio.read.end",
+      "Read project audio file",
+      expect.objectContaining({ byteLength: 4 })
+    );
   });
 
   it("opens old project files with default pitch heatmap display settings", async () => {

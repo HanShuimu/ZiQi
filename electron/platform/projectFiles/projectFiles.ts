@@ -50,6 +50,16 @@ export interface SaveExistingProjectOptions {
   projectRootPath: string;
 }
 
+export interface ProjectFileLogger {
+  trace(event: string, message: string, details?: ProjectFileLogDetails): void;
+}
+
+export interface ProjectFileOperationOptions {
+  logger?: ProjectFileLogger;
+}
+
+type ProjectFileLogDetails = Record<string, string | number | boolean | null | undefined>;
+
 export interface SaveProjectResult {
   project: SerializableProject;
   projectFilePath: string;
@@ -107,7 +117,7 @@ export function isSerializableProject(value: unknown): value is SerializableProj
 export async function saveNewProject({
   parentDirectoryPath,
   project
-}: SaveNewProjectOptions): Promise<SaveProjectResult> {
+}: SaveNewProjectOptions, operationOptions: ProjectFileOperationOptions = {}): Promise<SaveProjectResult> {
   const projectBaseName = sanitizeFileName(project.name || "Untitled Project");
   const projectRootPath = path.join(
     parentDirectoryPath,
@@ -123,6 +133,11 @@ export async function saveNewProject({
   let createdProjectRoot = false;
 
   try {
+    operationOptions.logger?.trace("project.saveNew.start", "Saving new project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath: copiedAudioPath
+    });
     await fs.mkdir(projectRootPath);
     createdProjectRoot = true;
     await fs.mkdir(audioDirectoryPath);
@@ -131,12 +146,24 @@ export async function saveNewProject({
     const savedProject = withSourceAudioPath(project, relativeAudioPath);
     await writeProjectFile(projectFilePath, savedProject);
 
-    return {
+    const result = {
       project: savedProject,
       projectFilePath,
       projectRootPath
     };
-  } catch {
+    operationOptions.logger?.trace("project.saveNew.end", "Saved new project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath: copiedAudioPath
+    });
+    return result;
+  } catch (error) {
+    operationOptions.logger?.trace("project.saveNew.fail", "Failed to save new project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath: copiedAudioPath,
+      errorMessage: getErrorMessage(error)
+    });
     if (createdProjectRoot) {
       await fs.rm(projectRootPath, { recursive: true, force: true });
     }
@@ -148,53 +175,106 @@ export async function saveExistingProject({
   project,
   projectFilePath,
   projectRootPath
-}: SaveExistingProjectOptions): Promise<SaveProjectResult> {
-  if (
-    !isProjectFilePathInRoot(projectFilePath, projectRootPath) ||
-    !isProjectRelativePath(project.sourceAudio.filePath)
-  ) {
-    throw new Error("Failed to save project.");
-  }
+}: SaveExistingProjectOptions, operationOptions: ProjectFileOperationOptions = {}): Promise<SaveProjectResult> {
+  const audioPath = project.sourceAudio.filePath;
 
   try {
+    operationOptions.logger?.trace("project.saveExisting.start", "Saving existing project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath
+    });
+    if (
+      !isProjectFilePathInRoot(projectFilePath, projectRootPath) ||
+      !isProjectRelativePath(project.sourceAudio.filePath)
+    ) {
+      throw new Error("Failed to save project.");
+    }
+
     await writeProjectFile(projectFilePath, project);
 
-    return {
+    const result = {
       project,
       projectFilePath,
       projectRootPath
     };
-  } catch {
+    operationOptions.logger?.trace("project.saveExisting.end", "Saved existing project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath
+    });
+    return result;
+  } catch (error) {
+    operationOptions.logger?.trace("project.saveExisting.fail", "Failed to save existing project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath,
+      errorMessage: getErrorMessage(error)
+    });
     throw new Error("Failed to save project.");
   }
 }
 
-export async function openProjectFromFile(projectFilePath: string): Promise<OpenProjectResult> {
+export async function openProjectFromFile(
+  projectFilePath: string,
+  operationOptions: ProjectFileOperationOptions = {}
+): Promise<OpenProjectResult> {
   const projectRootPath = path.dirname(projectFilePath);
   let payload: ZiqiProjectPayload;
 
   try {
-    payload = parseZiqiProjectPayload(await fs.readFile(projectFilePath, "utf8"));
-  } catch {
+    operationOptions.logger?.trace("project.file.read.start", "Reading project file", {
+      projectFilePath
+    });
+    const contents = await fs.readFile(projectFilePath, "utf8");
+    payload = parseZiqiProjectPayload(contents);
+    operationOptions.logger?.trace("project.file.read.end", "Read project file", {
+      projectFilePath
+    });
+  } catch (error) {
+    operationOptions.logger?.trace("project.file.read.fail", "Failed to read project file", {
+      projectFilePath,
+      errorMessage: getErrorMessage(error)
+    });
     throw new Error("Failed to open project.");
   }
 
   if (!isProjectRelativePath(payload.project.sourceAudio.filePath)) {
+    operationOptions.logger?.trace("project.audio.read.fail", "Failed to read project audio file", {
+      projectFilePath,
+      audioPath: payload.project.sourceAudio.filePath,
+      errorMessage: "Unsafe project audio path."
+    });
     throw new Error("Failed to load project audio.");
   }
 
   const audioPath = path.join(projectRootPath, ...payload.project.sourceAudio.filePath.split("/"));
 
   try {
+    operationOptions.logger?.trace("project.audio.read.start", "Reading project audio file", {
+      projectFilePath,
+      audioPath
+    });
     const audioFile = await fs.readFile(audioPath);
 
-    return {
+    const result = {
       project: normalizeSerializableProject(payload.project),
       projectFilePath,
       projectRootPath,
       audioData: toArrayBuffer(audioFile)
     };
-  } catch {
+    operationOptions.logger?.trace("project.audio.read.end", "Read project audio file", {
+      projectFilePath,
+      audioPath,
+      byteLength: audioFile.byteLength
+    });
+    return result;
+  } catch (error) {
+    operationOptions.logger?.trace("project.audio.read.fail", "Failed to read project audio file", {
+      projectFilePath,
+      audioPath,
+      errorMessage: getErrorMessage(error)
+    });
     throw new Error("Failed to load project audio.");
   }
 }
@@ -323,4 +403,8 @@ function isZiqiProjectPayload(value: unknown): value is ZiqiProjectPayload {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }

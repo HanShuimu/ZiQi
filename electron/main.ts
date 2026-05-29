@@ -89,9 +89,10 @@ app.whenReady().then(async () => {
     setCurrentUserSettings: (settings) => { currentUserSettings = settings; },
     installApplicationMenu
   });
-  registerAudioFileHandlers({ trustedImportedAudioPaths });
+  registerAudioFileHandlers({ trustedImportedAudioPaths, logger: appLogger });
   registerProjectFileHandlers({
     getCurrentProjectLocation: () => currentProjectLocation,
+    logger: appLogger,
     trustedImportedAudioPaths,
     updateCurrentProjectLocation
   });
