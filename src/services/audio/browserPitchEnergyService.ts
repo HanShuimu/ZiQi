@@ -27,6 +27,7 @@ interface BrowserPitchEnergyServiceDependencies {
 }
 
 const DEFAULT_FRAMES_PER_SECOND = 24;
+const SPECTRUM_CQ_FRAME_SIZE = 32_768;
 
 export function createBrowserPitchEnergyService({
   loadEngine = loadEssentiaPitchEnergyEngine
@@ -73,7 +74,7 @@ export function createPitchEnergyOverviewFromBuffer(
   const sampleCount = Math.max(0, Math.floor(buffer.duration * buffer.sampleRate));
   const monoSamples = mixToMono(buffer, sampleCount);
   const frameCount = Math.ceil(buffer.duration * options.framesPerSecond);
-  const samplesPerFrame = buffer.sampleRate / options.framesPerSecond;
+  const hopSamples = buffer.sampleRate / options.framesPerSecond;
 
   return {
     durationMs,
@@ -82,9 +83,8 @@ export function createPitchEnergyOverviewFromBuffer(
     maxMidiNumber: MAX_PITCH_MIDI_NUMBER,
     notesPerFrame: PITCH_HEATMAP_NOTE_COUNT,
     frames: Array.from({ length: frameCount }, (_, index) => {
-      const startSample = Math.floor(index * samplesPerFrame);
-      const endSample = Math.min(sampleCount, Math.floor((index + 1) * samplesPerFrame));
-      const frame = monoSamples.slice(startSample, Math.max(startSample + 1, endSample));
+      const centerSample = Math.round((index + 0.5) * hopSamples);
+      const frame = extractCenteredFrame(monoSamples, centerSample, SPECTRUM_CQ_FRAME_SIZE);
 
       return createPitchEnergyFrame({
         startMs: Math.round((index / options.framesPerSecond) * 1000),
@@ -95,12 +95,28 @@ export function createPitchEnergyOverviewFromBuffer(
   };
 }
 
-async function loadEssentiaPitchEnergyEngine(): Promise<PitchEnergyEngine> {
-  const [{ default: Essentia }, wasmModule] = await Promise.all([
-    import("essentia.js/dist/essentia.js-core.es.js"),
-    import("essentia.js/dist/essentia-wasm.es.js")
-  ]);
-  const essentia = new Essentia(wasmModule.default ?? wasmModule);
+function extractCenteredFrame(samples: Float32Array, centerSample: number, frameSize: number) {
+  const frame = new Float32Array(frameSize);
+  const sourceStart = centerSample - Math.floor(frameSize / 2);
+
+  for (let frameIndex = 0; frameIndex < frameSize; frameIndex += 1) {
+    const sourceIndex = sourceStart + frameIndex;
+    if (sourceIndex >= 0 && sourceIndex < samples.length) {
+      frame[frameIndex] = samples[sourceIndex];
+    }
+  }
+
+  return frame;
+}
+
+export async function loadEssentiaPitchEnergyEngine(): Promise<PitchEnergyEngine> {
+  const essentiaModule = await import("essentia.js");
+  const essentiaPackage = essentiaModule.default ?? essentiaModule;
+  const Essentia = essentiaPackage.Essentia ?? essentiaModule.Essentia;
+  const EssentiaWASM = unwrapEssentiaWASM(
+    essentiaPackage.EssentiaWASM ?? essentiaModule.EssentiaWASM
+  );
+  const essentia = new Essentia(EssentiaWASM);
 
   return {
     analyzeFrame(frame, sampleRate) {
@@ -121,6 +137,26 @@ async function loadEssentiaPitchEnergyEngine(): Promise<PitchEnergyEngine> {
       return Array.from(essentia.vectorToArray(result.spectrumCQ));
     }
   };
+}
+
+function unwrapEssentiaWASM(value: unknown) {
+  if (isEssentiaWASM(value)) {
+    return value;
+  }
+
+  if (isRecord(value) && isEssentiaWASM(value.EssentiaWASM)) {
+    return value.EssentiaWASM;
+  }
+
+  return value;
+}
+
+function isEssentiaWASM(value: unknown): value is { EssentiaJS: unknown } {
+  return isRecord(value) && typeof value.EssentiaJS === "function";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function mixToMono(buffer: AudioBuffer, sampleCount: number) {

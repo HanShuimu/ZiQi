@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createBrowserPitchEnergyService,
+  loadEssentiaPitchEnergyEngine,
   type PitchEnergyEngine
 } from "./browserPitchEnergyService";
 
@@ -49,6 +50,7 @@ describe("createBrowserPitchEnergyService", () => {
     expect(overview.frames).toHaveLength(4);
     expect(overview.frames[0].energies).toHaveLength(88);
     expect(analyzeFrame).toHaveBeenCalledWith(expect.any(Float32Array), 44_100);
+    expect(analyzeFrame.mock.calls[0][0]).toHaveLength(32_768);
   });
 
   it("throws a stable error when decoding fails", async () => {
@@ -93,5 +95,15 @@ describe("createBrowserPitchEnergyService", () => {
     await expect(service.buildOverviewFromAudioData(new ArrayBuffer(8))).rejects.toThrow(
       "Failed to load pitch analysis engine."
     );
+  });
+
+  it("loads the packaged Essentia engine", async () => {
+    const engine = await loadEssentiaPitchEnergyEngine();
+    const frame = new Float32Array(32_768);
+    for (let index = 0; index < frame.length; index += 1) {
+      frame[index] = Math.sin((2 * Math.PI * 440 * index) / 44_100);
+    }
+
+    expect(engine.analyzeFrame(frame, 44_100)).toHaveLength(88);
   });
 });
