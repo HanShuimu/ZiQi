@@ -9,6 +9,8 @@ import { registerAppInfoHandlers } from "./platform/ipc/appInfoHandlers.js";
 import { registerSettingsHandlers } from "./platform/ipc/settingsHandlers.js";
 import { registerAudioFileHandlers } from "./platform/ipc/audioFileHandlers.js";
 import { registerProjectFileHandlers } from "./platform/ipc/projectFileHandlers.js";
+import { registerLogHandlers } from "./platform/ipc/logHandlers.js";
+import { createAppLogger, type AppLogger } from "./platform/logging/appLogger.js";
 
 protocol.registerSchemesAsPrivileged([
   { scheme: "ziqi", privileges: { standard: true, secure: true, supportFetchAPI: true } }
@@ -23,6 +25,7 @@ let currentProjectLocation: { projectFilePath: string; projectRootPath: string }
 const trustedImportedAudioPaths = new Set<string>();
 let currentUserSettings: UserSettings = { uiSkin: "default" };
 let userSettingsStore: ReturnType<typeof createUserSettingsStore> | null = null;
+let appLogger: AppLogger | null = null;
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -66,6 +69,15 @@ function updateCurrentProjectLocation(location: { projectFilePath: string; proje
 }
 
 app.whenReady().then(async () => {
+  const programRootPath = path.resolve(__dirname, "..");
+  appLogger = await createAppLogger({ programRootPath });
+  appLogger.trace("app.start", "ZiQi startup began", {
+    programRootPath,
+    rendererDevUrl: rendererDevUrl ?? null
+  });
+  registerLogHandlers(appLogger);
+  appLogger.trace("ipc.log.registered", "Registered renderer log IPC handler");
+
   userSettingsStore = createUserSettingsStore(app.getPath("userData"));
   currentUserSettings = await userSettingsStore.read();
 
@@ -86,6 +98,7 @@ app.whenReady().then(async () => {
 
   installApplicationMenu();
   createWindow();
+  appLogger.trace("app.ready", "ZiQi startup completed");
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

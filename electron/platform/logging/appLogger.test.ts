@@ -85,6 +85,30 @@ describe("app logger", () => {
     );
   });
 
+  it("appends renderer entries to the same log file", async () => {
+    const consoleSink = {
+      trace: vi.fn(),
+      warn: vi.fn()
+    };
+    const logger = await createAppLogger({
+      programRootPath: tempDir,
+      now: () => new Date("2026-05-29T13:03:05.123Z"),
+      consoleSink
+    });
+
+    logger.appendRendererEntry({
+      area: "renderer",
+      level: "trace",
+      event: "project.open.start",
+      message: "Open project command started",
+      details: { projectLoaded: false }
+    });
+
+    const logContents = await fs.readFile(logger.logFilePath, "utf8");
+    expect(logContents).toContain("[renderer] TRACE project.open.start");
+    expect(logContents).toContain("projectLoaded=false");
+  });
+
   it("keeps console logging when file initialization fails", async () => {
     const programRootPath = path.join(tempDir, "program-root-file");
     await fs.writeFile(programRootPath, "not a directory", "utf8");
