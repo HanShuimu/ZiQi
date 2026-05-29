@@ -19,6 +19,7 @@ import { createProjectCommands } from "../commands/projectCommands";
 import { createSkinCommands } from "../commands/skinCommands";
 import type { SkinId } from "../../core/userSettings/types";
 import { DEFAULT_USER_SETTINGS } from "../../core/userSettings/types";
+import { rendererLogger } from "../../services/logging/rendererLogger";
 import { createBrowserProjectAudioFacade } from "../../services/projectAudio/browserProjectAudioFacade";
 import { AppSessionContext } from "./AppSessionContext";
 import type { AppSessionValue, ProjectLocation } from "./types";
@@ -99,6 +100,7 @@ export function AppSessionProvider({
         waveformService: activeWaveformService,
         spectrogramService: activeSpectrogramService,
         pitchEnergyService: activePitchEnergyService,
+        logger: rendererLogger,
         setProject,
         setProjectLocation,
         setWaveformOverview,

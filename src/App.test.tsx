@@ -65,6 +65,7 @@ describe("App local audio import", () => {
       value: {
         activateOpenedProject: vi.fn().mockResolvedValue(undefined),
         getVersion: vi.fn().mockResolvedValue("test-version"),
+        log: vi.fn(),
         openProject: vi.fn().mockResolvedValue(null),
         saveProject: vi.fn().mockResolvedValue(null),
         selectAudioFile: vi.fn().mockResolvedValue({
@@ -1155,6 +1156,46 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });
+  });
+
+  it("logs ordered stages when opening a project", async () => {
+    const openedAudioData = new ArrayBuffer(8);
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: openedAudioData,
+      project: createProjectSummary("audio/demo track.wav"),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+
+    renderApp({ waveformService });
+
+    menuCommandListener?.("open-project");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.open.start",
+      message: "Open project command started"
+    }));
+    expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.open.pitchHeatmap.end",
+      message: "Built project pitch heatmap overview"
+    }));
+    expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.open.end",
+      message: "Open project command completed"
+    }));
+    const loggedEvents = window.ziqiApp.log.mock.calls.map(([entry]) => entry.event);
+    expect(loggedEvents.indexOf("project.open.start")).toBeLessThan(
+      loggedEvents.indexOf("project.open.pitchHeatmap.end")
+    );
+    expect(loggedEvents.indexOf("project.open.pitchHeatmap.end")).toBeLessThan(
+      loggedEvents.indexOf("project.open.end")
+    );
   });
 
   it("saves focused workspace changes after playback rate updates", async () => {

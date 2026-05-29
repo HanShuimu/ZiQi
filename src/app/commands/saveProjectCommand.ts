@@ -3,6 +3,7 @@ import type { ProjectCommandDependencies } from "./projectCommandTypes";
 export function createSaveProjectCommand({
   project,
   projectLocation,
+  logger,
   setProject,
   setProjectLocation,
   setIsSavingProject,
@@ -10,18 +11,29 @@ export function createSaveProjectCommand({
 }: ProjectCommandDependencies) {
   return async function saveProject() {
     if (!project) {
+      logger.trace("project.save.skipNoProject", "Save project skipped because no project is loaded");
       return;
     }
 
+    const commandStart = performance.now();
+    logger.trace("project.save.start", "Save project command started", {
+      hasProjectLocation: projectLocation !== null
+    });
     setIsSavingProject(true);
     setImportError(null);
 
     try {
+      const nativeStart = performance.now();
       const savedProject = await window.ziqiApp.saveProject({
         project,
         ...(projectLocation ?? {})
       });
+      logger.trace("project.save.native.end", "Native save project completed", {
+        durationMs: performance.now() - nativeStart,
+        canceled: savedProject === null
+      });
       if (!savedProject) {
+        logger.trace("project.save.cancel", "Save project command canceled");
         return;
       }
 
@@ -30,10 +42,21 @@ export function createSaveProjectCommand({
         projectFilePath: savedProject.projectFilePath,
         projectRootPath: savedProject.projectRootPath
       });
+      logger.trace("project.save.stateCommitted", "Committed saved project state", {
+        projectName: savedProject.project.name,
+        projectFilePath: savedProject.projectFilePath,
+        projectRootPath: savedProject.projectRootPath
+      });
     } catch (error) {
+      logger.trace("project.save.fail", "Save project command failed", {
+        errorMessage: error instanceof Error ? error.message : String(error)
+      });
       setImportError(error instanceof Error ? error.message : "Failed to save project.");
     } finally {
       setIsSavingProject(false);
+      logger.trace("project.save.end", "Save project command completed", {
+        durationMs: performance.now() - commandStart
+      });
     }
   };
 }
