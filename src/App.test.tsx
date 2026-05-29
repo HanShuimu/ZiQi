@@ -998,13 +998,14 @@ describe("App local audio import", () => {
     };
     renderApp({ waveformService });
 
-    menuCommandListener?.("open-project");
+    expect(firstMenuCommandListener).toBeTruthy();
+    firstMenuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
-    menuCommandListener?.("open-project");
+    firstMenuCommandListener?.("open-project");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to open project.")).toBeTruthy();
@@ -1012,6 +1013,12 @@ describe("App local audio import", () => {
     expect(screen.getByText("demo track")).toBeTruthy();
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
+    expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.open.start",
+      details: expect.objectContaining({
+        hadExistingProject: true
+      })
+    }));
 
     menuCommandListener?.("save-project");
     await waitFor(() => {

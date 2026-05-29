@@ -20,15 +20,13 @@ export function useMenuCommands({
     saveProject,
     changeSkin
   });
-
-  useEffect(() => {
-    commandsRef.current = {
-      importAudio,
-      openProject,
-      saveProject,
-      changeSkin
-    };
-  }, [changeSkin, importAudio, openProject, saveProject]);
+  // eslint-disable-next-line react-hooks/refs -- Native menu events can fire before passive effects run.
+  commandsRef.current = {
+    importAudio,
+    openProject,
+    saveProject,
+    changeSkin
+  };
 
   const ziqiApp = window.ziqiApp;
 
