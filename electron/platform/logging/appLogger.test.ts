@@ -1,4 +1,5 @@
 import fs from "node:fs/promises";
+import syncFs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -11,6 +12,7 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  vi.restoreAllMocks();
   await fs.rm(tempDir, { recursive: true, force: true });
 });
 
@@ -39,6 +41,25 @@ describe("app logger", () => {
       })
     ).toBe(
       '2026-05-29T21:03:05.123+08:00 [renderer] TRACE pitch.sample name="lead \\"vocal\\"" count=2 enabled=true empty=null "quoted \\"message\\""'
+    );
+  });
+
+  it("sanitizes event and detail keys in log lines", () => {
+    expect(
+      formatLogLine({
+        timestamp: "2026-05-29T21:03:05.123+08:00",
+        area: "renderer",
+        level: "trace",
+        event: "bad event\nnext=token",
+        message: "Renderer message",
+        details: {
+          "bad key": "space",
+          "equals=key": "equals",
+          "line\nkey": "line"
+        }
+      })
+    ).toBe(
+      '2026-05-29T21:03:05.123+08:00 [renderer] TRACE bad_event_next_token bad_key="space" equals_key="equals" line_key="line" "Renderer message"'
     );
   });
 
@@ -81,5 +102,29 @@ describe("app logger", () => {
 
     expect(consoleSink.warn).toHaveBeenCalledOnce();
     expect(consoleSink.trace).toHaveBeenCalledOnce();
+  });
+
+  it("disables file output after an append failure while keeping console logging", async () => {
+    const consoleSink = {
+      trace: vi.fn(),
+      warn: vi.fn()
+    };
+    const logger = await createAppLogger({
+      programRootPath: tempDir,
+      now: () => new Date("2026-05-29T13:03:05.123Z"),
+      consoleSink
+    });
+    const appendFile = vi
+      .spyOn(syncFs, "appendFileSync")
+      .mockImplementationOnce(() => {
+        throw new Error("disk full");
+      });
+
+    logger.trace("first.append", "First append");
+    logger.trace("second.append", "Second append");
+
+    expect(consoleSink.warn).toHaveBeenCalledOnce();
+    expect(consoleSink.trace).toHaveBeenCalledTimes(2);
+    expect(appendFile).toHaveBeenCalledOnce();
   });
 });

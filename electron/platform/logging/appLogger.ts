@@ -89,7 +89,7 @@ export function formatLogLine(entry: LogEntry): string {
   const level = entry.level ?? "trace";
   const detailsPart = formatDetailsPart(entry.details);
 
-  return `${timestamp} [${entry.area}] ${level.toUpperCase()} ${entry.event}${detailsPart} ${JSON.stringify(entry.message)}`;
+  return `${timestamp} [${entry.area}] ${level.toUpperCase()} ${sanitizeToken(entry.event)}${detailsPart} ${JSON.stringify(entry.message)}`;
 }
 
 function formatDetailsPart(details: LogDetails | undefined): string {
@@ -98,8 +98,9 @@ function formatDetailsPart(details: LogDetails | undefined): string {
   }
 
   const serializedDetails = Object.entries(details)
-    .filter(([, value]) => value !== undefined)
-    .map(([key, value]) => `${key}=${formatDetailValue(value)}`);
+    .flatMap(([key, value]) =>
+      value === undefined ? [] : [`${sanitizeToken(key)}=${formatDetailValue(value)}`]
+    );
 
   return serializedDetails.length > 0 ? ` ${serializedDetails.join(" ")}` : "";
 }
@@ -131,6 +132,10 @@ function formatTimestamp(date: Date): string {
 
 function padDatePart(value: number): string {
   return String(value).padStart(2, "0");
+}
+
+function sanitizeToken(value: string): string {
+  return value.replace(/[^A-Za-z0-9._-]/g, "_");
 }
 
 function getErrorMessage(error: unknown): string {
