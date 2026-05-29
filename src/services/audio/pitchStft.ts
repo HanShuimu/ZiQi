@@ -47,12 +47,18 @@ interface NoteBinWeights {
   bins: WeightedBin[];
 }
 
+interface FftTwiddleTable {
+  cos: Float32Array;
+  sin: Float32Array;
+}
+
 interface PitchPlanWorkspace {
   plan: PitchResolutionPlan;
   real: Float32Array;
   imaginary: Float32Array;
   magnitudes: Float32Array;
   window: Float32Array;
+  twiddles: FftTwiddleTable;
 }
 
 const RESOLUTION_DOWNSAMPLE_FACTORS = [16, 8, 4, 2, 1] as const;
@@ -215,7 +221,8 @@ function createPitchPlanWorkspace(plan: PitchResolutionPlan): PitchPlanWorkspace
     real: new Float32Array(plan.fftSize),
     imaginary: new Float32Array(plan.fftSize),
     magnitudes: new Float32Array(Math.floor(plan.fftSize / 2)),
-    window: createHannWindow(plan.fftSize)
+    window: createHannWindow(plan.fftSize),
+    twiddles: createFftTwiddleTable(plan.fftSize)
   };
 }
 
@@ -224,7 +231,7 @@ function calculateWindowSpectrum(
   centerSample: number,
   workspace: PitchPlanWorkspace
 ) {
-  const { plan, real, imaginary, magnitudes, window } = workspace;
+  const { plan, real, imaginary, magnitudes, window, twiddles } = workspace;
   const windowStart = centerSample - Math.floor(plan.effectiveWindowSamples / 2);
 
   for (let index = 0; index < plan.fftSize; index += 1) {
@@ -234,7 +241,7 @@ function calculateWindowSpectrum(
     imaginary[index] = 0;
   }
 
-  fft(real, imaginary);
+  fft(real, imaginary, twiddles);
 
   for (let index = 0; index < magnitudes.length; index += 1) {
     magnitudes[index] = Math.hypot(real[index], imaginary[index]);
@@ -334,7 +341,21 @@ function createHannWindow(length: number) {
   return window;
 }
 
-function fft(real: Float32Array, imaginary: Float32Array) {
+function createFftTwiddleTable(length: number): FftTwiddleTable {
+  const halfLength = Math.floor(length / 2);
+  const cos = new Float32Array(halfLength);
+  const sin = new Float32Array(halfLength);
+
+  for (let index = 0; index < halfLength; index += 1) {
+    const phase = (-2 * Math.PI * index) / length;
+    cos[index] = Math.cos(phase);
+    sin[index] = Math.sin(phase);
+  }
+
+  return { cos, sin };
+}
+
+function fft(real: Float32Array, imaginary: Float32Array, twiddles: FftTwiddleTable) {
   const length = real.length;
   let j = 0;
 
@@ -353,13 +374,13 @@ function fft(real: Float32Array, imaginary: Float32Array) {
 
   for (let size = 2; size <= length; size <<= 1) {
     const halfSize = size >> 1;
-    const phaseStep = (-2 * Math.PI) / size;
+    const twiddleStep = length / size;
 
     for (let start = 0; start < length; start += size) {
       for (let offset = 0; offset < halfSize; offset += 1) {
-        const phase = phaseStep * offset;
-        const cos = Math.cos(phase);
-        const sin = Math.sin(phase);
+        const twiddleIndex = offset * twiddleStep;
+        const cos = twiddles.cos[twiddleIndex];
+        const sin = twiddles.sin[twiddleIndex];
         const evenIndex = start + offset;
         const oddIndex = evenIndex + halfSize;
         const oddReal = real[oddIndex] * cos - imaginary[oddIndex] * sin;
