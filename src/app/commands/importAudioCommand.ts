@@ -19,6 +19,7 @@ export function createImportAudioCommand({
 }: ProjectCommandDependencies) {
   return async function importAudio() {
     const commandStart = performance.now();
+    let outcome: "success" | "canceled" | "failed" = "failed";
     logger.trace("audio.import.start", "Import audio command started");
     setIsImporting(true);
     setImportError(null);
@@ -31,6 +32,7 @@ export function createImportAudioCommand({
         canceled: selectedFile === null
       });
       if (!selectedFile) {
+        outcome = "canceled";
         return;
       }
 
@@ -95,19 +97,24 @@ export function createImportAudioCommand({
         logger.trace("audio.import.stateCommitted", "Committed imported audio project state", {
           projectName: importedProject.name
         });
+        outcome = "success";
       } catch (error) {
         URL.revokeObjectURL(nextPlaybackUrl);
         throw error;
       }
     } catch (error) {
+      if (outcome !== "failed") {
+        outcome = "failed";
+      }
       logger.trace("audio.import.fail", "Import audio command failed", {
         errorMessage: error instanceof Error ? error.message : String(error)
       });
       setImportError(error instanceof Error ? error.message : "Failed to import audio.");
     } finally {
       setIsImporting(false);
-      logger.trace("audio.import.end", "Import audio command completed", {
-        durationMs: performance.now() - commandStart
+      logger.trace("audio.import.end", "Import audio command finished", {
+        durationMs: performance.now() - commandStart,
+        outcome
       });
     }
   };

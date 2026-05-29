@@ -1187,7 +1187,10 @@ describe("App local audio import", () => {
     }));
     expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
       event: "project.open.end",
-      message: "Open project command completed"
+      message: "Open project command finished",
+      details: expect.objectContaining({
+        outcome: "success"
+      })
     }));
     const loggedEvents = window.ziqiApp.log.mock.calls.map(([entry]) => entry.event);
     expect(loggedEvents.indexOf("project.open.start")).toBeLessThan(

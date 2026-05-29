@@ -20,6 +20,7 @@ export function createOpenProjectCommand({
 }: ProjectCommandDependencies) {
   return async function openProject() {
     const commandStart = performance.now();
+    let outcome: "success" | "canceled" | "failed" = "failed";
     logger.trace("project.open.start", "Open project command started", {
       hadExistingProject: project !== null
     });
@@ -34,6 +35,7 @@ export function createOpenProjectCommand({
         canceled: openedProject === null
       });
       if (!openedProject) {
+        outcome = "canceled";
         return;
       }
 
@@ -118,6 +120,7 @@ export function createOpenProjectCommand({
         logger.trace("project.open.stateCommitted", "Committed opened project state", {
           projectName: normalizedProject.name
         });
+        outcome = "success";
       } catch (error) {
         URL.revokeObjectURL(nextPlaybackUrl);
         try {
@@ -143,14 +146,18 @@ export function createOpenProjectCommand({
         throw error;
       }
     } catch (error) {
+      if (outcome !== "failed") {
+        outcome = "failed";
+      }
       logger.trace("project.open.fail", "Open project command failed", {
         errorMessage: error instanceof Error ? error.message : String(error)
       });
       setImportError(error instanceof Error ? error.message : "Failed to open project.");
     } finally {
       setIsOpeningProject(false);
-      logger.trace("project.open.end", "Open project command completed", {
-        durationMs: performance.now() - commandStart
+      logger.trace("project.open.end", "Open project command finished", {
+        durationMs: performance.now() - commandStart,
+        outcome
       });
     }
   };
