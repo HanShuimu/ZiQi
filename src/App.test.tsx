@@ -40,20 +40,22 @@ class FakeAudioElement {
   load() {}
 }
 
-let menuCommandListener:
-  | ((
-      command:
-        | "open-project"
-        | "save-project"
-        | "import-audio"
-        | "set-skin-default"
-        | "set-skin-animal-island"
-    ) => void)
-  | null;
+type MenuCommandListener = (
+  command:
+    | "open-project"
+    | "save-project"
+    | "import-audio"
+    | "set-skin-default"
+    | "set-skin-animal-island"
+) => void;
+
+let menuCommandListener: MenuCommandListener | null;
+let firstMenuCommandListener: MenuCommandListener | null;
 
 describe("App local audio import", () => {
   beforeEach(() => {
     menuCommandListener = null;
+    firstMenuCommandListener = null;
     FakeAudioElement.instances = [];
     FakeAudioElement.currentTimeWrites = 0;
     FakeAudioElement.throwOnCurrentTimeWrite = null;
@@ -73,6 +75,7 @@ describe("App local audio import", () => {
           filePath: "D:\\Music Library\\demo track.wav"
         }),
         onMenuCommand: vi.fn((listener) => {
+          firstMenuCommandListener ??= listener;
           menuCommandListener = listener;
           return () => {
             if (menuCommandListener === listener) {
@@ -1156,6 +1159,42 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
     });
+  });
+
+  it("saves imported projects through the initial native menu listener", async () => {
+    const audioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    window.ziqiApp.saveProject = vi.fn().mockResolvedValue(null);
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+
+    renderApp({ waveformService });
+
+    expect(firstMenuCommandListener).toBeTruthy();
+    firstMenuCommandListener?.("import-audio");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    firstMenuCommandListener?.("save-project");
+
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
+    });
+    expect(window.ziqiApp.saveProject).toHaveBeenCalledWith({
+      project: expect.objectContaining({
+        sourceAudio: expect.objectContaining({
+          filePath: "D:\\Music Library\\demo track.wav"
+        })
+      })
+    });
+    expect(window.ziqiApp.log).not.toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.save.skipNoProject"
+    }));
   });
 
   it("logs ordered stages when opening a project", async () => {
