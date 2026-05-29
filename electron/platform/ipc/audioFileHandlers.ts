@@ -48,7 +48,7 @@ export function registerAudioFileHandlers(dependencies: AudioFileHandlerDependen
         filePath,
         errorMessage: getErrorMessage(error)
       });
-      throw new Error("Failed to load audio file.");
+      throw new Error("Failed to load audio file.", { cause: error });
     }
   });
 }

@@ -167,7 +167,7 @@ export async function saveNewProject({
     if (createdProjectRoot) {
       await fs.rm(projectRootPath, { recursive: true, force: true });
     }
-    throw new Error("Failed to save project.");
+    throw new Error("Failed to save project.", { cause: error });
   }
 }
 
@@ -211,7 +211,7 @@ export async function saveExistingProject({
       audioPath,
       errorMessage: getErrorMessage(error)
     });
-    throw new Error("Failed to save project.");
+    throw new Error("Failed to save project.", { cause: error });
   }
 }
 
@@ -236,7 +236,7 @@ export async function openProjectFromFile(
       projectFilePath,
       errorMessage: getErrorMessage(error)
     });
-    throw new Error("Failed to open project.");
+    throw new Error("Failed to open project.", { cause: error });
   }
 
   if (!isProjectRelativePath(payload.project.sourceAudio.filePath)) {
@@ -275,7 +275,7 @@ export async function openProjectFromFile(
       audioPath,
       errorMessage: getErrorMessage(error)
     });
-    throw new Error("Failed to load project audio.");
+    throw new Error("Failed to load project audio.", { cause: error });
   }
 }
 
