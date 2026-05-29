@@ -1,9 +1,18 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  createBrowserPitchEnergyService,
-  loadEssentiaPitchEnergyEngine,
-  type PitchEnergyEngine
-} from "./browserPitchEnergyService";
+import type { PitchEnergyOverview } from "../../core/audio/types";
+import { createBrowserPitchEnergyService } from "./browserPitchEnergyService";
+
+type DecodedAudioBuffer = {
+  duration: number;
+  numberOfChannels: number;
+  sampleRate: number;
+  getChannelData(channel: number): Float32Array;
+};
+
+type BuildOverviewOptions = {
+  framesPerSecond: number;
+  onProgress?: (progress: { frameIndex: number; frameCount: number }) => void;
+};
 
 class FakeAudioBuffer {
   readonly duration = 1;
@@ -15,17 +24,30 @@ class FakeAudioBuffer {
   }
 }
 
+function createOverview(framesPerSecond: number): PitchEnergyOverview {
+  return {
+    durationMs: 1000,
+    framesPerSecond,
+    minMidiNumber: 21,
+    maxMidiNumber: 108,
+    notesPerFrame: 88,
+    frames: []
+  };
+}
+
 describe("createBrowserPitchEnergyService", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     Reflect.deleteProperty(globalThis, "AudioContext");
   });
 
-  it("decodes audio data and builds 88-key pitch frames", async () => {
+  it("builds pitch heatmaps at 100 frames per second by default", async () => {
     const close = vi.fn().mockResolvedValue(undefined);
-    const decodeAudioData = vi.fn().mockResolvedValue(new FakeAudioBuffer());
-    const analyzeFrame = vi.fn<PitchEnergyEngine["analyzeFrame"]>(() =>
-      Array.from({ length: 88 }, (_, index) => index)
+    const decodedAudio = new FakeAudioBuffer();
+    const decodeAudioData = vi.fn().mockResolvedValue(decodedAudio);
+    const buildOverviewFromBuffer = vi.fn(
+      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions) =>
+        createOverview(options.framesPerSecond)
     );
 
     Object.defineProperty(globalThis, "AudioContext", {
@@ -35,28 +57,57 @@ describe("createBrowserPitchEnergyService", () => {
       })
     });
 
-    const service = createBrowserPitchEnergyService({
-      loadEngine: async () => ({ analyzeFrame })
-    });
-    const overview = await service.buildOverviewFromAudioData(new ArrayBuffer(8), {
-      framesPerSecond: 4
-    });
+    const service = createBrowserPitchEnergyService({ buildOverviewFromBuffer });
+    const overview = await service.buildOverviewFromAudioData(new ArrayBuffer(8));
 
     expect(decodeAudioData).toHaveBeenCalledOnce();
     expect(close).toHaveBeenCalledOnce();
-    expect(overview.minMidiNumber).toBe(21);
-    expect(overview.maxMidiNumber).toBe(108);
-    expect(overview.notesPerFrame).toBe(88);
-    expect(overview.frames).toHaveLength(4);
-    expect(overview.frames[0].energies).toHaveLength(88);
-    expect(analyzeFrame).toHaveBeenCalledWith(expect.any(Float32Array), 44_100);
-    expect(analyzeFrame.mock.calls[0][0]).toHaveLength(32_768);
+    expect(buildOverviewFromBuffer).toHaveBeenCalledWith(
+      decodedAudio,
+      expect.objectContaining({ framesPerSecond: 100 })
+    );
+    expect(overview.framesPerSecond).toBe(100);
+  });
+
+  it("uses an explicit frames-per-second override", async () => {
+    const close = vi.fn().mockResolvedValue(undefined);
+    const decodedAudio = new FakeAudioBuffer();
+    const decodeAudioData = vi.fn().mockResolvedValue(decodedAudio);
+    const buildOverviewFromBuffer = vi.fn(
+      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions) =>
+        createOverview(options.framesPerSecond)
+    );
+
+    Object.defineProperty(globalThis, "AudioContext", {
+      configurable: true,
+      value: vi.fn(function () {
+        return { close, decodeAudioData };
+      })
+    });
+
+    const service = createBrowserPitchEnergyService({ buildOverviewFromBuffer });
+    const overview = await service.buildOverviewFromAudioData(new ArrayBuffer(8), {
+      framesPerSecond: 30
+    });
+
+    expect(buildOverviewFromBuffer).toHaveBeenCalledWith(
+      decodedAudio,
+      expect.objectContaining({ framesPerSecond: 30 })
+    );
+    expect(overview.framesPerSecond).toBe(30);
   });
 
   it("logs pitch heatmap progress while analyzing frames", async () => {
     const close = vi.fn().mockResolvedValue(undefined);
-    const decodeAudioData = vi.fn().mockResolvedValue(new FakeAudioBuffer());
-    const analyzeFrame = vi.fn<PitchEnergyEngine["analyzeFrame"]>(() => new Array(88).fill(0));
+    const decodedAudio = new FakeAudioBuffer();
+    const decodeAudioData = vi.fn().mockResolvedValue(decodedAudio);
+    const buildOverviewFromBuffer = vi.fn(
+      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions) => {
+        options.onProgress?.({ frameIndex: 1, frameCount: 4 });
+        options.onProgress?.({ frameIndex: 4, frameCount: 4 });
+        return createOverview(options.framesPerSecond);
+      }
+    );
     const logger = { trace: vi.fn() };
 
     Object.defineProperty(globalThis, "AudioContext", {
@@ -67,7 +118,7 @@ describe("createBrowserPitchEnergyService", () => {
     });
 
     const service = createBrowserPitchEnergyService({
-      loadEngine: async () => ({ analyzeFrame }),
+      buildOverviewFromBuffer,
       logger
     });
 
@@ -75,6 +126,11 @@ describe("createBrowserPitchEnergyService", () => {
       framesPerSecond: 4
     });
 
+    expect(logger.trace).toHaveBeenCalledWith(
+      "pitchHeatmap.overview.start",
+      "Building pitch heatmap overview",
+      expect.objectContaining({ analysisEngine: "multiresolution-stft" })
+    );
     expect(logger.trace).toHaveBeenCalledWith(
       "pitchHeatmap.progress",
       "Analyzed pitch heatmap frame",
@@ -89,8 +145,12 @@ describe("createBrowserPitchEnergyService", () => {
 
   it("continues analysis and closes the audio context when logging fails", async () => {
     const close = vi.fn().mockResolvedValue(undefined);
-    const decodeAudioData = vi.fn().mockResolvedValue(new FakeAudioBuffer());
-    const analyzeFrame = vi.fn<PitchEnergyEngine["analyzeFrame"]>(() => new Array(88).fill(0));
+    const decodedAudio = new FakeAudioBuffer();
+    const decodeAudioData = vi.fn().mockResolvedValue(decodedAudio);
+    const buildOverviewFromBuffer = vi.fn(
+      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions) =>
+        createOverview(options.framesPerSecond)
+    );
     const logger = {
       trace: vi.fn(() => {
         throw new Error("logger failed");
@@ -105,7 +165,7 @@ describe("createBrowserPitchEnergyService", () => {
     });
 
     const service = createBrowserPitchEnergyService({
-      loadEngine: async () => ({ analyzeFrame }),
+      buildOverviewFromBuffer,
       logger
     });
 
@@ -113,12 +173,14 @@ describe("createBrowserPitchEnergyService", () => {
       framesPerSecond: 4
     });
 
-    expect(overview.frames).toHaveLength(4);
+    expect(overview.framesPerSecond).toBe(4);
     expect(decodeAudioData).toHaveBeenCalledOnce();
     expect(close).toHaveBeenCalledOnce();
   });
 
   it("throws a stable error when decoding fails", async () => {
+    const buildOverviewFromBuffer = vi.fn(() => createOverview(100));
+
     Object.defineProperty(globalThis, "AudioContext", {
       configurable: true,
       value: vi.fn(function () {
@@ -129,18 +191,15 @@ describe("createBrowserPitchEnergyService", () => {
       })
     });
 
-    const service = createBrowserPitchEnergyService({
-      loadEngine: async () => ({
-        analyzeFrame: () => new Array(88).fill(0)
-      })
-    });
+    const service = createBrowserPitchEnergyService({ buildOverviewFromBuffer });
 
     await expect(service.buildOverviewFromAudioData(new ArrayBuffer(8))).rejects.toThrow(
       "Failed to generate pitch heatmap."
     );
+    expect(buildOverviewFromBuffer).not.toHaveBeenCalled();
   });
 
-  it("throws a stable error when the engine cannot load", async () => {
+  it("throws a stable error when STFT analysis fails", async () => {
     Object.defineProperty(globalThis, "AudioContext", {
       configurable: true,
       value: vi.fn(function () {
@@ -152,23 +211,13 @@ describe("createBrowserPitchEnergyService", () => {
     });
 
     const service = createBrowserPitchEnergyService({
-      loadEngine: async () => {
-        throw new Error("wasm missing");
+      buildOverviewFromBuffer: () => {
+        throw new Error("stft failed");
       }
     });
 
     await expect(service.buildOverviewFromAudioData(new ArrayBuffer(8))).rejects.toThrow(
-      "Failed to load pitch analysis engine."
+      "Failed to generate pitch heatmap."
     );
-  });
-
-  it("loads the packaged Essentia engine", async () => {
-    const engine = await loadEssentiaPitchEnergyEngine();
-    const frame = new Float32Array(32_768);
-    for (let index = 0; index < frame.length; index += 1) {
-      frame[index] = Math.sin((2 * Math.PI * 440 * index) / 44_100);
-    }
-
-    expect(engine.analyzeFrame(frame, 44_100)).toHaveLength(88);
   });
 });
