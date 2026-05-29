@@ -6,9 +6,11 @@ import {
   createPitchEnergyFrame
 } from "../../core/audio/pitchHeatmap";
 import type { PitchEnergyOverview } from "../../core/audio/types";
+import { rendererLogger, type RendererLogger } from "../logging/rendererLogger";
 
 export interface PitchEnergyBuildOptions {
   framesPerSecond?: number;
+  onProgress?: (progress: { frameIndex: number; frameCount: number }) => void;
 }
 
 export interface PitchEnergyEngine {
@@ -24,42 +26,137 @@ export interface PitchEnergyService {
 
 interface BrowserPitchEnergyServiceDependencies {
   loadEngine?: () => Promise<PitchEnergyEngine>;
+  logger?: RendererLogger;
+}
+
+interface NormalizedPitchEnergyBuildOptions {
+  framesPerSecond: number;
+  onProgress?: (progress: { frameIndex: number; frameCount: number }) => void;
 }
 
 const DEFAULT_FRAMES_PER_SECOND = 24;
 const SPECTRUM_CQ_FRAME_SIZE = 32_768;
 
 export function createBrowserPitchEnergyService({
-  loadEngine = loadEssentiaPitchEnergyEngine
+  loadEngine = loadEssentiaPitchEnergyEngine,
+  logger = rendererLogger
 }: BrowserPitchEnergyServiceDependencies = {}): PitchEnergyService {
   return {
     async buildOverviewFromAudioData(audioData, options = {}) {
       const framesPerSecond = options.framesPerSecond ?? DEFAULT_FRAMES_PER_SECOND;
+      const byteLength = audioData.byteLength;
       const audioContext = new AudioContext();
       let decodedAudio: AudioBuffer;
 
+      const decodeStartedAt = nowMs();
+      logger.trace("pitchHeatmap.decode.start", "Decoding audio for pitch heatmap", {
+        byteLength,
+        framesPerSecond
+      });
+
       try {
         decodedAudio = await audioContext.decodeAudioData(audioData);
-      } catch {
+        logger.trace("pitchHeatmap.decode.end", "Decoded audio for pitch heatmap", {
+          byteLength,
+          durationMs: elapsedMs(decodeStartedAt),
+          audioDurationMs: Math.round(decodedAudio.duration * 1000),
+          sampleRate: decodedAudio.sampleRate,
+          channelCount: decodedAudio.numberOfChannels,
+          framesPerSecond
+        });
+      } catch (error) {
+        logger.trace("pitchHeatmap.decode.fail", "Failed to decode audio for pitch heatmap", {
+          byteLength,
+          durationMs: elapsedMs(decodeStartedAt),
+          framesPerSecond,
+          errorMessage: getErrorMessage(error)
+        });
         await closeAudioContext(audioContext);
-        throw new Error("Failed to generate pitch heatmap.");
+        throw new Error("Failed to generate pitch heatmap.", { cause: error });
       }
 
       await closeAudioContext(audioContext);
 
       let engine: PitchEnergyEngine;
-      try {
-        engine = await loadEngine();
-      } catch {
-        throw new Error("Failed to load pitch analysis engine.");
-      }
+      const engineStartedAt = nowMs();
+      logger.trace("pitchHeatmap.engine.load.start", "Loading pitch analysis engine", {
+        byteLength,
+        audioDurationMs: Math.round(decodedAudio.duration * 1000),
+        sampleRate: decodedAudio.sampleRate,
+        channelCount: decodedAudio.numberOfChannels,
+        framesPerSecond
+      });
 
       try {
-        return createPitchEnergyOverviewFromBuffer(decodedAudio, engine, {
+        engine = await loadEngine();
+        logger.trace("pitchHeatmap.engine.load.end", "Loaded pitch analysis engine", {
+          byteLength,
+          durationMs: elapsedMs(engineStartedAt),
+          audioDurationMs: Math.round(decodedAudio.duration * 1000),
+          sampleRate: decodedAudio.sampleRate,
+          channelCount: decodedAudio.numberOfChannels,
           framesPerSecond
         });
-      } catch {
-        throw new Error("Failed to generate pitch heatmap.");
+      } catch (error) {
+        logger.trace("pitchHeatmap.engine.load.fail", "Failed to load pitch analysis engine", {
+          byteLength,
+          durationMs: elapsedMs(engineStartedAt),
+          audioDurationMs: Math.round(decodedAudio.duration * 1000),
+          sampleRate: decodedAudio.sampleRate,
+          channelCount: decodedAudio.numberOfChannels,
+          framesPerSecond,
+          errorMessage: getErrorMessage(error)
+        });
+        throw new Error("Failed to load pitch analysis engine.", { cause: error });
+      }
+
+      const frameCount = Math.ceil(decodedAudio.duration * framesPerSecond);
+      const overviewStartedAt = nowMs();
+      logger.trace("pitchHeatmap.overview.start", "Building pitch heatmap overview", {
+        byteLength,
+        audioDurationMs: Math.round(decodedAudio.duration * 1000),
+        sampleRate: decodedAudio.sampleRate,
+        channelCount: decodedAudio.numberOfChannels,
+        framesPerSecond,
+        frameCount
+      });
+
+      try {
+        const overview = createPitchEnergyOverviewFromBuffer(decodedAudio, engine, {
+          framesPerSecond,
+          onProgress(progress) {
+            options.onProgress?.(progress);
+            if (shouldLogProgress(progress.frameIndex, progress.frameCount)) {
+              logger.trace("pitchHeatmap.progress", "Analyzed pitch heatmap frame", {
+                frameIndex: progress.frameIndex,
+                frameCount: progress.frameCount,
+                percent: Math.round((progress.frameIndex / progress.frameCount) * 100)
+              });
+            }
+          }
+        });
+        logger.trace("pitchHeatmap.overview.end", "Built pitch heatmap overview", {
+          byteLength,
+          durationMs: elapsedMs(overviewStartedAt),
+          audioDurationMs: Math.round(decodedAudio.duration * 1000),
+          sampleRate: decodedAudio.sampleRate,
+          channelCount: decodedAudio.numberOfChannels,
+          framesPerSecond,
+          frameCount
+        });
+        return overview;
+      } catch (error) {
+        logger.trace("pitchHeatmap.overview.fail", "Failed to build pitch heatmap overview", {
+          byteLength,
+          durationMs: elapsedMs(overviewStartedAt),
+          audioDurationMs: Math.round(decodedAudio.duration * 1000),
+          sampleRate: decodedAudio.sampleRate,
+          channelCount: decodedAudio.numberOfChannels,
+          framesPerSecond,
+          frameCount,
+          errorMessage: getErrorMessage(error)
+        });
+        throw new Error("Failed to generate pitch heatmap.", { cause: error });
       }
     }
   };
@@ -68,7 +165,7 @@ export function createBrowserPitchEnergyService({
 export function createPitchEnergyOverviewFromBuffer(
   buffer: AudioBuffer,
   engine: PitchEnergyEngine,
-  options: Required<PitchEnergyBuildOptions>
+  options: NormalizedPitchEnergyBuildOptions
 ): PitchEnergyOverview {
   const durationMs = Math.round(buffer.duration * 1000);
   const sampleCount = Math.max(0, Math.floor(buffer.duration * buffer.sampleRate));
@@ -85,12 +182,18 @@ export function createPitchEnergyOverviewFromBuffer(
     frames: Array.from({ length: frameCount }, (_, index) => {
       const centerSample = Math.round((index + 0.5) * hopSamples);
       const frame = extractCenteredFrame(monoSamples, centerSample, SPECTRUM_CQ_FRAME_SIZE);
-
-      return createPitchEnergyFrame({
+      const pitchFrame = createPitchEnergyFrame({
         startMs: Math.round((index / options.framesPerSecond) * 1000),
         endMs: Math.min(durationMs, Math.round(((index + 1) / options.framesPerSecond) * 1000)),
         energies: engine.analyzeFrame(frame, buffer.sampleRate)
       });
+
+      options.onProgress?.({
+        frameIndex: index + 1,
+        frameCount
+      });
+
+      return pitchFrame;
     })
   };
 }
@@ -179,4 +282,20 @@ async function closeAudioContext(audioContext: AudioContext) {
   } catch {
     // Ignore cleanup failures so they do not mask the primary result or error.
   }
+}
+
+function shouldLogProgress(frameIndex: number, frameCount: number) {
+  return frameIndex === 1 || frameIndex === frameCount || frameIndex % 24 === 0;
+}
+
+function nowMs() {
+  return globalThis.performance?.now() ?? Date.now();
+}
+
+function elapsedMs(startMs: number) {
+  return Math.round(nowMs() - startMs);
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }

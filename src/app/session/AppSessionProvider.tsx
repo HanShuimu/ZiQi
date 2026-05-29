@@ -53,15 +53,15 @@ export function AppSessionProvider({
     []
   );
   const activeWaveformService = useMemo(
-    () => waveformService ?? createBrowserWaveformService(),
+    () => waveformService ?? createBrowserWaveformService(rendererLogger),
     [waveformService]
   );
   const activeSpectrogramService = useMemo(
-    () => spectrogramService ?? createBrowserSpectrogramService(),
+    () => spectrogramService ?? createBrowserSpectrogramService(rendererLogger),
     [spectrogramService]
   );
   const activePitchEnergyService = useMemo(
-    () => pitchEnergyService ?? createBrowserPitchEnergyService(),
+    () => pitchEnergyService ?? createBrowserPitchEnergyService({ logger: rendererLogger }),
     [pitchEnergyService]
   );
 

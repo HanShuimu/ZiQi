@@ -53,6 +53,40 @@ describe("createBrowserPitchEnergyService", () => {
     expect(analyzeFrame.mock.calls[0][0]).toHaveLength(32_768);
   });
 
+  it("logs pitch heatmap progress while analyzing frames", async () => {
+    const close = vi.fn().mockResolvedValue(undefined);
+    const decodeAudioData = vi.fn().mockResolvedValue(new FakeAudioBuffer());
+    const analyzeFrame = vi.fn<PitchEnergyEngine["analyzeFrame"]>(() => new Array(88).fill(0));
+    const logger = { trace: vi.fn() };
+
+    Object.defineProperty(globalThis, "AudioContext", {
+      configurable: true,
+      value: vi.fn(function () {
+        return { close, decodeAudioData };
+      })
+    });
+
+    const service = createBrowserPitchEnergyService({
+      loadEngine: async () => ({ analyzeFrame }),
+      logger
+    });
+
+    await service.buildOverviewFromAudioData(new ArrayBuffer(8), {
+      framesPerSecond: 4
+    });
+
+    expect(logger.trace).toHaveBeenCalledWith(
+      "pitchHeatmap.progress",
+      "Analyzed pitch heatmap frame",
+      expect.objectContaining({ frameIndex: 1, frameCount: 4 })
+    );
+    expect(logger.trace).toHaveBeenCalledWith(
+      "pitchHeatmap.progress",
+      "Analyzed pitch heatmap frame",
+      expect.objectContaining({ frameIndex: 4, frameCount: 4 })
+    );
+  });
+
   it("throws a stable error when decoding fails", async () => {
     Object.defineProperty(globalThis, "AudioContext", {
       configurable: true,
