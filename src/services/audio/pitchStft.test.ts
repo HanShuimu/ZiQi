@@ -124,6 +124,25 @@ describe("multiresolution pitch STFT", () => {
     expect(aSharpIndex).toBe(49);
   });
 
+  it("does not alias high-frequency tones into low pitch bins", () => {
+    const sampleRate = 48_000;
+    const durationSeconds = 0.75;
+    const highToneFrequencyHz = 3_027.5;
+    const buffer = new FakeAudioBuffer(
+      [createSineSamples({ durationSeconds, frequencyHz: highToneFrequencyHz, sampleRate })],
+      sampleRate
+    );
+
+    const overview = createMultiresolutionPitchEnergyOverviewFromBuffer(buffer, {
+      framesPerSecond: 4
+    });
+    const energies = overview.frames[1].energies;
+    const a0Energy = energies[0];
+    const highToneEnergy = energies[81];
+
+    expect(a0Energy).toBeLessThan(highToneEnergy * 0.05);
+  });
+
   it("reports progress after each analyzed frame", () => {
     const samples = createSineSamples({
       durationSeconds: 0.25,

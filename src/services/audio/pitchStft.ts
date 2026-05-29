@@ -38,6 +38,23 @@ interface NoteBand {
   upperFrequencyHz: number;
 }
 
+interface WeightedBin {
+  index: number;
+  weight: number;
+}
+
+interface NoteBinWeights {
+  bins: WeightedBin[];
+}
+
+interface PitchPlanWorkspace {
+  plan: PitchResolutionPlan;
+  real: Float32Array;
+  imaginary: Float32Array;
+  magnitudes: Float32Array;
+  window: Float32Array;
+}
+
 const RESOLUTION_DOWNSAMPLE_FACTORS = [16, 8, 4, 2, 1] as const;
 const BASE_FFT_SIZE = 4096;
 const MIN_NOTE_BINS = 4;
@@ -69,22 +86,19 @@ export function createMultiresolutionPitchEnergyOverviewFromBuffer(
   const plans = createPitchResolutionPlans(buffer.sampleRate);
   const notePlans = createNoteResolutionPlans(buffer.sampleRate, plans);
   const noteBands = createNoteBands();
+  const workspaces = plans.map(createPitchPlanWorkspace);
+  const noteBinWeights = createNoteBinWeights(notePlans, noteBands);
   const frameCount = Math.ceil(buffer.duration * framesPerSecond);
   const hopSamples = buffer.sampleRate / framesPerSecond;
   const frames = Array.from({ length: frameCount }, (_, index) => {
     const centerSample = Math.round((index + 0.5) * hopSamples);
-    const spectraByDownsampleFactor = new Map(
-      plans.map((plan) => [
-        plan.downsampleFactor,
-        calculateWindowSpectrum(monoSamples, centerSample, plan)
-      ])
-    );
-    const energies = notePlans.map((plan, noteIndex) =>
-      calculateBandEnergy({
-        magnitudes: spectraByDownsampleFactor.get(plan.downsampleFactor) ?? [],
-        band: noteBands[noteIndex],
-        plan
-      })
+
+    for (const workspace of workspaces) {
+      calculateWindowSpectrum(monoSamples, centerSample, workspace);
+    }
+
+    const energies = noteBinWeights.map((weights, noteIndex) =>
+      calculateBandEnergy(workspaces[notePlans[noteIndex].workspaceIndex].magnitudes, weights)
     );
     const frame = createPitchEnergyFrame({
       startMs: Math.round((index / framesPerSecond) * 1000),
@@ -152,13 +166,16 @@ export function selectPitchResolutionPlan({
 }
 
 function createNoteResolutionPlans(sampleRate: number, plans: PitchResolutionPlan[]) {
-  return Array.from({ length: PITCH_HEATMAP_NOTE_COUNT }, (_, index) =>
-    selectPitchResolutionPlan({
+  return Array.from({ length: PITCH_HEATMAP_NOTE_COUNT }, (_, index) => {
+    const plan = selectPitchResolutionPlan({
       midiNumber: MIN_PITCH_MIDI_NUMBER + index,
       sampleRate,
       plans
-    })
-  );
+    });
+    const workspaceIndex = plans.indexOf(plan);
+
+    return { plan, workspaceIndex };
+  });
 }
 
 function createNoteBands() {
@@ -192,58 +209,107 @@ function mixToMono(buffer: DecodedAudioBuffer, sampleCount: number) {
   return monoSamples;
 }
 
+function createPitchPlanWorkspace(plan: PitchResolutionPlan): PitchPlanWorkspace {
+  return {
+    plan,
+    real: new Float32Array(plan.fftSize),
+    imaginary: new Float32Array(plan.fftSize),
+    magnitudes: new Float32Array(Math.floor(plan.fftSize / 2)),
+    window: createHannWindow(plan.fftSize)
+  };
+}
+
 function calculateWindowSpectrum(
   samples: Float32Array,
   centerSample: number,
-  plan: PitchResolutionPlan
+  workspace: PitchPlanWorkspace
 ) {
-  const real = new Float32Array(plan.fftSize);
-  const imaginary = new Float32Array(plan.fftSize);
+  const { plan, real, imaginary, magnitudes, window } = workspace;
   const windowStart = centerSample - Math.floor(plan.effectiveWindowSamples / 2);
 
   for (let index = 0; index < plan.fftSize; index += 1) {
-    const sourceIndex = windowStart + index * plan.downsampleFactor;
-    const sample = samples[sourceIndex] ?? 0;
-    real[index] = sample * hannWindow(index, plan.fftSize);
+    real[index] =
+      getLowPassedDecimatedSample(samples, windowStart + index * plan.downsampleFactor, plan) *
+      window[index];
+    imaginary[index] = 0;
   }
 
   fft(real, imaginary);
 
-  const usableBinCount = Math.floor(plan.fftSize / 2);
-  return Array.from({ length: usableBinCount }, (_, index) =>
-    Math.hypot(real[index], imaginary[index])
-  );
+  for (let index = 0; index < magnitudes.length; index += 1) {
+    magnitudes[index] = Math.hypot(real[index], imaginary[index]);
+  }
 }
 
-function calculateBandEnergy({
-  magnitudes,
-  band,
-  plan
-}: {
-  magnitudes: number[];
-  band: NoteBand;
-  plan: PitchResolutionPlan;
-}) {
-  let weightedTotal = 0;
-  let totalWeight = 0;
+function getLowPassedDecimatedSample(
+  samples: Float32Array,
+  sourceStart: number,
+  plan: PitchResolutionPlan
+) {
+  if (plan.downsampleFactor === 1) {
+    return samples[sourceStart] ?? 0;
+  }
 
-  for (let index = 0; index < magnitudes.length; index += 1) {
+  let total = 0;
+
+  for (let offset = 0; offset < plan.downsampleFactor; offset += 1) {
+    total += samples[sourceStart + offset] ?? 0;
+  }
+
+  return total / plan.downsampleFactor;
+}
+
+function createNoteBinWeights(
+  notePlans: ReturnType<typeof createNoteResolutionPlans>,
+  noteBands: NoteBand[]
+) {
+  return notePlans.map(({ plan }, noteIndex) => createBinWeightsForBand(noteBands[noteIndex], plan));
+}
+
+function createBinWeightsForBand(band: NoteBand, plan: PitchResolutionPlan): NoteBinWeights {
+  const magnitudesLength = Math.floor(plan.fftSize / 2);
+  const startIndex = Math.max(0, Math.ceil(band.lowerFrequencyHz / plan.frequencyBinWidthHz - 0.5));
+  const endIndex = Math.min(
+    magnitudesLength,
+    Math.ceil(band.upperFrequencyHz / plan.frequencyBinWidthHz + 0.5)
+  );
+  const bins: WeightedBin[] = [];
+  let weightedTotal = 0;
+
+  for (let index = startIndex; index < endIndex; index += 1) {
     const binStartHz = (index - 0.5) * plan.frequencyBinWidthHz;
     const binEndHz = (index + 0.5) * plan.frequencyBinWidthHz;
     const overlapHz =
       Math.min(binEndHz, band.upperFrequencyHz) - Math.max(binStartHz, band.lowerFrequencyHz);
 
     if (overlapHz > 0) {
-      weightedTotal += magnitudes[index] * overlapHz;
-      totalWeight += overlapHz;
+      bins.push({ index, weight: overlapHz });
+      weightedTotal += overlapHz;
     }
   }
 
-  if (totalWeight > 0) {
-    return weightedTotal / totalWeight;
+  if (weightedTotal === 0) {
+    return {
+      bins: [{ index: frequencyToFftIndex(midiBandCenter(band), plan), weight: 1 }]
+    };
   }
 
-  return magnitudes[frequencyToFftIndex(midiBandCenter(band), plan)] ?? 0;
+  return {
+    bins: bins.map((bin) => ({
+      index: bin.index,
+      weight: bin.weight / weightedTotal
+    }))
+  };
+}
+
+function calculateBandEnergy(magnitudes: Float32Array, weights: NoteBinWeights) {
+  let energy = 0;
+
+  for (const bin of weights.bins) {
+    energy += (magnitudes[bin.index] ?? 0) * bin.weight;
+  }
+
+  return energy;
 }
 
 function midiBandCenter(band: NoteBand) {
@@ -257,12 +323,15 @@ function frequencyToFftIndex(frequencyHz: number, plan: PitchResolutionPlan) {
   );
 }
 
-function hannWindow(index: number, length: number) {
-  if (length <= 1) {
-    return 1;
+function createHannWindow(length: number) {
+  const window = new Float32Array(length);
+
+  for (let index = 0; index < length; index += 1) {
+    window[index] =
+      length <= 1 ? 1 : 0.5 * (1 - Math.cos((2 * Math.PI * index) / (length - 1)));
   }
 
-  return 0.5 * (1 - Math.cos((2 * Math.PI * index) / (length - 1)));
+  return window;
 }
 
 function fft(real: Float32Array, imaginary: Float32Array) {
