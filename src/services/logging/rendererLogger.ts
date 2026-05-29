@@ -8,15 +8,17 @@ export interface RendererLogger {
 
 interface RendererLoggerOptions {
   app?: Pick<Window["ziqiApp"], "log">;
+  getApp?: () => Pick<Window["ziqiApp"], "log"> | undefined;
   consoleSink?: Pick<Console, "trace" | "warn">;
   now?: () => Date;
 }
 
-export function createRendererLogger({
-  app = typeof window === "undefined" ? undefined : window.ziqiApp,
-  consoleSink = console,
-  now = () => new Date()
-}: RendererLoggerOptions = {}): RendererLogger {
+export function createRendererLogger(options: RendererLoggerOptions = {}): RendererLogger {
+  const { consoleSink = console, now = () => new Date() } = options;
+  const getApp =
+    options.getApp ?? ("app" in options ? () => options.app : () => getWindowApp());
+  let didWarnForwardFailure = false;
+
   return {
     trace(event, message, details) {
       const entry: RendererLogEntry = {
@@ -30,9 +32,12 @@ export function createRendererLogger({
       consoleSink.trace(formatConsoleLine(entry, now()));
 
       try {
-        app?.log(entry);
+        getApp()?.log(entry);
       } catch (error) {
-        consoleSink.warn(`ZiQi renderer log forwarding failed: ${getErrorMessage(error)}`);
+        if (!didWarnForwardFailure) {
+          didWarnForwardFailure = true;
+          consoleSink.warn(`ZiQi renderer log forwarding failed: ${getErrorMessage(error)}`);
+        }
       }
     }
   };
@@ -78,4 +83,8 @@ function sanitizeToken(value: string): string {
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+function getWindowApp(): Pick<Window["ziqiApp"], "log"> | undefined {
+  return typeof window === "undefined" ? undefined : window.ziqiApp;
 }
