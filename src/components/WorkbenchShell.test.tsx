@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../core/audio/pitchHeatmap";
 import { mockProjectAudioFacade } from "../services/projectAudio/mockFacade";
 import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import { createMockProjectSummary } from "../core/project/mockProject";
@@ -104,7 +105,7 @@ describe("WorkbenchShell transport controls", () => {
     );
 
     expect(screen.getByRole("img", { name: "Audio waveform overview" })).toBeTruthy();
-    expect(screen.getByRole("img", { name: "Audio spectrogram" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Pitch heatmap" })).toBeTruthy();
     expect(screen.getByLabelText("Piano pitch axis")).toBeTruthy();
     expect(screen.getAllByTestId("waveform-point")).toHaveLength(3);
   });
@@ -395,6 +396,35 @@ describe("WorkbenchShell transport controls", () => {
     });
   });
 
+  it("reports pitch heatmap display changes for persistence", () => {
+    const project = createMockProjectSummary();
+    const onProjectAnalysisViewChange = vi.fn();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onProjectAnalysisViewChange={onProjectAnalysisViewChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    expect(screen.getByLabelText("Gain")).toMatchObject({ min: "-48", max: "24" });
+    expect(screen.getByLabelText("Contrast")).toMatchObject({ min: "0.6", max: "1.8" });
+    expect(screen.getByLabelText("Range")).toMatchObject({ min: "80", max: "150" });
+    expect(screen.getByLabelText("Floor")).toMatchObject({ min: "-80", max: "0" });
+    expect(screen.getByLabelText("Intensity")).toMatchObject({ min: "0.5", max: "1.4" });
+
+    fireEvent.change(screen.getByLabelText("Gain"), { target: { value: "6" } });
+
+    expect(onProjectAnalysisViewChange).toHaveBeenCalledWith({
+      pitchHeatmapDisplay: {
+        ...DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
+        gainDb: 6
+      }
+    });
+  });
+
   it("limits rendered waveform points for long overviews", async () => {
     const project = createMockProjectSummary();
     const waveformOverview: WaveformOverview = {
@@ -439,3 +469,4 @@ function createSpectrogramOverview(): SpectrogramOverview {
     frames: [{ startMs: 0, endMs: 42, magnitudes: [0, 0.25, 0.5, 1] }]
   };
 }
+

@@ -1,3 +1,5 @@
+import type { PitchHeatmapDisplaySettings } from "../audio/types";
+
 export type ProjectId = string;
 export type AudioAssetId = string;
 export type AnalysisRunId = string;
@@ -57,6 +59,10 @@ export interface WorkspaceState {
   spectrogramViewport?: WorkspaceSpectrogramViewport;
 }
 
+export interface ProjectAnalysisView {
+  pitchHeatmapDisplay: PitchHeatmapDisplaySettings;
+}
+
 export interface ProjectSummary {
   id: ProjectId;
   name: string;
@@ -64,5 +70,6 @@ export interface ProjectSummary {
   assets: DerivedAudioAsset[];
   analysisRuns: AnalysisRun[];
   annotations: TimelineAnnotation[];
+  analysisView: ProjectAnalysisView;
   workspace: WorkspaceState;
 }

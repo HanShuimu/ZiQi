@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../audio/pitchHeatmap";
 import { createProjectFromAudio } from "./createProjectFromAudio";
 
 describe("createProjectFromAudio", () => {
@@ -27,6 +28,9 @@ describe("createProjectFromAudio", () => {
       assets: [],
       analysisRuns: [],
       annotations: [],
+      analysisView: {
+        pitchHeatmapDisplay: DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS
+      },
       workspace: {
         preset: "pure-spectrum",
         activeDock: "analysis",

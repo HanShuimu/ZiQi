@@ -12,8 +12,19 @@ type UserSettings = {
   uiSkin: "default" | "animal-island";
 };
 
+type RendererLogEntry = {
+  area: "renderer";
+  level?: "trace";
+  event: string;
+  message: string;
+  details?: Record<string, string | number | boolean | null | undefined>;
+};
+
 const api = {
   getVersion: () => ipcRenderer.invoke("app:get-version") as Promise<string>,
+  log: (entry: RendererLogEntry) => {
+    ipcRenderer.send("log:renderer", entry);
+  },
   getUserSettings: () => ipcRenderer.invoke("settings:get-user-settings") as Promise<UserSettings>,
   updateUserSettings: (patch: Partial<UserSettings>) =>
     ipcRenderer.invoke("settings:update-user-settings", patch) as Promise<UserSettings>,

@@ -7,15 +7,21 @@ import { getSkinDefinition } from "./skins/registry";
 import { UiProvider } from "./ui";
 import type { WaveformService } from "./services/audio/browserWaveformService";
 import type { SpectrogramService } from "./services/audio/browserSpectrogramService";
+import type { PitchEnergyService } from "./services/audio/browserPitchEnergyService";
 
 interface AppProps {
   waveformService?: WaveformService;
   spectrogramService?: SpectrogramService;
+  pitchEnergyService?: PitchEnergyService;
 }
 
-export function App({ waveformService, spectrogramService }: AppProps) {
+export function App({ waveformService, spectrogramService, pitchEnergyService }: AppProps) {
   return (
-    <AppSessionProvider waveformService={waveformService} spectrogramService={spectrogramService}>
+    <AppSessionProvider
+      waveformService={waveformService}
+      spectrogramService={spectrogramService}
+      pitchEnergyService={pitchEnergyService}
+    >
       <AppContent />
     </AppSessionProvider>
   );
@@ -35,8 +41,10 @@ function AppContent() {
       <WorkbenchShell
         audioFacade={session.audioFacade}
         importError={session.importError}
+        onProjectAnalysisViewChange={session.updateProjectAnalysisView}
         onWorkspaceChange={session.updateWorkspace}
         project={session.project}
+        pitchEnergyOverview={session.pitchEnergyOverview}
         spectrogramOverview={session.spectrogramOverview}
         waveformOverview={session.waveformOverview}
       />

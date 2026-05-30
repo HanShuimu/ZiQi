@@ -1,6 +1,7 @@
 import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
+import type { ProjectAnalysisView } from "../../core/project/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
-import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
+import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import { SpectrogramViewer } from "../../features/spectrogramViewer/SpectrogramViewer";
 
 export interface TranscriptionWorkspaceProps {
@@ -8,6 +9,8 @@ export interface TranscriptionWorkspaceProps {
   audioFacade: ProjectAudioFacade;
   waveformOverview?: WaveformOverview | null;
   spectrogramOverview?: SpectrogramOverview | null;
+  pitchEnergyOverview?: PitchEnergyOverview | null;
+  onProjectAnalysisViewChange: (analysisViewPatch: Partial<ProjectAnalysisView>) => void;
   onWorkspaceChange: (workspacePatch: Partial<WorkspaceState>) => void;
 }
 
@@ -16,6 +19,8 @@ export function TranscriptionWorkspace({
   audioFacade,
   waveformOverview,
   spectrogramOverview,
+  pitchEnergyOverview,
+  onProjectAnalysisViewChange,
   onWorkspaceChange
 }: TranscriptionWorkspaceProps) {
   return (
@@ -26,6 +31,8 @@ export function TranscriptionWorkspace({
           audioFacade={audioFacade}
           waveformOverview={waveformOverview}
           spectrogramOverview={spectrogramOverview}
+          pitchEnergyOverview={pitchEnergyOverview}
+          onProjectAnalysisViewChange={onProjectAnalysisViewChange}
           onWorkspaceChange={onWorkspaceChange}
         />
       </section>

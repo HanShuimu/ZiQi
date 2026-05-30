@@ -7,6 +7,13 @@ export const PROJECT_SCHEMA_VERSION = 1;
 const PROJECT_FOLDER_EXTENSION = ".ziqiproject";
 const PROJECT_FILE_EXTENSION = ".ziqi";
 const AUDIO_DIRECTORY_NAME = "audio";
+const DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS = {
+  gainDb: 0,
+  contrast: 1,
+  dynamicRangeDb: 80,
+  noiseFloorDb: -90,
+  colorIntensity: 1
+};
 
 export interface SerializableProject {
   id: string;
@@ -22,6 +29,7 @@ export interface SerializableProject {
   assets: unknown[];
   analysisRuns: unknown[];
   annotations: unknown[];
+  analysisView?: Record<string, unknown>;
   workspace: Record<string, unknown>;
 }
 
@@ -41,6 +49,16 @@ export interface SaveExistingProjectOptions {
   projectFilePath: string;
   projectRootPath: string;
 }
+
+export interface ProjectFileLogger {
+  trace(event: string, message: string, details?: ProjectFileLogDetails): void;
+}
+
+export interface ProjectFileOperationOptions {
+  logger?: ProjectFileLogger;
+}
+
+type ProjectFileLogDetails = Record<string, string | number | boolean | null | undefined>;
 
 export interface SaveProjectResult {
   project: SerializableProject;
@@ -99,7 +117,7 @@ export function isSerializableProject(value: unknown): value is SerializableProj
 export async function saveNewProject({
   parentDirectoryPath,
   project
-}: SaveNewProjectOptions): Promise<SaveProjectResult> {
+}: SaveNewProjectOptions, operationOptions: ProjectFileOperationOptions = {}): Promise<SaveProjectResult> {
   const projectBaseName = sanitizeFileName(project.name || "Untitled Project");
   const projectRootPath = path.join(
     parentDirectoryPath,
@@ -115,6 +133,11 @@ export async function saveNewProject({
   let createdProjectRoot = false;
 
   try {
+    operationOptions.logger?.trace("project.saveNew.start", "Saving new project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath: copiedAudioPath
+    });
     await fs.mkdir(projectRootPath);
     createdProjectRoot = true;
     await fs.mkdir(audioDirectoryPath);
@@ -123,16 +146,28 @@ export async function saveNewProject({
     const savedProject = withSourceAudioPath(project, relativeAudioPath);
     await writeProjectFile(projectFilePath, savedProject);
 
-    return {
+    const result = {
       project: savedProject,
       projectFilePath,
       projectRootPath
     };
-  } catch {
+    operationOptions.logger?.trace("project.saveNew.end", "Saved new project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath: copiedAudioPath
+    });
+    return result;
+  } catch (error) {
+    operationOptions.logger?.trace("project.saveNew.fail", "Failed to save new project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath: copiedAudioPath,
+      errorMessage: getErrorMessage(error)
+    });
     if (createdProjectRoot) {
       await fs.rm(projectRootPath, { recursive: true, force: true });
     }
-    throw new Error("Failed to save project.");
+    throw new Error("Failed to save project.", { cause: error });
   }
 }
 
@@ -140,54 +175,107 @@ export async function saveExistingProject({
   project,
   projectFilePath,
   projectRootPath
-}: SaveExistingProjectOptions): Promise<SaveProjectResult> {
-  if (
-    !isProjectFilePathInRoot(projectFilePath, projectRootPath) ||
-    !isProjectRelativePath(project.sourceAudio.filePath)
-  ) {
-    throw new Error("Failed to save project.");
-  }
+}: SaveExistingProjectOptions, operationOptions: ProjectFileOperationOptions = {}): Promise<SaveProjectResult> {
+  const audioPath = project.sourceAudio.filePath;
 
   try {
+    operationOptions.logger?.trace("project.saveExisting.start", "Saving existing project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath
+    });
+    if (
+      !isProjectFilePathInRoot(projectFilePath, projectRootPath) ||
+      !isProjectRelativePath(project.sourceAudio.filePath)
+    ) {
+      throw new Error("Failed to save project.");
+    }
+
     await writeProjectFile(projectFilePath, project);
 
-    return {
+    const result = {
       project,
       projectFilePath,
       projectRootPath
     };
-  } catch {
-    throw new Error("Failed to save project.");
+    operationOptions.logger?.trace("project.saveExisting.end", "Saved existing project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath
+    });
+    return result;
+  } catch (error) {
+    operationOptions.logger?.trace("project.saveExisting.fail", "Failed to save existing project", {
+      projectRootPath,
+      projectFilePath,
+      audioPath,
+      errorMessage: getErrorMessage(error)
+    });
+    throw new Error("Failed to save project.", { cause: error });
   }
 }
 
-export async function openProjectFromFile(projectFilePath: string): Promise<OpenProjectResult> {
+export async function openProjectFromFile(
+  projectFilePath: string,
+  operationOptions: ProjectFileOperationOptions = {}
+): Promise<OpenProjectResult> {
   const projectRootPath = path.dirname(projectFilePath);
   let payload: ZiqiProjectPayload;
 
   try {
-    payload = parseZiqiProjectPayload(await fs.readFile(projectFilePath, "utf8"));
-  } catch {
-    throw new Error("Failed to open project.");
+    operationOptions.logger?.trace("project.file.read.start", "Reading project file", {
+      projectFilePath
+    });
+    const contents = await fs.readFile(projectFilePath, "utf8");
+    payload = parseZiqiProjectPayload(contents);
+    operationOptions.logger?.trace("project.file.read.end", "Read project file", {
+      projectFilePath
+    });
+  } catch (error) {
+    operationOptions.logger?.trace("project.file.read.fail", "Failed to read project file", {
+      projectFilePath,
+      errorMessage: getErrorMessage(error)
+    });
+    throw new Error("Failed to open project.", { cause: error });
   }
 
   if (!isProjectRelativePath(payload.project.sourceAudio.filePath)) {
+    operationOptions.logger?.trace("project.audio.read.fail", "Failed to read project audio file", {
+      projectFilePath,
+      audioPath: payload.project.sourceAudio.filePath,
+      errorMessage: "Unsafe project audio path."
+    });
     throw new Error("Failed to load project audio.");
   }
 
   const audioPath = path.join(projectRootPath, ...payload.project.sourceAudio.filePath.split("/"));
 
   try {
+    operationOptions.logger?.trace("project.audio.read.start", "Reading project audio file", {
+      projectFilePath,
+      audioPath
+    });
     const audioFile = await fs.readFile(audioPath);
 
-    return {
-      project: payload.project,
+    const result = {
+      project: normalizeSerializableProject(payload.project),
       projectFilePath,
       projectRootPath,
       audioData: toArrayBuffer(audioFile)
     };
-  } catch {
-    throw new Error("Failed to load project audio.");
+    operationOptions.logger?.trace("project.audio.read.end", "Read project audio file", {
+      projectFilePath,
+      audioPath,
+      byteLength: audioFile.byteLength
+    });
+    return result;
+  } catch (error) {
+    operationOptions.logger?.trace("project.audio.read.fail", "Failed to read project audio file", {
+      projectFilePath,
+      audioPath,
+      errorMessage: getErrorMessage(error)
+    });
+    throw new Error("Failed to load project audio.", { cause: error });
   }
 }
 
@@ -204,6 +292,58 @@ function withSourceAudioPath(project: SerializableProject, filePath: string): Se
       filePath
     }
   };
+}
+
+function normalizeSerializableProject(project: SerializableProject): SerializableProject {
+  return {
+    ...project,
+    analysisView: {
+      ...project.analysisView,
+      pitchHeatmapDisplay: normalizePitchHeatmapDisplaySettings(
+        project.analysisView?.pitchHeatmapDisplay
+      )
+    }
+  };
+}
+
+function normalizePitchHeatmapDisplaySettings(value: unknown) {
+  const settings = isRecord(value) ? value : {};
+
+  return {
+    gainDb: clampNumber(settings.gainDb, -24, 36, DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.gainDb),
+    contrast: clampNumber(
+      settings.contrast,
+      0.5,
+      3,
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.contrast
+    ),
+    dynamicRangeDb: clampNumber(
+      settings.dynamicRangeDb,
+      40,
+      120,
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.dynamicRangeDb
+    ),
+    noiseFloorDb: clampNumber(
+      settings.noiseFloorDb,
+      -120,
+      -40,
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.noiseFloorDb
+    ),
+    colorIntensity: clampNumber(
+      settings.colorIntensity,
+      0.5,
+      2,
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.colorIntensity
+    )
+  };
+}
+
+function clampNumber(value: unknown, min: number, max: number, fallback: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.min(max, Math.max(min, value));
 }
 
 function toProjectRelativePath(...segments: string[]) {
@@ -263,4 +403,8 @@ function isZiqiProjectPayload(value: unknown): value is ZiqiProjectPayload {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
 }

@@ -25,10 +25,19 @@ export type MenuCommand =
   | "set-skin-default"
   | "set-skin-animal-island";
 
+export type RendererLogEntry = {
+  area: "renderer";
+  level?: "trace";
+  event: string;
+  message: string;
+  details?: Record<string, string | number | boolean | null | undefined>;
+};
+
 declare global {
   interface Window {
     ziqiApp: {
       getVersion(): Promise<string>;
+      log(entry: RendererLogEntry): void;
       getUserSettings(): Promise<UserSettings>;
       updateUserSettings(patch: Partial<UserSettings>): Promise<UserSettings>;
       selectAudioFile(): Promise<{ audioData: ArrayBuffer; filePath: string } | null>;

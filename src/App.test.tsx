@@ -2,7 +2,8 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
-import type { SpectrogramOverview, WaveformOverview } from "./core/audio/types";
+import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "./core/audio/types";
+import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "./core/audio/pitchHeatmap";
 import type { ProjectSummary } from "./core/project/types";
 
 class FakeAudioElement {
@@ -39,20 +40,22 @@ class FakeAudioElement {
   load() {}
 }
 
-let menuCommandListener:
-  | ((
-      command:
-        | "open-project"
-        | "save-project"
-        | "import-audio"
-        | "set-skin-default"
-        | "set-skin-animal-island"
-    ) => void)
-  | null;
+type MenuCommandListener = (
+  command:
+    | "open-project"
+    | "save-project"
+    | "import-audio"
+    | "set-skin-default"
+    | "set-skin-animal-island"
+) => void;
+
+let menuCommandListener: MenuCommandListener | null;
+let firstMenuCommandListener: MenuCommandListener | null;
 
 describe("App local audio import", () => {
   beforeEach(() => {
     menuCommandListener = null;
+    firstMenuCommandListener = null;
     FakeAudioElement.instances = [];
     FakeAudioElement.currentTimeWrites = 0;
     FakeAudioElement.throwOnCurrentTimeWrite = null;
@@ -64,6 +67,7 @@ describe("App local audio import", () => {
       value: {
         activateOpenedProject: vi.fn().mockResolvedValue(undefined),
         getVersion: vi.fn().mockResolvedValue("test-version"),
+        log: vi.fn(),
         openProject: vi.fn().mockResolvedValue(null),
         saveProject: vi.fn().mockResolvedValue(null),
         selectAudioFile: vi.fn().mockResolvedValue({
@@ -71,6 +75,7 @@ describe("App local audio import", () => {
           filePath: "D:\\Music Library\\demo track.wav"
         }),
         onMenuCommand: vi.fn((listener) => {
+          firstMenuCommandListener ??= listener;
           menuCommandListener = listener;
           return () => {
             if (menuCommandListener === listener) {
@@ -130,7 +135,8 @@ describe("App local audio import", () => {
       })
     };
     const spectrogramService = createSpectrogramService();
-    renderApp({ waveformService, spectrogramService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, spectrogramService, pitchEnergyService });
 
     menuCommandListener?.("import-audio");
 
@@ -138,12 +144,16 @@ describe("App local audio import", () => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
-    expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
+    expect(screen.getByLabelText("Pitch heatmap")).toBeTruthy();
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(audioData);
     const [spectrogramAudioData] = spectrogramService.buildOverviewFromAudioData.mock.calls[0];
     expect(spectrogramAudioData).toBeInstanceOf(ArrayBuffer);
     expect(spectrogramAudioData).not.toBe(audioData);
     expect(spectrogramAudioData.byteLength).toBe(audioData.byteLength);
+    const [pitchAudioData] = pitchEnergyService.buildOverviewFromAudioData.mock.calls[0];
+    expect(pitchAudioData).toBeInstanceOf(ArrayBuffer);
+    expect(pitchAudioData).not.toBe(audioData);
+    expect(pitchAudioData.byteLength).toBe(audioData.byteLength);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
   });
 
@@ -451,7 +461,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("import-audio");
     await waitFor(() => {
@@ -486,7 +497,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("import-audio");
     await waitFor(() => {
@@ -537,7 +549,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("open-project");
     await waitFor(() => {
@@ -578,7 +591,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("open-project");
     await waitFor(() => {
@@ -667,7 +681,8 @@ describe("App local audio import", () => {
         points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
       })
     };
-    renderApp({ waveformService });
+    const pitchEnergyService = createPitchEnergyService();
+    renderApp({ waveformService, pitchEnergyService });
 
     menuCommandListener?.("open-project");
 
@@ -675,10 +690,59 @@ describe("App local audio import", () => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(waveformService.buildOverviewFromAudioData).toHaveBeenCalledWith(openedAudioData);
+    expect(pitchEnergyService.buildOverviewFromAudioData).toHaveBeenCalledWith(
+      expect.any(ArrayBuffer)
+    );
+    expect(pitchEnergyService.buildOverviewFromAudioData.mock.calls[0][0]).not.toBe(openedAudioData);
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(screen.getByLabelText("Audio waveform overview")).toBeTruthy();
-    expect(screen.getByLabelText("Audio spectrogram")).toBeTruthy();
+    expect(screen.getByLabelText("Pitch heatmap")).toBeTruthy();
     expect(window.ziqiApp.activateOpenedProject).toHaveBeenCalledWith({
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+  });
+
+  it("fills missing pitch heatmap display settings when opening old projects", async () => {
+    const { analysisView: _analysisView, ...oldProject } = createProjectSummary(
+      "audio/demo track.wav"
+    );
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: new ArrayBuffer(16),
+      project: oldProject,
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+    window.ziqiApp.saveProject = vi.fn().mockImplementation(async (request) => ({
+      project: request.project,
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    }));
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue({
+        pointsPerSecond: 50,
+        durationMs: 12_000,
+        points: [{ startMs: 0, endMs: 20, peak: 0.8 }]
+      })
+    };
+    renderApp({ waveformService });
+
+    menuCommandListener?.("open-project");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    menuCommandListener?.("save-project");
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
+    });
+
+    expect(window.ziqiApp.saveProject).toHaveBeenCalledWith({
+      project: expect.objectContaining({
+        analysisView: {
+          pitchHeatmapDisplay: DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS
+        }
+      }),
       projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
       projectRootPath: "D:\\ZiQi Projects\\Demo"
     });
@@ -934,13 +998,14 @@ describe("App local audio import", () => {
     };
     renderApp({ waveformService });
 
-    menuCommandListener?.("open-project");
+    expect(firstMenuCommandListener).toBeTruthy();
+    firstMenuCommandListener?.("open-project");
     await waitFor(() => {
       expect(screen.getByText("demo track")).toBeTruthy();
     });
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
 
-    menuCommandListener?.("open-project");
+    firstMenuCommandListener?.("open-project");
 
     await waitFor(() => {
       expect(screen.getByText("Failed to open project.")).toBeTruthy();
@@ -948,6 +1013,12 @@ describe("App local audio import", () => {
     expect(screen.getByText("demo track")).toBeTruthy();
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
     expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:audio-2");
+    expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.open.start",
+      details: expect.objectContaining({
+        hadExistingProject: true
+      })
+    }));
 
     menuCommandListener?.("save-project");
     await waitFor(() => {
@@ -1097,6 +1168,85 @@ describe("App local audio import", () => {
     });
   });
 
+  it("saves imported projects through the initial native menu listener", async () => {
+    const audioData = new ArrayBuffer(8);
+    window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
+      audioData,
+      filePath: "D:\\Music Library\\demo track.wav"
+    });
+    window.ziqiApp.saveProject = vi.fn().mockResolvedValue(null);
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+
+    renderApp({ waveformService });
+
+    expect(firstMenuCommandListener).toBeTruthy();
+    firstMenuCommandListener?.("import-audio");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    firstMenuCommandListener?.("save-project");
+
+    await waitFor(() => {
+      expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
+    });
+    expect(window.ziqiApp.saveProject).toHaveBeenCalledWith({
+      project: expect.objectContaining({
+        sourceAudio: expect.objectContaining({
+          filePath: "D:\\Music Library\\demo track.wav"
+        })
+      })
+    });
+    expect(window.ziqiApp.log).not.toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.save.skipNoProject"
+    }));
+  });
+
+  it("logs ordered stages when opening a project", async () => {
+    const openedAudioData = new ArrayBuffer(8);
+    window.ziqiApp.openProject = vi.fn().mockResolvedValue({
+      audioData: openedAudioData,
+      project: createProjectSummary("audio/demo track.wav"),
+      projectFilePath: "D:\\ZiQi Projects\\Demo\\project.ziqi.json",
+      projectRootPath: "D:\\ZiQi Projects\\Demo"
+    });
+    const waveformService = {
+      buildOverviewFromAudioData: vi.fn().mockResolvedValue(createWaveformOverview())
+    };
+
+    renderApp({ waveformService });
+
+    menuCommandListener?.("open-project");
+    await waitFor(() => {
+      expect(screen.getByText("demo track")).toBeTruthy();
+    });
+
+    expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.open.start",
+      message: "Open project command started"
+    }));
+    expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.open.pitchHeatmap.end",
+      message: "Built project pitch heatmap overview"
+    }));
+    expect(window.ziqiApp.log).toHaveBeenCalledWith(expect.objectContaining({
+      event: "project.open.end",
+      message: "Open project command finished",
+      details: expect.objectContaining({
+        outcome: "success"
+      })
+    }));
+    const loggedEvents = window.ziqiApp.log.mock.calls.map(([entry]) => entry.event);
+    expect(loggedEvents.indexOf("project.open.start")).toBeLessThan(
+      loggedEvents.indexOf("project.open.pitchHeatmap.end")
+    );
+    expect(loggedEvents.indexOf("project.open.pitchHeatmap.end")).toBeLessThan(
+      loggedEvents.indexOf("project.open.end")
+    );
+  });
+
   it("saves focused workspace changes after playback rate updates", async () => {
     const audioData = new ArrayBuffer(8);
     window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({
@@ -1220,7 +1370,13 @@ describe("App local audio import", () => {
 });
 
 function renderApp(props: Parameters<typeof App>[0]) {
-  return render(<App spectrogramService={createSpectrogramService()} {...props} />);
+  return render(
+    <App
+      pitchEnergyService={createPitchEnergyService()}
+      spectrogramService={createSpectrogramService()}
+      {...props}
+    />
+  );
 }
 
 function createWaveformOverview(): WaveformOverview {
@@ -1245,12 +1401,32 @@ function createSpectrogramOverview(): SpectrogramOverview {
   };
 }
 
+function createPitchEnergyOverview(): PitchEnergyOverview {
+  return {
+    durationMs: 12_000,
+    framesPerSecond: 24,
+    minMidiNumber: 21,
+    maxMidiNumber: 108,
+    notesPerFrame: 88,
+    frames: []
+  };
+}
+
 function createSpectrogramService(overrides?: {
   buildOverviewFromAudioData?: ReturnType<typeof vi.fn>;
 }) {
   return {
     buildOverviewFromAudioData:
       overrides?.buildOverviewFromAudioData ?? vi.fn().mockResolvedValue(createSpectrogramOverview())
+  };
+}
+
+function createPitchEnergyService(overrides?: {
+  buildOverviewFromAudioData?: ReturnType<typeof vi.fn>;
+}) {
+  return {
+    buildOverviewFromAudioData:
+      overrides?.buildOverviewFromAudioData ?? vi.fn().mockResolvedValue(createPitchEnergyOverview())
   };
 }
 
@@ -1269,6 +1445,9 @@ function createProjectSummary(filePath: string): ProjectSummary {
     assets: [],
     analysisRuns: [],
     annotations: [],
+    analysisView: {
+      pitchHeatmapDisplay: DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS
+    },
     workspace: {
       preset: "spectrum-analysis",
       activeDock: "analysis",
@@ -1279,3 +1458,4 @@ function createProjectSummary(filePath: string): ProjectSummary {
     }
   };
 }
+

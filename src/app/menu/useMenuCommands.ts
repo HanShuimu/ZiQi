@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { SkinId } from "../../core/userSettings/types";
 
 interface UseMenuCommandsOptions {
@@ -14,30 +14,47 @@ export function useMenuCommands({
   saveProject,
   changeSkin
 }: UseMenuCommandsOptions) {
+  const commandsRef = useRef({
+    importAudio,
+    openProject,
+    saveProject,
+    changeSkin
+  });
+  // eslint-disable-next-line react-hooks/refs -- Native menu events can fire before passive effects run.
+  commandsRef.current = {
+    importAudio,
+    openProject,
+    saveProject,
+    changeSkin
+  };
+
+  const ziqiApp = window.ziqiApp;
+
   useEffect(() => {
-    if (typeof window.ziqiApp.onMenuCommand !== "function") {
+    if (typeof ziqiApp.onMenuCommand !== "function") {
       return;
     }
-    return window.ziqiApp.onMenuCommand((command) => {
+    return ziqiApp.onMenuCommand((command) => {
+      const commands = commandsRef.current;
       if (command === "import-audio") {
-        void importAudio();
+        void commands.importAudio();
         return;
       }
       if (command === "open-project") {
-        void openProject();
+        void commands.openProject();
         return;
       }
       if (command === "save-project") {
-        void saveProject();
+        void commands.saveProject();
         return;
       }
       if (command === "set-skin-default") {
-        void changeSkin("default");
+        void commands.changeSkin("default");
         return;
       }
       if (command === "set-skin-animal-island") {
-        void changeSkin("animal-island");
+        void commands.changeSkin("animal-island");
       }
     });
-  }, [changeSkin, importAudio, openProject, saveProject]);
+  }, [ziqiApp]);
 }

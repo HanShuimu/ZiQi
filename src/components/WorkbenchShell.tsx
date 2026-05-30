@@ -1,6 +1,7 @@
 import type { ProjectSummary, WorkspaceState } from "../core/project/types";
+import type { ProjectAnalysisView } from "../core/project/types";
 import type { ProjectAudioFacade } from "../services/projectAudio/interfaces";
-import type { SpectrogramOverview, WaveformOverview } from "../core/audio/types";
+import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "../core/audio/types";
 import { mockProjectAudioFacade } from "../services/projectAudio/mockFacade";
 import { Panel } from "../ui";
 import { TranscriptionWorkspace } from "../workspaces/transcription/TranscriptionWorkspace";
@@ -10,7 +11,9 @@ interface WorkbenchShellProps {
   audioFacade?: ProjectAudioFacade;
   waveformOverview?: WaveformOverview | null;
   spectrogramOverview?: SpectrogramOverview | null;
+  pitchEnergyOverview?: PitchEnergyOverview | null;
   importError?: string | null;
+  onProjectAnalysisViewChange?: (analysisViewPatch: Partial<ProjectAnalysisView>) => void;
   onWorkspaceChange?: (workspacePatch: Partial<WorkspaceState>) => void;
 }
 
@@ -39,7 +42,9 @@ export function WorkbenchShell({
   audioFacade = mockProjectAudioFacade,
   waveformOverview,
   spectrogramOverview,
+  pitchEnergyOverview,
   importError,
+  onProjectAnalysisViewChange = () => {},
   onWorkspaceChange = () => {}
 }: WorkbenchShellProps) {
   if (!project) {
@@ -85,6 +90,8 @@ export function WorkbenchShell({
         audioFacade={audioFacade}
         waveformOverview={waveformOverview}
         spectrogramOverview={spectrogramOverview}
+        pitchEnergyOverview={pitchEnergyOverview}
+        onProjectAnalysisViewChange={onProjectAnalysisViewChange}
         onWorkspaceChange={onWorkspaceChange}
       />
     </div>

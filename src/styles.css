@@ -244,6 +244,22 @@ button:disabled {
   min-height: 2.6rem;
 }
 
+.heatmap-display-controls {
+  display: grid;
+  gap: 0.5rem 0.75rem;
+  grid-template-columns: repeat(3, minmax(120px, 1fr));
+}
+
+.heatmap-display-controls label {
+  display: grid;
+  font-size: 0.72rem;
+  gap: 0.2rem;
+}
+
+.heatmap-display-controls input[type="range"] {
+  width: 100%;
+}
+
 .workspace-control-label {
   color: var(--skin-accent);
   font-size: 0.72rem;
@@ -252,7 +268,7 @@ button:disabled {
 }
 
 .spectrogram-view {
-  --spectrogram-display-height: 420px;
+  --spectrogram-display-height: 528px;
   display: grid;
   gap: 0.65rem;
   margin-top: 1rem;
@@ -359,7 +375,8 @@ button:disabled {
 .spectrogram-canvas-frame {
   position: relative;
   min-width: 0;
-  height: var(--spectrogram-display-height);
+  min-height: var(--spectrogram-display-height);
+  overflow-y: auto;
   border: 1px solid #211d1a;
   border-radius: 8px;
   overflow: hidden;
@@ -368,6 +385,7 @@ button:disabled {
 
 .spectrogram-canvas {
   display: block;
+  min-height: var(--spectrogram-display-height);
   width: 100%;
   height: 100%;
   image-rendering: pixelated;

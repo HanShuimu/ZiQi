@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import type { ProjectSummary } from "../../core/project/types";
+import type { ProjectAnalysisView, ProjectSummary } from "../../core/project/types";
+import { normalizeProjectAnalysisView } from "../../core/project/analysisView";
 import {
   createBrowserWaveformService,
   type WaveformService
@@ -9,11 +10,16 @@ import {
   createBrowserSpectrogramService,
   type SpectrogramService
 } from "../../services/audio/browserSpectrogramService";
-import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
+import {
+  createBrowserPitchEnergyService,
+  type PitchEnergyService
+} from "../../services/audio/browserPitchEnergyService";
+import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import { createProjectCommands } from "../commands/projectCommands";
 import { createSkinCommands } from "../commands/skinCommands";
 import type { SkinId } from "../../core/userSettings/types";
 import { DEFAULT_USER_SETTINGS } from "../../core/userSettings/types";
+import { rendererLogger } from "../../services/logging/rendererLogger";
 import { createBrowserProjectAudioFacade } from "../../services/projectAudio/browserProjectAudioFacade";
 import { AppSessionContext } from "./AppSessionContext";
 import type { AppSessionValue, ProjectLocation } from "./types";
@@ -22,17 +28,20 @@ interface AppSessionProviderProps {
   children: ReactNode;
   waveformService?: WaveformService;
   spectrogramService?: SpectrogramService;
+  pitchEnergyService?: PitchEnergyService;
 }
 
 export function AppSessionProvider({
   children,
   waveformService,
-  spectrogramService
+  spectrogramService,
+  pitchEnergyService
 }: AppSessionProviderProps) {
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [projectLocation, setProjectLocation] = useState<ProjectLocation | null>(null);
   const [waveformOverview, setWaveformOverview] = useState<WaveformOverview | null>(null);
   const [spectrogramOverview, setSpectrogramOverview] = useState<SpectrogramOverview | null>(null);
+  const [pitchEnergyOverview, setPitchEnergyOverview] = useState<PitchEnergyOverview | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isOpeningProject, setIsOpeningProject] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
@@ -44,12 +53,16 @@ export function AppSessionProvider({
     []
   );
   const activeWaveformService = useMemo(
-    () => waveformService ?? createBrowserWaveformService(),
+    () => waveformService ?? createBrowserWaveformService(rendererLogger),
     [waveformService]
   );
   const activeSpectrogramService = useMemo(
-    () => spectrogramService ?? createBrowserSpectrogramService(),
+    () => spectrogramService ?? createBrowserSpectrogramService(rendererLogger),
     [spectrogramService]
+  );
+  const activePitchEnergyService = useMemo(
+    () => pitchEnergyService ?? createBrowserPitchEnergyService({ logger: rendererLogger }),
+    [pitchEnergyService]
   );
 
   useEffect(() => {
@@ -86,22 +99,41 @@ export function AppSessionProvider({
         audioFacade,
         waveformService: activeWaveformService,
         spectrogramService: activeSpectrogramService,
+        pitchEnergyService: activePitchEnergyService,
+        logger: rendererLogger,
         setProject,
         setProjectLocation,
         setWaveformOverview,
         setSpectrogramOverview,
+        setPitchEnergyOverview,
         setIsImporting,
         setIsOpeningProject,
         setIsSavingProject,
         setImportError
       });
       const skinCommands = createSkinCommands({ setUiSkin, setImportError });
+      const updateProjectAnalysisView = (analysisViewPatch: Partial<ProjectAnalysisView>) => {
+        setProject((currentProject) => {
+          if (!currentProject) {
+            return currentProject;
+          }
+
+          return {
+            ...currentProject,
+            analysisView: normalizeProjectAnalysisView({
+              ...currentProject.analysisView,
+              ...analysisViewPatch
+            })
+          };
+        });
+      };
 
       return {
         project,
         projectLocation,
         waveformOverview,
         spectrogramOverview,
+        pitchEnergyOverview,
         isImporting,
         isOpeningProject,
         isSavingProject,
@@ -110,10 +142,12 @@ export function AppSessionProvider({
         audioFacade,
         waveformService: activeWaveformService,
         spectrogramService: activeSpectrogramService,
+        pitchEnergyService: activePitchEnergyService,
         importAudio: projectCommands.importAudio,
         saveProject: projectCommands.saveProject,
         openProject: projectCommands.openProject,
         changeSkin: skinCommands.changeSkin,
+        updateProjectAnalysisView,
         updateWorkspace: projectCommands.updateWorkspace
       };
     },
@@ -122,6 +156,7 @@ export function AppSessionProvider({
       projectLocation,
       waveformOverview,
       spectrogramOverview,
+      pitchEnergyOverview,
       isImporting,
       isOpeningProject,
       isSavingProject,
@@ -129,7 +164,8 @@ export function AppSessionProvider({
       uiSkin,
       audioFacade,
       activeWaveformService,
-      activeSpectrogramService
+      activeSpectrogramService,
+      activePitchEnergyService
     ]
   );
 

@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { PIANO_KEYS, magnitudeToSpectrogramColor } from "../../services/audio/spectrogram";
+import type {
+  PitchEnergyOverview,
+  PitchHeatmapDisplaySettings,
+  SpectrogramOverview,
+  WaveformOverview
+} from "../../core/audio/types";
 import {
-  PIANO_KEYS,
-  frequencyToLogPosition,
-  magnitudeToSpectrogramColor
-} from "../../services/audio/spectrogram";
-import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
+  DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
+  PITCH_HEATMAP_MIN_HEIGHT_PX,
+  PITCH_HEATMAP_MIN_LANE_HEIGHT_PX,
+  PITCH_HEATMAP_NOTE_COUNT,
+  mapPitchEnergyToDisplayValue
+} from "../../core/audio/pitchHeatmap";
 import {
   createDefaultSpectrogramViewport,
   isTimeInsideViewport,
@@ -15,28 +23,30 @@ import {
 } from "../../core/spectrogramViewport";
 import type { SpectrogramViewport } from "../../core/spectrogramViewport";
 import {
-  filterSpectrogramFramesForViewport,
+  filterPitchEnergyFramesForViewport,
   filterWaveformPointsForViewport
 } from "./spectrogramViewport";
 import { SpectrogramTimelineNavigator } from "../../capabilities/timelineViewport";
 
 const CANVAS_WIDTH = 960;
-const CANVAS_HEIGHT = 420;
+const CANVAS_HEIGHT = PITCH_HEATMAP_MIN_HEIGHT_PX;
 const MAX_RENDERED_WAVEFORM_POINTS = 800;
 const PIANO_KEY_HEIGHT_PERCENT = 1.4;
 const SPECTROGRAM_VIEW_STYLE = {
   "--spectrogram-display-height": `${CANVAS_HEIGHT}px`
 } as CSSProperties;
 
-function getViewportResetKey(durationMs: number, spectrogramOverview: SpectrogramOverview | null | undefined) {
-  return `${durationMs}:${spectrogramOverview?.durationMs ?? "none"}`;
+function getViewportResetKey(durationMs: number, pitchEnergyOverview: PitchEnergyOverview | null | undefined) {
+  return `${durationMs}:${pitchEnergyOverview?.durationMs ?? "none"}`;
 }
 
 interface SpectrogramViewProps {
   currentTimeMs: number;
   durationMs: number;
   loopRange: { startMs: number; endMs: number } | undefined;
-  spectrogramOverview: SpectrogramOverview | null | undefined;
+  pitchEnergyOverview?: PitchEnergyOverview | null | undefined;
+  pitchHeatmapDisplay?: PitchHeatmapDisplaySettings;
+  spectrogramOverview?: SpectrogramOverview | null | undefined;
   viewport?: SpectrogramViewport;
   waveformOverview: WaveformOverview | null | undefined;
   onSeek: (timeMs: number) => Promise<void> | void;
@@ -47,6 +57,8 @@ export function SpectrogramView({
   currentTimeMs,
   durationMs,
   loopRange,
+  pitchEnergyOverview,
+  pitchHeatmapDisplay = DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
   spectrogramOverview,
   viewport: controlledViewport,
   waveformOverview,
@@ -54,7 +66,8 @@ export function SpectrogramView({
   onViewportChange
 }: SpectrogramViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const viewportResetKey = getViewportResetKey(durationMs, spectrogramOverview);
+  const activePitchEnergyOverview = pitchEnergyOverview ?? convertSpectrogramToPitchEnergy(spectrogramOverview);
+  const viewportResetKey = getViewportResetKey(durationMs, activePitchEnergyOverview);
   const [internalViewportState, setInternalViewportState] = useState(() => ({
     resetKey: viewportResetKey,
     viewport: createDefaultSpectrogramViewport(durationMs)
@@ -86,20 +99,23 @@ export function SpectrogramView({
   const isPlaybackVisible = isTimeInsideViewport(currentTimeMs, activeViewport);
   const progressPercent = isPlaybackVisible ? timeToViewportPercent(currentTimeMs, activeViewport) : 0;
   const timeGridLines = useMemo(() => createTimeGridLines(activeViewport), [activeViewport]);
-  const hasSpectrogramFrames =
-    spectrogramOverview !== null &&
-    spectrogramOverview !== undefined &&
-    spectrogramOverview.frames.length > 0;
+  const hasPitchFrames =
+    activePitchEnergyOverview !== null &&
+    activePitchEnergyOverview !== undefined &&
+    activePitchEnergyOverview.frames.length > 0;
 
   const visibleFrames = useMemo(
-    () => (hasSpectrogramFrames ? filterSpectrogramFramesForViewport(spectrogramOverview, activeViewport) : []),
-    [hasSpectrogramFrames, spectrogramOverview, activeViewport]
+    () =>
+      hasPitchFrames
+        ? filterPitchEnergyFramesForViewport(activePitchEnergyOverview, activeViewport)
+        : [],
+    [hasPitchFrames, activePitchEnergyOverview, activeViewport]
   );
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
-    if (!canvas || !context || !hasSpectrogramFrames) {
+    if (!canvas || !context || !hasPitchFrames) {
       return;
     }
 
@@ -113,7 +129,7 @@ export function SpectrogramView({
     }
 
     const frameWidth = canvas.width / renderedColumnCount;
-    const binHeight = canvas.height / Math.max(1, spectrogramOverview.binsPerFrame);
+    const laneHeight = PITCH_HEATMAP_MIN_LANE_HEIGHT_PX;
 
     for (let columnIndex = 0; columnIndex < renderedColumnCount; columnIndex += 1) {
       const startFrameIndex = Math.floor(
@@ -124,23 +140,24 @@ export function SpectrogramView({
         Math.floor(((columnIndex + 1) * visibleFrames.length) / renderedColumnCount)
       );
 
-      for (let binIndex = 0; binIndex < spectrogramOverview.binsPerFrame; binIndex += 1) {
-        const magnitude = getMaxMagnitudeForColumn(
+      for (let pitchIndex = 0; pitchIndex < PITCH_HEATMAP_NOTE_COUNT; pitchIndex += 1) {
+        const energy = getMaxEnergyForColumn(
           visibleFrames,
           startFrameIndex,
           endFrameIndex,
-          binIndex
+          pitchIndex
         );
-        context.fillStyle = magnitudeToSpectrogramColor(magnitude);
+        const displayValue = mapPitchEnergyToDisplayValue(energy, pitchHeatmapDisplay);
+        context.fillStyle = magnitudeToSpectrogramColor(displayValue);
         context.fillRect(
           columnIndex * frameWidth,
-          canvas.height - (binIndex + 1) * binHeight,
+          canvas.height - (pitchIndex + 1) * laneHeight,
           Math.ceil(frameWidth),
-          Math.ceil(binHeight)
+          laneHeight
         );
       }
     }
-  }, [hasSpectrogramFrames, spectrogramOverview, visibleFrames]);
+  }, [hasPitchFrames, pitchHeatmapDisplay, visibleFrames]);
 
   function handleSpectrogramWheel(event: React.WheelEvent<HTMLDivElement>) {
     if (durationMs <= 0) {
@@ -200,9 +217,8 @@ export function SpectrogramView({
 
         <div className="spectrogram-body">
           <div className="piano-axis" aria-label="Piano pitch axis">
-            {PIANO_KEYS.map((key) => {
-              const logPosition = frequencyToLogPosition(key.frequencyHz);
-              const bottomPercent = getPianoKeyBottomPercent(logPosition);
+            {PIANO_KEYS.map((key, index) => {
+              const bottomPercent = getPianoKeyBottomPercent(index);
 
               return (
                 <div
@@ -211,7 +227,7 @@ export function SpectrogramView({
                     key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"
                   }
                   data-bottom-percent={bottomPercent}
-                  data-log-position={logPosition}
+                  data-log-position={index / (PIANO_KEYS.length - 1)}
                   data-testid="piano-key"
                   style={{
                     bottom: `${bottomPercent}%`
@@ -224,15 +240,15 @@ export function SpectrogramView({
 
           <div className="spectrogram-canvas-frame" onWheel={handleSpectrogramWheel}>
             <canvas
-              aria-label="Audio spectrogram"
+              aria-label="Pitch heatmap"
               className="spectrogram-canvas"
               height={CANVAS_HEIGHT}
               ref={canvasRef}
               role="img"
               width={CANVAS_WIDTH}
             />
-            {!hasSpectrogramFrames ? (
-              <div className="spectrogram-empty">Generating spectrogram...</div>
+            {!hasPitchFrames ? (
+              <div className="spectrogram-empty">Generating pitch heatmap...</div>
             ) : null}
             {timeGridLines.map((position) => (
               <div
@@ -314,24 +330,48 @@ function createTimeGridLines(viewport: SpectrogramViewport) {
   return positions;
 }
 
-function getPianoKeyBottomPercent(logPosition: number) {
-  const boundedPosition = Math.min(1, Math.max(0, logPosition));
+function getPianoKeyBottomPercent(index: number) {
+  const boundedPosition = Math.min(1, Math.max(0, index / (PIANO_KEYS.length - 1)));
   return Math.round(boundedPosition * (100 - PIANO_KEY_HEIGHT_PERCENT) * 1000) / 1000;
 }
 
-function getMaxMagnitudeForColumn(
-  frames: SpectrogramOverview["frames"],
+function getMaxEnergyForColumn(
+  frames: PitchEnergyOverview["frames"],
   startFrameIndex: number,
   endFrameIndex: number,
-  binIndex: number
+  pitchIndex: number
 ) {
-  let maxMagnitude = 0;
+  let maxEnergy = 0;
 
   for (let frameIndex = startFrameIndex; frameIndex < endFrameIndex; frameIndex += 1) {
-    maxMagnitude = Math.max(maxMagnitude, frames[frameIndex]?.magnitudes[binIndex] ?? 0);
+    maxEnergy = Math.max(maxEnergy, frames[frameIndex]?.energies[pitchIndex] ?? 0);
   }
 
-  return maxMagnitude;
+  return maxEnergy;
+}
+
+function convertSpectrogramToPitchEnergy(
+  spectrogramOverview: SpectrogramOverview | null | undefined
+): PitchEnergyOverview | null {
+  if (!spectrogramOverview) {
+    return null;
+  }
+
+  return {
+    durationMs: spectrogramOverview.durationMs,
+    framesPerSecond: spectrogramOverview.framesPerSecond,
+    minMidiNumber: 21,
+    maxMidiNumber: 108,
+    notesPerFrame: PITCH_HEATMAP_NOTE_COUNT,
+    frames: spectrogramOverview.frames.map((frame) => ({
+      startMs: frame.startMs,
+      endMs: frame.endMs,
+      energies: Array.from({ length: PITCH_HEATMAP_NOTE_COUNT }, (_, index) => {
+        const sourceIndex = Math.floor((index * frame.magnitudes.length) / PITCH_HEATMAP_NOTE_COUNT);
+        return frame.magnitudes[sourceIndex] ?? 0;
+      })
+    }))
+  };
 }
 
 function chooseGridIntervalSeconds(durationSeconds: number) {
