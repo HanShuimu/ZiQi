@@ -14,8 +14,12 @@ const drawCalls: Array<{
 }> = [];
 
 function renderSpectrogramView(ui: React.ReactElement) {
+  return render(wrapWithUiProvider(ui));
+}
+
+function wrapWithUiProvider(ui: React.ReactElement) {
   const skin = getSkinDefinition("default");
-  return render(
+  return (
     <UiProvider skinId={skin.id} adapter={skin.adapter}>
       {ui}
     </UiProvider>
@@ -300,6 +304,112 @@ describe("SpectrogramView", () => {
 
     expect(status.textContent).toContain("Pointer");
     expect(status.textContent).toContain("Hover over the heatmap");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+  });
+
+  it("clears pitch hover state when pitch frames become unavailable", () => {
+    const { container, rerender } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("D#5");
+
+    rerender(wrapWithUiProvider(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={null}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("Pointer");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+  });
+
+  it("clears pitch hover state when the controlled viewport changes", () => {
+    const { container, rerender } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("D#5");
+
+    rerender(wrapWithUiProvider(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 2_000, durationMs: 8_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("Pointer");
     expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
     expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
     expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);

@@ -119,6 +119,10 @@ export function SpectrogramView({
   );
 
   useEffect(() => {
+    setPointerState(null);
+  }, [hasPitchFrames, activeViewport.startMs, activeViewport.durationMs]);
+
+  useEffect(() => {
     const canvas = canvasRef.current;
     const context = canvas?.getContext("2d");
     if (!canvas || !context || !hasPitchFrames) {
