@@ -3,6 +3,7 @@ import type { SpectrogramViewport } from "../../core/spectrogramViewport";
 import {
   formatPreciseTimeLabel,
   getPitchHoverStateFromPoint,
+  getPitchLaneCssProperties,
   getPitchLaneStyle
 } from "./pitchHover";
 
@@ -35,6 +36,13 @@ describe("pitch hover helpers", () => {
   it("clamps pitch lane indexes to the 88-key range", () => {
     expect(getPitchLaneStyle(-10)).toEqual(getPitchLaneStyle(0));
     expect(getPitchLaneStyle(999)).toEqual(getPitchLaneStyle(87));
+  });
+
+  it("maps pitch lane indexes to CSS percentage properties", () => {
+    expect(getPitchLaneCssProperties(87)).toEqual({
+      bottom: "98.86363636363636%",
+      height: "1.1363636363636365%"
+    });
   });
 
   it("maps the top of the heatmap to C8 and the bottom to A0", () => {
@@ -148,6 +156,7 @@ describe("pitch hover helpers", () => {
 
   it("formats precise time labels with milliseconds", () => {
     expect(formatPreciseTimeLabel(0)).toBe("00:00.000");
+    expect(formatPreciseTimeLabel(1000.6)).toBe("00:01.001");
     expect(formatPreciseTimeLabel(84_320)).toBe("01:24.320");
     expect(formatPreciseTimeLabel(3_661_009)).toBe("61:01.009");
   });

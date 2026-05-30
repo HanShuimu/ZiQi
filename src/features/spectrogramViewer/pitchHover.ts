@@ -91,7 +91,7 @@ export function getPitchHoverStateFromPoint({
 }
 
 export function formatPreciseTimeLabel(timeMs: number) {
-  const safeTimeMs = Math.max(0, Math.floor(timeMs));
+  const safeTimeMs = Math.max(0, Math.round(timeMs));
   const totalSeconds = Math.floor(safeTimeMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
