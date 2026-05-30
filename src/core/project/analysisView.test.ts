@@ -22,10 +22,10 @@ describe("normalizeProjectAnalysisView", () => {
       })
     ).toEqual({
       pitchHeatmapDisplay: {
-        gainDb: 36,
-        contrast: 3,
-        dynamicRangeDb: 40,
-        noiseFloorDb: -40,
+        gainDb: 24,
+        contrast: 1.8,
+        dynamicRangeDb: 80,
+        noiseFloorDb: 0,
         colorIntensity: 0.5
       }
     });
