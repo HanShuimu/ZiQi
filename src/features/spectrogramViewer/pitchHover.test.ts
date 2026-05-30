@@ -32,6 +32,11 @@ describe("pitch hover helpers", () => {
     });
   });
 
+  it("clamps pitch lane indexes to the 88-key range", () => {
+    expect(getPitchLaneStyle(-10)).toEqual(getPitchLaneStyle(0));
+    expect(getPitchLaneStyle(999)).toEqual(getPitchLaneStyle(87));
+  });
+
   it("maps the top of the heatmap to C8 and the bottom to A0", () => {
     expect(
       getPitchHoverStateFromPoint({
@@ -75,6 +80,19 @@ describe("pitch hover helpers", () => {
       xPercent: 50,
       yPercent: 50,
       timeMs: 65_000
+    });
+  });
+
+  it("rounds pointer time to whole milliseconds", () => {
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 101,
+        clientY: 50,
+        bounds: { ...bounds, width: 3 },
+        viewport: { startMs: 0, durationMs: 10_000 }
+      })
+    ).toMatchObject({
+      timeMs: 3_333
     });
   });
 

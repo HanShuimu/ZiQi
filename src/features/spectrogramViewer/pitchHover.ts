@@ -23,12 +23,14 @@ export interface HeatmapPointerState {
 }
 
 export function getPitchLaneStyle(pitchIndex: number) {
+  const clampedPitchIndex = clamp(pitchIndex, 0, PITCH_HEATMAP_NOTE_COUNT - 1);
   const heightPercent = 100 / PITCH_HEATMAP_NOTE_COUNT;
-  const bottomPercent = (pitchIndex * 100) / PITCH_HEATMAP_NOTE_COUNT;
+  const bottomPercent = (clampedPitchIndex * 100) / PITCH_HEATMAP_NOTE_COUNT;
 
   return {
     bottomPercent,
-    topPercent: ((PITCH_HEATMAP_NOTE_COUNT - pitchIndex - 1) * 100) / PITCH_HEATMAP_NOTE_COUNT,
+    topPercent:
+      ((PITCH_HEATMAP_NOTE_COUNT - clampedPitchIndex - 1) * 100) / PITCH_HEATMAP_NOTE_COUNT,
     heightPercent
   };
 }
@@ -80,7 +82,7 @@ export function getPitchHoverStateFromPoint({
   return {
     xPercent: xRatio * 100,
     yPercent: yRatio * 100,
-    timeMs: viewport.startMs + viewport.durationMs * xRatio,
+    timeMs: Math.round(viewport.startMs + viewport.durationMs * xRatio),
     pitchIndex,
     midiNumber,
     noteName: pianoKey?.name ?? midiNumber.toString(),
