@@ -108,7 +108,8 @@ export function mapPitchEnergyToDisplayValue(
   const rangeTopDb = settings.noiseFloorDb + settings.dynamicRangeDb;
   const normalized =
     (db - settings.noiseFloorDb) / Math.max(1, rangeTopDb - settings.noiseFloorDb);
-  const contrasted = normalized ** (1 / settings.contrast);
+  const contrastPivot = 0.5;
+  const contrasted = (normalized - contrastPivot) * settings.contrast + contrastPivot;
 
   return clamp01(contrasted * settings.colorIntensity);
 }
