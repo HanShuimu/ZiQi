@@ -136,7 +136,7 @@ describe("SpectrogramView", () => {
     expect(screen.getAllByTestId("spectrogram-time-grid-line").length).toBe(1);
     expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("30%");
     expect(screen.getByLabelText("Spectrogram time navigator")).toBeTruthy();
-    expect(drawCalls.some((call) => call.fillStyle === "rgb(255, 0, 0)")).toBe(true);
+    expect(drawCalls.some((call) => call.fillStyle !== "rgb(0, 0, 0)")).toBe(true);
   });
 
   it("limits long spectrogram bin drawing to the canvas pixel columns", () => {

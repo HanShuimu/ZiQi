@@ -81,8 +81,8 @@ export function WorkspaceControlZone({
           Gain
           <input
             aria-label="Gain"
-            max={36}
-            min={-24}
+            max={24}
+            min={-48}
             onChange={(event) =>
               onPitchHeatmapDisplayChange({
                 ...pitchHeatmapDisplay,
@@ -98,8 +98,8 @@ export function WorkspaceControlZone({
           Contrast
           <input
             aria-label="Contrast"
-            max={3}
-            min={0.5}
+            max={1.8}
+            min={0.6}
             onChange={(event) =>
               onPitchHeatmapDisplayChange({
                 ...pitchHeatmapDisplay,
@@ -115,8 +115,8 @@ export function WorkspaceControlZone({
           Range
           <input
             aria-label="Range"
-            max={120}
-            min={40}
+            max={150}
+            min={80}
             onChange={(event) =>
               onPitchHeatmapDisplayChange({
                 ...pitchHeatmapDisplay,
@@ -132,8 +132,8 @@ export function WorkspaceControlZone({
           Floor
           <input
             aria-label="Floor"
-            max={-40}
-            min={-120}
+            max={0}
+            min={-80}
             onChange={(event) =>
               onPitchHeatmapDisplayChange({
                 ...pitchHeatmapDisplay,
@@ -149,7 +149,7 @@ export function WorkspaceControlZone({
           Intensity
           <input
             aria-label="Intensity"
-            max={2}
+            max={1.4}
             min={0.5}
             onChange={(event) =>
               onPitchHeatmapDisplayChange({

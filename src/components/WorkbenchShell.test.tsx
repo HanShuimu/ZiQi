@@ -409,6 +409,12 @@ describe("WorkbenchShell transport controls", () => {
       />
     );
 
+    expect(screen.getByLabelText("Gain")).toMatchObject({ min: "-48", max: "24" });
+    expect(screen.getByLabelText("Contrast")).toMatchObject({ min: "0.6", max: "1.8" });
+    expect(screen.getByLabelText("Range")).toMatchObject({ min: "80", max: "150" });
+    expect(screen.getByLabelText("Floor")).toMatchObject({ min: "-80", max: "0" });
+    expect(screen.getByLabelText("Intensity")).toMatchObject({ min: "0.5", max: "1.4" });
+
     fireEvent.change(screen.getByLabelText("Gain"), { target: { value: "6" } });
 
     expect(onProjectAnalysisViewChange).toHaveBeenCalledWith({
