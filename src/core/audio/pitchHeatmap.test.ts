@@ -28,6 +28,20 @@ describe("pitch heatmap helpers", () => {
     expect(createPitchEnergyFrame({ startMs: 0, endMs: 42 }).energies).toHaveLength(88);
   });
 
+  it("uses calibrated absolute dB display defaults for STFT energy", () => {
+    expect(DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS).toEqual({
+      gainDb: 0,
+      contrast: 1,
+      dynamicRangeDb: 110,
+      noiseFloorDb: -40,
+      colorIntensity: 1
+    });
+    expect(
+      DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.noiseFloorDb +
+        DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.dynamicRangeDb
+    ).toBe(70);
+  });
+
   it("clamps display settings loaded from project files", () => {
     expect(
       clampPitchHeatmapDisplaySettings({
@@ -38,11 +52,29 @@ describe("pitch heatmap helpers", () => {
         colorIntensity: 99
       })
     ).toEqual({
-      gainDb: 36,
-      contrast: 0.5,
-      dynamicRangeDb: 120,
-      noiseFloorDb: -40,
-      colorIntensity: 2
+      gainDb: 24,
+      contrast: 0.6,
+      dynamicRangeDb: 150,
+      noiseFloorDb: 0,
+      colorIntensity: 1.4
+    });
+  });
+
+  it("clamps display settings to calibrated lower bounds", () => {
+    expect(
+      clampPitchHeatmapDisplaySettings({
+        gainDb: -99,
+        contrast: 0,
+        dynamicRangeDb: 1,
+        noiseFloorDb: -999,
+        colorIntensity: 0
+      })
+    ).toEqual({
+      gainDb: -48,
+      contrast: 0.6,
+      dynamicRangeDb: 80,
+      noiseFloorDb: -80,
+      colorIntensity: 0.5
     });
   });
 
