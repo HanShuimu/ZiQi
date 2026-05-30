@@ -36,6 +36,7 @@ describe("pitch hover helpers", () => {
   it("clamps pitch lane indexes to the 88-key range", () => {
     expect(getPitchLaneStyle(-10)).toEqual(getPitchLaneStyle(0));
     expect(getPitchLaneStyle(999)).toEqual(getPitchLaneStyle(87));
+    expect(getPitchLaneStyle(Number.NaN)).toEqual(getPitchLaneStyle(0));
   });
 
   it("maps pitch lane indexes to CSS percentage properties", () => {
@@ -154,10 +155,50 @@ describe("pitch hover helpers", () => {
     ).toBeNull();
   });
 
+  it("returns null for non-finite pointer geometry inputs", () => {
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: Number.NaN,
+        clientY: 0,
+        bounds,
+        viewport
+      })
+    ).toBeNull();
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 0,
+        clientY: Number.POSITIVE_INFINITY,
+        bounds,
+        viewport
+      })
+    ).toBeNull();
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 0,
+        clientY: 0,
+        bounds: { ...bounds, left: Number.NaN },
+        viewport
+      })
+    ).toBeNull();
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 0,
+        clientY: 0,
+        bounds: { ...bounds, top: Number.POSITIVE_INFINITY },
+        viewport
+      })
+    ).toBeNull();
+  });
+
   it("formats precise time labels with milliseconds", () => {
     expect(formatPreciseTimeLabel(0)).toBe("00:00.000");
     expect(formatPreciseTimeLabel(1000.6)).toBe("00:01.001");
     expect(formatPreciseTimeLabel(84_320)).toBe("01:24.320");
     expect(formatPreciseTimeLabel(3_661_009)).toBe("61:01.009");
+    expect(formatPreciseTimeLabel(Number.NaN)).toBe("00:00.000");
+    expect(formatPreciseTimeLabel(Number.POSITIVE_INFINITY)).toBe("00:00.000");
   });
 });

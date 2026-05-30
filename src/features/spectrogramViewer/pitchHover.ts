@@ -58,6 +58,10 @@ export function getPitchHoverStateFromPoint({
   if (
     !Number.isFinite(bounds.width) ||
     !Number.isFinite(bounds.height) ||
+    !Number.isFinite(bounds.left) ||
+    !Number.isFinite(bounds.top) ||
+    !Number.isFinite(clientX) ||
+    !Number.isFinite(clientY) ||
     bounds.width <= 0 ||
     bounds.height <= 0 ||
     !Number.isFinite(viewport.startMs) ||
@@ -91,7 +95,7 @@ export function getPitchHoverStateFromPoint({
 }
 
 export function formatPreciseTimeLabel(timeMs: number) {
-  const safeTimeMs = Math.max(0, Math.round(timeMs));
+  const safeTimeMs = Number.isFinite(timeMs) ? Math.max(0, Math.round(timeMs)) : 0;
   const totalSeconds = Math.floor(safeTimeMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -103,5 +107,9 @@ export function formatPreciseTimeLabel(timeMs: number) {
 }
 
 function clamp(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+
   return Math.min(max, Math.max(min, value));
 }
