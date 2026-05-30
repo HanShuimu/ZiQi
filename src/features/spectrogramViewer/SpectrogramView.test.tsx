@@ -200,6 +200,111 @@ describe("SpectrogramView", () => {
     expect(spectrogramView.style.getPropertyValue("--spectrogram-display-height")).toBe("528px");
   });
 
+  it("idle pitch hover status strip appears above spectrogram rows", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const spectrogramView = container.querySelector(".spectrogram-view") as HTMLElement;
+    const status = screen.getByTestId("pitch-hover-status");
+
+    expect(status.textContent).toContain("Pointer");
+    expect(status.textContent).toContain("Hover over the heatmap");
+    expect(spectrogramView.firstElementChild).toBe(status);
+    expect(status.nextElementSibling?.classList.contains("spectrogram-time-grid")).toBe(true);
+  });
+
+  it("pointer move updates status, active piano key, hover row, hover time line", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+
+    const status = screen.getByTestId("pitch-hover-status");
+    const hoverRow = screen.getByTestId("pitch-hover-row");
+    const hoverTimeLine = screen.getByTestId("pitch-hover-time-line");
+    const activeKey = screen.getByTitle("D#5");
+
+    expect(status.textContent).toContain("D#5");
+    expect(status.textContent).toContain("00:06.000");
+    expect(hoverRow.style.bottom).toBe("61.36363636363637%");
+    expect(hoverRow.style.height).toBe("1.1363636363636365%");
+    expect(hoverTimeLine.style.left).toBe("50%");
+    expect(activeKey.classList.contains("piano-key-active")).toBe(true);
+    expect(activeKey.style.bottom).toBe(hoverRow.style.bottom);
+  });
+
+  it("pointer leave clears state", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+    fireEvent.pointerLeave(frame);
+
+    const status = screen.getByTestId("pitch-hover-status");
+
+    expect(status.textContent).toContain("Pointer");
+    expect(status.textContent).toContain("Hover over the heatmap");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+  });
+
   it("keeps the lowest and highest piano keys inside the pitch axis", () => {
     renderSpectrogramView(
       <SpectrogramView

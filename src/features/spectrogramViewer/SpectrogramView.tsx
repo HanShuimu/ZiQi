@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, PointerEvent } from "react";
 import { PIANO_KEYS, magnitudeToSpectrogramColor } from "../../services/audio/spectrogram";
 import type {
   PitchEnergyOverview,
@@ -27,11 +27,16 @@ import {
   filterWaveformPointsForViewport
 } from "./spectrogramViewport";
 import { SpectrogramTimelineNavigator } from "../../capabilities/timelineViewport";
+import {
+  formatPreciseTimeLabel,
+  getPitchHoverStateFromPoint,
+  getPitchLaneCssProperties
+} from "./pitchHover";
+import type { HeatmapPointerState } from "./pitchHover";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = PITCH_HEATMAP_MIN_HEIGHT_PX;
 const MAX_RENDERED_WAVEFORM_POINTS = 800;
-const PIANO_KEY_HEIGHT_PERCENT = 1.4;
 const SPECTROGRAM_VIEW_STYLE = {
   "--spectrogram-display-height": `${CANVAS_HEIGHT}px`
 } as CSSProperties;
@@ -77,6 +82,7 @@ export function SpectrogramView({
       ? internalViewportState.viewport
       : createDefaultSpectrogramViewport(durationMs);
   const activeViewport = controlledViewport ?? internalViewport;
+  const [pointerState, setPointerState] = useState<HeatmapPointerState | null>(null);
 
   function updateViewport(nextViewport: SpectrogramViewport) {
     if (!controlledViewport) {
@@ -192,8 +198,45 @@ export function SpectrogramView({
     }
   }
 
+  function handleSpectrogramPointerMove(event: PointerEvent<HTMLDivElement>) {
+    if (!hasPitchFrames) {
+      return;
+    }
+
+    const bounds = event.currentTarget.getBoundingClientRect();
+    setPointerState(
+      getPitchHoverStateFromPoint({
+        clientX: event.clientX,
+        clientY: event.clientY,
+        bounds,
+        viewport: activeViewport
+      })
+    );
+  }
+
+  function handleSpectrogramPointerLeave() {
+    setPointerState(null);
+  }
+
   return (
     <div className="spectrogram-view" style={SPECTROGRAM_VIEW_STYLE}>
+      <div className="pitch-hover-status" data-testid="pitch-hover-status">
+        {pointerState ? (
+          <>
+            <span className="pitch-hover-status-label">{pointerState.noteName}</span>
+            <span>{pointerState.frequencyHz.toFixed(2)} Hz</span>
+            <span>MIDI {pointerState.midiNumber}</span>
+            <span className="pitch-hover-status-time">
+              {formatPreciseTimeLabel(pointerState.timeMs)}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="pitch-hover-status-label">Pointer</span>
+            <span>Hover over the heatmap</span>
+          </>
+        )}
+      </div>
       <div className="spectrogram-time-grid">
         <div className="spectrogram-axis-spacer" />
         <div className="waveform-overview spectrogram-waveform-row" aria-label="Audio waveform overview" role="img">
@@ -218,27 +261,32 @@ export function SpectrogramView({
         <div className="spectrogram-body">
           <div className="piano-axis" aria-label="Piano pitch axis">
             {PIANO_KEYS.map((key, index) => {
-              const bottomPercent = getPianoKeyBottomPercent(index);
+              const laneStyle = getPitchLaneCssProperties(index);
+              const bottomPercent = Number.parseFloat(laneStyle.bottom);
+              const isActiveKey = pointerState?.midiNumber === key.midiNumber;
 
               return (
                 <div
                   key={key.midiNumber}
                   className={
-                    key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"
+                    `${key.isBlackKey ? "piano-key piano-key-black" : "piano-key piano-key-white"}${isActiveKey ? " piano-key-active" : ""}`
                   }
                   data-bottom-percent={bottomPercent}
                   data-log-position={index / (PIANO_KEYS.length - 1)}
                   data-testid="piano-key"
-                  style={{
-                    bottom: `${bottomPercent}%`
-                  }}
+                  style={laneStyle}
                   title={key.name}
                 />
               );
             })}
           </div>
 
-          <div className="spectrogram-canvas-frame" onWheel={handleSpectrogramWheel}>
+          <div
+            className="spectrogram-canvas-frame"
+            onPointerLeave={handleSpectrogramPointerLeave}
+            onPointerMove={handleSpectrogramPointerMove}
+            onWheel={handleSpectrogramWheel}
+          >
             <canvas
               aria-label="Pitch heatmap"
               className="spectrogram-canvas"
@@ -249,6 +297,20 @@ export function SpectrogramView({
             />
             {!hasPitchFrames ? (
               <div className="spectrogram-empty">Generating pitch heatmap...</div>
+            ) : null}
+            {pointerState ? (
+              <>
+                <div
+                  className="spectrogram-hover-row"
+                  data-testid="pitch-hover-row"
+                  style={getPitchLaneCssProperties(pointerState.pitchIndex)}
+                />
+                <div
+                  className="spectrogram-hover-time-line"
+                  data-testid="pitch-hover-time-line"
+                  style={{ left: `${pointerState.xPercent}%` }}
+                />
+              </>
             ) : null}
             {timeGridLines.map((position) => (
               <div
@@ -328,11 +390,6 @@ function createTimeGridLines(viewport: SpectrogramViewport) {
   }
 
   return positions;
-}
-
-function getPianoKeyBottomPercent(index: number) {
-  const boundedPosition = Math.min(1, Math.max(0, index / (PIANO_KEYS.length - 1)));
-  return Math.round(boundedPosition * (100 - PIANO_KEY_HEIGHT_PERCENT) * 1000) / 1000;
 }
 
 function getMaxEnergyForColumn(
