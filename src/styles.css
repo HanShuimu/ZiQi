@@ -514,6 +514,7 @@ button:disabled {
   border-radius: 6px;
   background: rgba(244, 179, 110, 0.55);
   cursor: grab;
+  z-index: 2;
 }
 
 .spectrogram-navigator-thumb:active {
@@ -545,17 +546,21 @@ button:disabled {
   top: 0;
   width: 1px;
   background: #2563eb;
-  z-index: 2;
+  z-index: 1;
 }
 
 .spectrogram-navigator-hover-time span {
   position: absolute;
-  bottom: 100%;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  color: #1e3a8a;
+  transform: translate(-50%, -50%);
+  color: #ffffff;
   font-size: 0.72rem;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+  padding: 0.12rem 0.2rem;
+  border-radius: 4px;
+  background: rgba(30, 58, 138, 0.82);
   white-space: nowrap;
 }
 

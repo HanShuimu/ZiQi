@@ -194,4 +194,21 @@ describe("SpectrogramTimelineNavigator", () => {
 
     expect(screen.queryByTestId("spectrogram-navigator-hover-time")).toBeNull();
   });
+
+  it("does not render a hover time marker for non-finite hover times", () => {
+    for (const hoverTimeMs of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      const { unmount } = render(
+        <SpectrogramTimelineNavigator
+          currentTimeMs={0}
+          durationMs={20_000}
+          hoverTimeMs={hoverTimeMs}
+          onViewportChange={vi.fn()}
+          viewport={{ startMs: 0, durationMs: Number.POSITIVE_INFINITY }}
+        />
+      );
+
+      expect(screen.queryByTestId("spectrogram-navigator-hover-time")).toBeNull();
+      unmount();
+    }
+  });
 });

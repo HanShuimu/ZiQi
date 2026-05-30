@@ -44,7 +44,7 @@ export function SpectrogramTimelineNavigator({
   const loopLeftPercent = loopRange ? timeToTrackPercent(loopRange.startMs, durationMs) : 0;
   const loopRightPercent = loopRange ? timeToTrackPercent(loopRange.endMs, durationMs) : 0;
   const shouldShowHoverTime =
-    typeof hoverTimeMs === "number" && isTimeInsideViewport(hoverTimeMs, viewport);
+    Number.isFinite(hoverTimeMs) && isTimeInsideViewport(hoverTimeMs, viewport);
   const hoverTimePercent = shouldShowHoverTime ? timeToTrackPercent(hoverTimeMs, durationMs) : 0;
 
   function timeForClientX(clientX: number, track: HTMLElement) {
