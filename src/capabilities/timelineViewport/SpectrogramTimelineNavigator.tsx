@@ -3,13 +3,16 @@ import {
   clampSpectrogramViewport,
   formatTimeLabel,
   formatViewportRange,
+  isTimeInsideViewport,
   timeToTrackPercent
 } from "../../core/spectrogramViewport";
 import type { SpectrogramViewport } from "../../core/spectrogramViewport";
+import { formatPreciseTimeLabel } from "../../features/spectrogramViewer/pitchHover";
 
 interface SpectrogramTimelineNavigatorProps {
   currentTimeMs: number;
   durationMs: number;
+  hoverTimeMs?: number;
   loopRange?: { startMs: number; endMs: number };
   viewport: SpectrogramViewport;
   onSeek?: (timeMs: number) => void;
@@ -19,6 +22,7 @@ interface SpectrogramTimelineNavigatorProps {
 export function SpectrogramTimelineNavigator({
   currentTimeMs,
   durationMs,
+  hoverTimeMs,
   loopRange,
   viewport,
   onSeek,
@@ -39,6 +43,9 @@ export function SpectrogramTimelineNavigator({
   const playheadPercent = timeToTrackPercent(currentTimeMs, durationMs);
   const loopLeftPercent = loopRange ? timeToTrackPercent(loopRange.startMs, durationMs) : 0;
   const loopRightPercent = loopRange ? timeToTrackPercent(loopRange.endMs, durationMs) : 0;
+  const shouldShowHoverTime =
+    typeof hoverTimeMs === "number" && isTimeInsideViewport(hoverTimeMs, viewport);
+  const hoverTimePercent = shouldShowHoverTime ? timeToTrackPercent(hoverTimeMs, durationMs) : 0;
 
   function timeForClientX(clientX: number, track: HTMLElement) {
     const bounds = track.getBoundingClientRect();
@@ -148,6 +155,15 @@ export function SpectrogramTimelineNavigator({
               width: `${Math.max(0, loopRightPercent - loopLeftPercent)}%`
             }}
           />
+        ) : null}
+        {shouldShowHoverTime ? (
+          <div
+            className="spectrogram-navigator-hover-time"
+            data-testid="spectrogram-navigator-hover-time"
+            style={{ left: `${hoverTimePercent}%` }}
+          >
+            <span>{formatPreciseTimeLabel(hoverTimeMs)}</span>
+          </div>
         ) : null}
         <div
           className="spectrogram-navigator-thumb"

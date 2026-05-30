@@ -538,6 +538,27 @@ button:disabled {
   top: 0;
 }
 
+.spectrogram-navigator-hover-time {
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 1px;
+  background: #2563eb;
+  z-index: 2;
+}
+
+.spectrogram-navigator-hover-time span {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #1e3a8a;
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
 @media (max-width: 1200px) {
   .workspace-grid {
     grid-template-columns: 1fr;

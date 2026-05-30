@@ -273,6 +273,38 @@ describe("SpectrogramView", () => {
     expect(activeKey.style.bottom).toBe(hoverRow.style.bottom);
   });
 
+  it("shows the hovered time in the timeline navigator", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+
+    const hoverTime = screen.getByTestId("spectrogram-navigator-hover-time");
+
+    expect(hoverTime.style.left).toBe("50%");
+    expect(hoverTime.textContent).toBe("00:06.000");
+  });
+
   it("pointer leave clears state", () => {
     const { container } = renderSpectrogramView(
       <SpectrogramView

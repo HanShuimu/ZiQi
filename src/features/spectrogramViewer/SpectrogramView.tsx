@@ -339,6 +339,7 @@ export function SpectrogramView({
           <SpectrogramTimelineNavigator
             currentTimeMs={currentTimeMs}
             durationMs={durationMs}
+            hoverTimeMs={pointerState?.timeMs}
             loopRange={loopRange}
             onSeek={onSeek}
             onViewportChange={updateViewport}
