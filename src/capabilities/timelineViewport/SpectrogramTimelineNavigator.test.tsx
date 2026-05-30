@@ -179,6 +179,7 @@ describe("SpectrogramTimelineNavigator", () => {
 
     expect(hoverTime.style.left).toBe("75%");
     expect(hoverTime.textContent).toBe("00:15.000");
+    expect(hoverTime.parentElement?.classList.contains("spectrogram-navigator-playback-track")).toBe(true);
   });
 
   it("does not render a hover time marker when hover time is outside the viewport", () => {

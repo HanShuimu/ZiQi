@@ -87,6 +87,20 @@ function stubCanvasFrameRect(element: Element) {
   });
 }
 
+function stubCanvasRect(element: Element, rect: Partial<DOMRect> = {}) {
+  vi.spyOn(element, "getBoundingClientRect").mockReturnValue({
+    x: rect.x ?? 0,
+    y: rect.y ?? 0,
+    width: rect.width ?? 1_000,
+    height: rect.height ?? 420,
+    top: rect.top ?? rect.y ?? 0,
+    right: rect.right ?? (rect.x ?? 0) + (rect.width ?? 1_000),
+    bottom: rect.bottom ?? (rect.y ?? 0) + (rect.height ?? 420),
+    left: rect.left ?? rect.x ?? 0,
+    toJSON: () => ({})
+  });
+}
+
 describe("SpectrogramView", () => {
   beforeEach(() => {
     drawCalls.length = 0;
@@ -269,6 +283,42 @@ describe("SpectrogramView", () => {
     expect(hoverRow.style.bottom).toBe("61.36363636363637%");
     expect(hoverRow.style.height).toBe("1.1363636363636365%");
     expect(hoverTimeLine.style.left).toBe("50%");
+    expect(activeKey.classList.contains("piano-key-active")).toBe(true);
+    expect(activeKey.style.bottom).toBe(hoverRow.style.bottom);
+  });
+
+  it("maps hover pitch from the rendered canvas bounds instead of the outer frame", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    const canvas = container.querySelector(".spectrogram-canvas") as HTMLCanvasElement;
+    stubCanvasFrameRect(frame);
+    stubCanvasRect(canvas, { top: 100, bottom: 520, height: 420 });
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 260 });
+
+    const hoverRow = screen.getByTestId("pitch-hover-row");
+    const activeKey = screen.getByTitle("D#5");
+
+    expect(hoverRow.style.bottom).toBe("61.36363636363637%");
     expect(activeKey.classList.contains("piano-key-active")).toBe(true);
     expect(activeKey.style.bottom).toBe(hoverRow.style.bottom);
   });

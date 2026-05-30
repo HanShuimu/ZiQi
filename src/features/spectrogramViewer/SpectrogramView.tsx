@@ -207,7 +207,12 @@ export function SpectrogramView({
       return;
     }
 
-    const bounds = event.currentTarget.getBoundingClientRect();
+    const canvasBounds = canvasRef.current?.getBoundingClientRect();
+    const bounds =
+      canvasBounds && canvasBounds.width > 0 && canvasBounds.height > 0
+        ? canvasBounds
+        : event.currentTarget.getBoundingClientRect();
+
     setPointerState(
       getPitchHoverStateFromPoint({
         clientX: event.clientX,

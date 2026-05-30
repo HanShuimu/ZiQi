@@ -378,6 +378,7 @@ button:disabled {
 }
 
 .piano-key {
+  box-sizing: border-box;
   position: absolute;
   left: 0;
   height: calc(100% / 88);
@@ -439,6 +440,7 @@ button:disabled {
 }
 
 .spectrogram-hover-row {
+  box-sizing: border-box;
   position: absolute;
   left: 0;
   right: 0;

@@ -140,6 +140,15 @@ export function SpectrogramTimelineNavigator({
           data-testid="spectrogram-navigator-playhead"
           style={{ left: `${playheadPercent}%` }}
         />
+        {shouldShowHoverTime ? (
+          <div
+            className="spectrogram-navigator-hover-time"
+            data-testid="spectrogram-navigator-hover-time"
+            style={{ left: `${hoverTimePercent}%` }}
+          >
+            <span>{formatPreciseTimeLabel(hoverTimeMs)}</span>
+          </div>
+        ) : null}
       </div>
       <div
         className="spectrogram-navigator-viewport-track"
@@ -155,15 +164,6 @@ export function SpectrogramTimelineNavigator({
               width: `${Math.max(0, loopRightPercent - loopLeftPercent)}%`
             }}
           />
-        ) : null}
-        {shouldShowHoverTime ? (
-          <div
-            className="spectrogram-navigator-hover-time"
-            data-testid="spectrogram-navigator-hover-time"
-            style={{ left: `${hoverTimePercent}%` }}
-          >
-            <span>{formatPreciseTimeLabel(hoverTimeMs)}</span>
-          </div>
         ) : null}
         <div
           className="spectrogram-navigator-thumb"
