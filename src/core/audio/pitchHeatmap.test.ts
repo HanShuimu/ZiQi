@@ -11,6 +11,14 @@ import {
   mapPitchEnergyToDisplayValue
 } from "./pitchHeatmap";
 
+function energyForNormalizedDisplayValue(value: number) {
+  const db =
+    DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.noiseFloorDb +
+    DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS.dynamicRangeDb * value;
+
+  return 10 ** (db / 20);
+}
+
 describe("pitch heatmap helpers", () => {
   it("maps A0-C8 to stable 88-key indexes", () => {
     expect(MIN_PITCH_MIDI_NUMBER).toBe(21);
@@ -91,6 +99,49 @@ describe("pitch heatmap helpers", () => {
     expect(dim).toBeGreaterThanOrEqual(0);
     expect(bright).toBeLessThanOrEqual(1);
     expect(bright).toBeGreaterThan(dim);
+  });
+
+  it("keeps contrast 1 neutral for normalized display values", () => {
+    expect(
+      mapPitchEnergyToDisplayValue(
+        energyForNormalizedDisplayValue(0.25),
+        DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS
+      )
+    ).toBeCloseTo(0.25, 5);
+    expect(
+      mapPitchEnergyToDisplayValue(
+        energyForNormalizedDisplayValue(0.75),
+        DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS
+      )
+    ).toBeCloseTo(0.75, 5);
+  });
+
+  it("increases contrast around the midpoint instead of brightening globally", () => {
+    const highContrast = {
+      ...DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
+      contrast: 1.8
+    };
+
+    expect(
+      mapPitchEnergyToDisplayValue(energyForNormalizedDisplayValue(0.25), highContrast)
+    ).toBeLessThan(0.25);
+    expect(
+      mapPitchEnergyToDisplayValue(energyForNormalizedDisplayValue(0.75), highContrast)
+    ).toBeGreaterThan(0.75);
+  });
+
+  it("reduces contrast around the midpoint", () => {
+    const lowContrast = {
+      ...DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
+      contrast: 0.6
+    };
+
+    expect(
+      mapPitchEnergyToDisplayValue(energyForNormalizedDisplayValue(0.25), lowContrast)
+    ).toBeGreaterThan(0.25);
+    expect(
+      mapPitchEnergyToDisplayValue(energyForNormalizedDisplayValue(0.75), lowContrast)
+    ).toBeLessThan(0.75);
   });
 
   it("uses noise floor as background cutoff", () => {
