@@ -11,17 +11,17 @@ export const PITCH_HEATMAP_MIN_HEIGHT_PX =
 export const DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS: PitchHeatmapDisplaySettings = {
   gainDb: 0,
   contrast: 1,
-  dynamicRangeDb: 80,
-  noiseFloorDb: -90,
+  dynamicRangeDb: 110,
+  noiseFloorDb: -40,
   colorIntensity: 1
 };
 
 const SETTING_RANGES = {
-  gainDb: { min: -24, max: 36 },
-  contrast: { min: 0.5, max: 3 },
-  dynamicRangeDb: { min: 40, max: 120 },
-  noiseFloorDb: { min: -120, max: -40 },
-  colorIntensity: { min: 0.5, max: 2 }
+  gainDb: { min: -48, max: 24 },
+  contrast: { min: 0.6, max: 1.8 },
+  dynamicRangeDb: { min: 80, max: 150 },
+  noiseFloorDb: { min: -80, max: 0 },
+  colorIntensity: { min: 0.5, max: 1.4 }
 } as const;
 
 export function getMidiNumberForPitchIndex(index: number) {
