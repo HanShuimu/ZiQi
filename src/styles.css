@@ -405,6 +405,7 @@ button:disabled {
 .spectrogram-canvas-frame {
   position: relative;
   min-width: 0;
+  height: var(--spectrogram-display-height);
   min-height: var(--spectrogram-display-height);
   overflow-y: auto;
   border: 1px solid #211d1a;

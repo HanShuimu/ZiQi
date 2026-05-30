@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
@@ -12,6 +13,13 @@ const drawCalls: Array<{
   width: number;
   height: number;
 }> = [];
+const appStyles = readFileSync("src/styles.css", "utf8");
+
+function getCssRuleBlock(selector: string) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = appStyles.match(new RegExp(`${escapedSelector}\\s*{([^}]*)}`, "s"));
+  return match?.[1] ?? "";
+}
 
 function renderSpectrogramView(ui: React.ReactElement) {
   return render(wrapWithUiProvider(ui));
@@ -216,6 +224,13 @@ describe("SpectrogramView", () => {
 
     expect(canvas.height).toBe(528);
     expect(spectrogramView.style.getPropertyValue("--spectrogram-display-height")).toBe("528px");
+    expect(getCssRuleBlock(".piano-axis")).toMatch(
+      /(^|\n)\s*height:\s*var\(--spectrogram-display-height\)/
+    );
+    expect(getCssRuleBlock(".spectrogram-canvas-frame")).toMatch(
+      /(^|\n)\s*height:\s*var\(--spectrogram-display-height\)/
+    );
+    expect(getCssRuleBlock(".spectrogram-canvas")).toMatch(/(^|\n)\s*height:\s*100%/);
   });
 
   it("idle pitch hover status strip appears above spectrogram rows", () => {
