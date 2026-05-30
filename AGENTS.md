@@ -91,6 +91,13 @@ When `superpowers:writing-plans` is used:
 - Keep analysis data separate from UI rendering samples. Waveform analysis should produce stable time-based data; the UI may aggregate for display, but display size should not force re-analysis or change source analysis values.
 - Playback services should coordinate real media elements, not simulate browser playback. Only write `currentTime` for explicit seek or loop jumps; normal playback time should be read from the media element and synchronized into app state.
 
+## 7. Browser Visual Companion
+
+**When opening browser-based visual brainstorming, use the documented working workflow.**
+
+- Before trying to show mockups, diagrams, layout comparisons, or other temporary visuals in the in-app browser, read `docs/superpowers/handoffs/2026-05-23-browser-visual-companion-retrospective.md`.
+- In this Windows/Codex desktop environment, prefer the documented persistent `node_repl` local HTTP server workflow over shell-launched background servers.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
