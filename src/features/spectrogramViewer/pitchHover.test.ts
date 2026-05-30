@@ -43,7 +43,9 @@ describe("pitch hover helpers", () => {
     ).toMatchObject({
       pitchIndex: 87,
       midiNumber: 108,
-      noteName: "C8"
+      noteName: "C8",
+      frequencyHz: 4186.009044809578,
+      yPercent: 0
     });
 
     expect(
@@ -56,11 +58,12 @@ describe("pitch hover helpers", () => {
     ).toMatchObject({
       pitchIndex: 0,
       midiNumber: 21,
-      noteName: "A0"
+      noteName: "A0",
+      frequencyHz: 27.5
     });
   });
 
-  it("maps pointer x to viewport time and x percent", () => {
+  it("maps pointer position to viewport time and heatmap percentages", () => {
     expect(
       getPitchHoverStateFromPoint({
         clientX: 600,
@@ -70,6 +73,7 @@ describe("pitch hover helpers", () => {
       })
     ).toMatchObject({
       xPercent: 50,
+      yPercent: 50,
       timeMs: 65_000
     });
   });
@@ -84,6 +88,7 @@ describe("pitch hover helpers", () => {
       })
     ).toMatchObject({
       xPercent: 0,
+      yPercent: 0,
       pitchIndex: 87,
       timeMs: 60_000
     });
@@ -97,6 +102,7 @@ describe("pitch hover helpers", () => {
       })
     ).toMatchObject({
       xPercent: 100,
+      yPercent: 100,
       pitchIndex: 0,
       timeMs: 70_000
     });

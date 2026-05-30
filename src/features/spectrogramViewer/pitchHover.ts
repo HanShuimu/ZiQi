@@ -14,10 +14,12 @@ export interface HeatmapPointerBounds {
 
 export interface HeatmapPointerState {
   xPercent: number;
+  yPercent: number;
   timeMs: number;
   pitchIndex: number;
   midiNumber: number;
   noteName: string;
+  frequencyHz: number;
 }
 
 export function getPitchLaneStyle(pitchIndex: number) {
@@ -66,21 +68,23 @@ export function getPitchHoverStateFromPoint({
   const xOffset = clamp(clientX - bounds.left, 0, bounds.width);
   const yOffset = clamp(clientY - bounds.top, 0, bounds.height);
   const xRatio = xOffset / bounds.width;
+  const yRatio = yOffset / bounds.height;
   const topLaneIndex = Math.min(
     PITCH_HEATMAP_NOTE_COUNT - 1,
-    Math.floor((yOffset / bounds.height) * PITCH_HEATMAP_NOTE_COUNT)
+    Math.floor(yRatio * PITCH_HEATMAP_NOTE_COUNT)
   );
   const pitchIndex = PITCH_HEATMAP_NOTE_COUNT - 1 - topLaneIndex;
   const midiNumber = getMidiNumberForPitchIndex(pitchIndex);
-  const noteName =
-    PIANO_KEYS.find((key) => key.midiNumber === midiNumber)?.name ?? midiNumber.toString();
+  const pianoKey = PIANO_KEYS.find((key) => key.midiNumber === midiNumber);
 
   return {
     xPercent: xRatio * 100,
+    yPercent: yRatio * 100,
     timeMs: viewport.startMs + viewport.durationMs * xRatio,
     pitchIndex,
     midiNumber,
-    noteName
+    noteName: pianoKey?.name ?? midiNumber.toString(),
+    frequencyHz: pianoKey?.frequencyHz ?? 0
   };
 }
 
