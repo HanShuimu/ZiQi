@@ -231,6 +231,33 @@ describe("SpectrogramView", () => {
     ]);
   });
 
+  it("limits rendered bar grid lines for extreme bpm settings", () => {
+    renderSpectrogramView(
+      <SpectrogramView
+        beatOffsetMs={0}
+        beatsPerBar={1}
+        bpm={1_000_000}
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getAllByTestId("spectrogram-bar-grid-line")).toHaveLength(1_000);
+  });
+
   it("limits long spectrogram bin drawing to the canvas pixel columns", () => {
     renderSpectrogramView(
       <SpectrogramView

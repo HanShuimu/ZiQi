@@ -36,6 +36,7 @@ import type { HeatmapPointerState } from "./pitchHover";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = PITCH_HEATMAP_MIN_HEIGHT_PX;
+const MAX_BAR_GRID_LINES = 1_000;
 const MAX_RENDERED_WAVEFORM_POINTS = 800;
 const SPECTROGRAM_VIEW_STYLE = {
   "--spectrogram-display-height": `${CANVAS_HEIGHT}px`
@@ -450,7 +451,7 @@ function createBarGridLines(
 
   for (
     let barStartMs = beatOffsetMs + firstBarIndex * barDurationMs;
-    barStartMs < viewportEndMs;
+    barStartMs < viewportEndMs && lines.length < MAX_BAR_GRID_LINES;
     barStartMs += barDurationMs
   ) {
     if (barStartMs >= viewport.startMs) {
