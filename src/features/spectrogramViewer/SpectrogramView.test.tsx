@@ -165,6 +165,72 @@ describe("SpectrogramView", () => {
     expect(drawCalls.some((call) => call.fillStyle !== "rgb(0, 0, 0)")).toBe(true);
   });
 
+  it("renders visible bar grid lines from beats, bpm, and offset", () => {
+    renderSpectrogramView(
+      <SpectrogramView
+        beatOffsetMs={500}
+        beatsPerBar={4}
+        bpm={120}
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getAllByTestId("spectrogram-bar-grid-line").map((line) => line.style.left)).toEqual([
+      "5%",
+      "25%",
+      "45%",
+      "65%",
+      "85%"
+    ]);
+  });
+
+  it("keeps negative-offset bar grid lines aligned to the viewport", () => {
+    renderSpectrogramView(
+      <SpectrogramView
+        beatOffsetMs={-500}
+        beatsPerBar={4}
+        bpm={120}
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getAllByTestId("spectrogram-bar-grid-line").map((line) => line.style.left)).toEqual([
+      "15%",
+      "35%",
+      "55%",
+      "75%",
+      "95%"
+    ]);
+  });
+
   it("limits long spectrogram bin drawing to the canvas pixel columns", () => {
     renderSpectrogramView(
       <SpectrogramView

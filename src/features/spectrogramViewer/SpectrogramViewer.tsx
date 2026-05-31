@@ -159,6 +159,9 @@ export function SpectrogramViewer({
       />
 
       <SpectrogramView
+        beatOffsetMs={project.workspace.beatOffsetMs}
+        beatsPerBar={project.workspace.beatsPerBar}
+        bpm={project.workspace.bpm}
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
         loopRange={playbackState.loopRange ?? project.workspace.loopRange}

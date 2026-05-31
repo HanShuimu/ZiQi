@@ -46,6 +46,9 @@ function getViewportResetKey(durationMs: number, pitchEnergyOverview: PitchEnerg
 }
 
 interface SpectrogramViewProps {
+  beatOffsetMs?: number;
+  beatsPerBar?: number;
+  bpm?: number;
   currentTimeMs: number;
   durationMs: number;
   loopRange: { startMs: number; endMs: number } | undefined;
@@ -59,6 +62,9 @@ interface SpectrogramViewProps {
 }
 
 export function SpectrogramView({
+  beatOffsetMs = 0,
+  beatsPerBar = 4,
+  bpm = 120,
   currentTimeMs,
   durationMs,
   loopRange,
@@ -105,6 +111,10 @@ export function SpectrogramView({
   const isPlaybackVisible = isTimeInsideViewport(currentTimeMs, activeViewport);
   const progressPercent = isPlaybackVisible ? timeToViewportPercent(currentTimeMs, activeViewport) : 0;
   const timeGridLines = useMemo(() => createTimeGridLines(activeViewport), [activeViewport]);
+  const barGridLines = useMemo(
+    () => createBarGridLines(activeViewport, { beatOffsetMs, beatsPerBar, bpm }),
+    [activeViewport, beatOffsetMs, beatsPerBar, bpm]
+  );
   const hasPitchFrames =
     activePitchEnergyOverview !== null &&
     activePitchEnergyOverview !== undefined &&
@@ -329,6 +339,14 @@ export function SpectrogramView({
                 style={{ left: `${position}%` }}
               />
             ))}
+            {barGridLines.map((line) => (
+              <div
+                key={line.timeMs}
+                className="spectrogram-bar-grid-line"
+                data-testid="spectrogram-bar-grid-line"
+                style={{ left: `${line.leftPercent}%` }}
+              />
+            ))}
             {isPlaybackVisible ? (
               <div
                 className="cursor-line cursor-line-vertical spectrogram-cursor"
@@ -400,6 +418,50 @@ function createTimeGridLines(viewport: SpectrogramViewport) {
   }
 
   return positions;
+}
+
+function createBarGridLines(
+  viewport: SpectrogramViewport,
+  settings: { beatOffsetMs: number; beatsPerBar: number; bpm: number }
+) {
+  const { beatOffsetMs, beatsPerBar, bpm } = settings;
+
+  if (
+    !Number.isFinite(viewport.startMs) ||
+    !Number.isFinite(viewport.durationMs) ||
+    !Number.isFinite(beatOffsetMs) ||
+    !Number.isFinite(beatsPerBar) ||
+    !Number.isFinite(bpm) ||
+    viewport.durationMs <= 0 ||
+    beatsPerBar <= 0 ||
+    bpm <= 0
+  ) {
+    return [];
+  }
+
+  const barDurationMs = (60_000 / bpm) * beatsPerBar;
+  if (!Number.isFinite(barDurationMs) || barDurationMs <= 0) {
+    return [];
+  }
+
+  const viewportEndMs = viewport.startMs + viewport.durationMs;
+  const firstBarIndex = Math.ceil((viewport.startMs - beatOffsetMs) / barDurationMs);
+  const lines: Array<{ leftPercent: number; timeMs: number }> = [];
+
+  for (
+    let barStartMs = beatOffsetMs + firstBarIndex * barDurationMs;
+    barStartMs < viewportEndMs;
+    barStartMs += barDurationMs
+  ) {
+    if (barStartMs >= viewport.startMs) {
+      lines.push({
+        leftPercent: Math.round(timeToViewportPercent(barStartMs, viewport) * 1_000_000) / 1_000_000,
+        timeMs: barStartMs
+      });
+    }
+  }
+
+  return lines;
 }
 
 function getMaxEnergyForColumn(

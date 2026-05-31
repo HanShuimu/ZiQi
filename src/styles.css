@@ -440,6 +440,15 @@ button:disabled {
   pointer-events: none;
 }
 
+.spectrogram-bar-grid-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.68);
+  pointer-events: none;
+}
+
 .spectrogram-hover-row {
   box-sizing: border-box;
   position: absolute;
