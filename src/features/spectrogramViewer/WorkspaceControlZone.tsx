@@ -106,10 +106,16 @@ export function WorkspaceControlZone({
             value={bpm}
           />
         </label>
-        <button aria-label="Decrease BPM" onClick={() => onBarGridChange({ bpm: bpm - 1 })}>
+        <button
+          aria-label="Decrease BPM"
+          onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) - 1) })}
+        >
           -
         </button>
-        <button aria-label="Increase BPM" onClick={() => onBarGridChange({ bpm: bpm + 1 })}>
+        <button
+          aria-label="Increase BPM"
+          onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) + 1) })}
+        >
           +
         </button>
         <label>

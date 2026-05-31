@@ -235,6 +235,32 @@ describe("WorkbenchShell transport controls", () => {
     expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 121 });
   });
 
+  it("keeps BPM at one when decreasing from the minimum bar grid value", async () => {
+    const user = userEvent.setup();
+    const project = {
+      ...createMockProjectSummary(),
+      workspace: {
+        ...createMockProjectSummary().workspace,
+        bpm: 1
+      }
+    };
+    const onWorkspaceChange = vi.fn();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Decrease BPM" }));
+
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 1 });
+    expect(onWorkspaceChange).not.toHaveBeenCalledWith({ bpm: 0 });
+  });
+
   it("renders a single play toggle in the spectrum timeline controls", async () => {
     const user = userEvent.setup();
     const project = createMockProjectSummary();
