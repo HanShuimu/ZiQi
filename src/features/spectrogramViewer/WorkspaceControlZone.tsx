@@ -259,5 +259,5 @@ function parsePositiveInteger(value: string, fallback: number) {
 
 function parseInteger(value: string, fallback: number) {
   const parsed = Number(value);
-  return Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
+  return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
 }

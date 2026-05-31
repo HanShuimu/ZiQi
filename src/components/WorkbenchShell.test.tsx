@@ -205,13 +205,13 @@ describe("WorkbenchShell transport controls", () => {
       />
     );
 
-    fireEvent.change(screen.getByLabelText("Beats per bar"), { target: { value: "3" } });
-    fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "96" } });
-    fireEvent.change(screen.getByLabelText("Beat offset milliseconds"), { target: { value: "-250" } });
+    fireEvent.change(screen.getByLabelText("Beats per bar"), { target: { value: "3.7" } });
+    fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "96.6" } });
+    fireEvent.change(screen.getByLabelText("Beat offset milliseconds"), { target: { value: "-250.6" } });
 
-    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatsPerBar: 3 });
-    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 96 });
-    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatOffsetMs: -250 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatsPerBar: 4 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 97 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatOffsetMs: -251 });
   });
 
   it("steps BPM by one from the bar grid arrow buttons", async () => {
