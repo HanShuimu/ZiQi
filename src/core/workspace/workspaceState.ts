@@ -8,6 +8,7 @@ const DEFAULT_WORKSPACE_BASE = {
   preset: "pure-spectrum",
   activeDock: "analysis",
   gridEnabled: true,
+  beatsPerBar: 4,
   bpm: 120,
   beatOffsetMs: 0,
   playbackRate: 1
@@ -30,8 +31,9 @@ export function normalizeWorkspaceState(
     preset: isPreset(workspace.preset) ? workspace.preset : defaultWorkspace.preset,
     activeDock: isActiveDock(workspace.activeDock) ? workspace.activeDock : defaultWorkspace.activeDock,
     gridEnabled: typeof workspace.gridEnabled === "boolean" ? workspace.gridEnabled : defaultWorkspace.gridEnabled,
-    bpm: finiteOrDefault(workspace.bpm, defaultWorkspace.bpm),
-    beatOffsetMs: finiteOrDefault(workspace.beatOffsetMs, defaultWorkspace.beatOffsetMs),
+    beatsPerBar: positiveIntegerOrDefault(workspace.beatsPerBar, defaultWorkspace.beatsPerBar),
+    bpm: positiveIntegerOrDefault(workspace.bpm, defaultWorkspace.bpm),
+    beatOffsetMs: finiteIntegerOrDefault(workspace.beatOffsetMs, defaultWorkspace.beatOffsetMs),
     playbackRate: isSupportedPlaybackRate(workspace.playbackRate)
       ? workspace.playbackRate
       : defaultWorkspace.playbackRate,
@@ -44,8 +46,22 @@ export function normalizeWorkspaceState(
   };
 }
 
-function finiteOrDefault(value: unknown, fallback: number) {
-  return Number.isFinite(value) ? Number(value) : fallback;
+function positiveIntegerOrDefault(value: unknown, fallback: number) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return fallback;
+  }
+
+  return Math.round(numericValue);
+}
+
+function finiteIntegerOrDefault(value: unknown, fallback: number) {
+  const numericValue = Number(value);
+  if (!Number.isFinite(numericValue)) {
+    return fallback;
+  }
+
+  return Math.round(numericValue);
 }
 
 function isSupportedPlaybackRate(value: unknown): value is SupportedPlaybackRate {
