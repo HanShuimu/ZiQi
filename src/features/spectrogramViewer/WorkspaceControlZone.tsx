@@ -74,9 +74,9 @@ export function WorkspaceControlZone({
         </div>
       </div>
 
-      <div className="workspace-control-group" aria-label="Bar Grid controls">
+      <div className="workspace-control-group bar-grid-controls" aria-label="Bar Grid controls">
         <div className="workspace-control-label">Bar Grid</div>
-        <label>
+        <label className="bar-grid-number-field">
           Beats
           <input
             aria-label="Beats per bar"
@@ -91,34 +91,38 @@ export function WorkspaceControlZone({
             value={beatsPerBar}
           />
         </label>
-        <label>
-          BPM
-          <input
-            aria-label="BPM"
-            min={1}
-            onChange={(event) =>
-              onBarGridChange({
-                bpm: parsePositiveInteger(event.currentTarget.value, bpm)
-              })
-            }
-            step={1}
-            type="number"
-            value={bpm}
-          />
-        </label>
-        <button
-          aria-label="Decrease BPM"
-          onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) - 1) })}
-        >
-          -
-        </button>
-        <button
-          aria-label="Increase BPM"
-          onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) + 1) })}
-        >
-          +
-        </button>
-        <label>
+        <div className="bar-grid-number-field">
+          <span>BPM</span>
+          <span className="bpm-stepper">
+            <button
+              aria-label="Decrease BPM"
+              onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) - 1) })}
+              type="button"
+            >
+              -
+            </button>
+            <input
+              aria-label="BPM"
+              min={1}
+              onChange={(event) =>
+                onBarGridChange({
+                  bpm: parsePositiveInteger(event.currentTarget.value, bpm)
+                })
+              }
+              step={1}
+              type="number"
+              value={bpm}
+            />
+            <button
+              aria-label="Increase BPM"
+              onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) + 1) })}
+              type="button"
+            >
+              +
+            </button>
+          </span>
+        </div>
+        <label className="bar-grid-number-field">
           Offset ms
           <input
             aria-label="Beat offset milliseconds"
