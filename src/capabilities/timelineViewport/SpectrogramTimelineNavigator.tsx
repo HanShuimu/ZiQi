@@ -7,7 +7,18 @@ import {
   timeToTrackPercent
 } from "../../core/spectrogramViewport";
 import type { SpectrogramViewport } from "../../core/spectrogramViewport";
-import { formatPreciseTimeLabel } from "../../features/spectrogramViewer/pitchHover";
+
+function formatPreciseTimeLabel(timeMs: number) {
+  const safeTimeMs = Number.isFinite(timeMs) ? Math.max(0, Math.round(timeMs)) : 0;
+  const totalSeconds = Math.floor(safeTimeMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const milliseconds = safeTimeMs % 1000;
+
+  return `${minutes.toString().padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+}
 
 interface SpectrogramTimelineNavigatorProps {
   currentTimeMs: number;
