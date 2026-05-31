@@ -122,6 +122,25 @@ describe("workspaceState", () => {
     expect(workspace.beatOffsetMs).toBe(-120);
   });
 
+  it("falls back from non-number bar grid fields", () => {
+    const workspace = normalizeWorkspaceState(
+      {
+        preset: "pure-spectrum",
+        activeDock: "analysis",
+        gridEnabled: true,
+        beatsPerBar: "3",
+        bpm: true,
+        beatOffsetMs: "-250",
+        playbackRate: 1
+      },
+      12_000
+    );
+
+    expect(workspace.beatsPerBar).toBe(4);
+    expect(workspace.bpm).toBe(120);
+    expect(workspace.beatOffsetMs).toBe(0);
+  });
+
   it("clamps saved viewport and loop ranges to the audio duration", () => {
     const workspace = normalizeWorkspaceState(
       {

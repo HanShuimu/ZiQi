@@ -47,21 +47,19 @@ export function normalizeWorkspaceState(
 }
 
 function positiveIntegerOrDefault(value: unknown, fallback: number) {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
     return fallback;
   }
 
-  return Math.round(numericValue);
+  return Math.round(value);
 }
 
 function finiteIntegerOrDefault(value: unknown, fallback: number) {
-  const numericValue = Number(value);
-  if (!Number.isFinite(numericValue)) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
     return fallback;
   }
 
-  return Math.round(numericValue);
+  return Math.round(value);
 }
 
 function isSupportedPlaybackRate(value: unknown): value is SupportedPlaybackRate {
