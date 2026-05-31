@@ -141,6 +141,24 @@ describe("workspaceState", () => {
     expect(workspace.beatOffsetMs).toBe(0);
   });
 
+  it("falls back when rounded positive bar grid fields would be zero", () => {
+    const workspace = normalizeWorkspaceState(
+      {
+        preset: "pure-spectrum",
+        activeDock: "analysis",
+        gridEnabled: true,
+        beatsPerBar: 0.4,
+        bpm: 0.4,
+        beatOffsetMs: 0,
+        playbackRate: 1
+      },
+      12_000
+    );
+
+    expect(workspace.beatsPerBar).toBe(4);
+    expect(workspace.bpm).toBe(120);
+  });
+
   it("clamps saved viewport and loop ranges to the audio duration", () => {
     const workspace = normalizeWorkspaceState(
       {

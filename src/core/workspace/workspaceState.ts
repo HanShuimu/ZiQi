@@ -47,11 +47,12 @@ export function normalizeWorkspaceState(
 }
 
 function positiveIntegerOrDefault(value: unknown, fallback: number) {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
     return fallback;
   }
 
-  return Math.round(value);
+  const roundedValue = Math.round(value);
+  return roundedValue > 0 ? roundedValue : fallback;
 }
 
 function finiteIntegerOrDefault(value: unknown, fallback: number) {
