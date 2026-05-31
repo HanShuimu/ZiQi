@@ -28,7 +28,6 @@ import {
 } from "./spectrogramViewport";
 import { SpectrogramTimelineNavigator } from "../../capabilities/timelineViewport";
 import {
-  formatPreciseTimeLabel,
   formatPreciseTimeWithMilliseconds,
   getPitchHoverStateFromPoint,
   getPitchLaneCssProperties
