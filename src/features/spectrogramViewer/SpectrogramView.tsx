@@ -29,6 +29,7 @@ import {
 import { SpectrogramTimelineNavigator } from "../../capabilities/timelineViewport";
 import {
   formatPreciseTimeLabel,
+  formatPreciseTimeWithMilliseconds,
   getPitchHoverStateFromPoint,
   getPitchLaneCssProperties
 } from "./pitchHover";
@@ -236,7 +237,7 @@ export function SpectrogramView({
             <span>{pointerState.frequencyHz.toFixed(2)} Hz</span>
             <span>MIDI {pointerState.midiNumber}</span>
             <span className="pitch-hover-status-time">
-              {formatPreciseTimeLabel(pointerState.timeMs)}
+              {formatPreciseTimeWithMilliseconds(pointerState.timeMs)}
             </span>
           </>
         ) : (

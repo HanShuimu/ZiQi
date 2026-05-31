@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { SpectrogramViewport } from "../../core/spectrogramViewport";
 import {
   formatPreciseTimeLabel,
+  formatPreciseTimeWithMilliseconds,
   getPitchHoverStateFromPoint,
   getPitchLaneCssProperties,
   getPitchLaneStyle
@@ -200,5 +201,12 @@ describe("pitch hover helpers", () => {
     expect(formatPreciseTimeLabel(3_661_009)).toBe("61:01.009");
     expect(formatPreciseTimeLabel(Number.NaN)).toBe("00:00.000");
     expect(formatPreciseTimeLabel(Number.POSITIVE_INFINITY)).toBe("00:00.000");
+  });
+
+  it("formats precise time labels with raw milliseconds", () => {
+    expect(formatPreciseTimeWithMilliseconds(0)).toBe("00:00.000 (0 ms)");
+    expect(formatPreciseTimeWithMilliseconds(1000.6)).toBe("00:01.001 (1001 ms)");
+    expect(formatPreciseTimeWithMilliseconds(84_320)).toBe("01:24.320 (84320 ms)");
+    expect(formatPreciseTimeWithMilliseconds(Number.NaN)).toBe("00:00.000 (0 ms)");
   });
 });

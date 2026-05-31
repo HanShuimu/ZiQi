@@ -95,7 +95,7 @@ export function getPitchHoverStateFromPoint({
 }
 
 export function formatPreciseTimeLabel(timeMs: number) {
-  const safeTimeMs = Number.isFinite(timeMs) ? Math.max(0, Math.round(timeMs)) : 0;
+  const safeTimeMs = getSafeRoundedTimeMs(timeMs);
   const totalSeconds = Math.floor(safeTimeMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -104,6 +104,15 @@ export function formatPreciseTimeLabel(timeMs: number) {
   return `${minutes.toString().padStart(2, "0")}:${seconds
     .toString()
     .padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+}
+
+export function formatPreciseTimeWithMilliseconds(timeMs: number) {
+  const safeTimeMs = getSafeRoundedTimeMs(timeMs);
+  return `${formatPreciseTimeLabel(safeTimeMs)} (${safeTimeMs} ms)`;
+}
+
+function getSafeRoundedTimeMs(timeMs: number) {
+  return Number.isFinite(timeMs) ? Math.max(0, Math.round(timeMs)) : 0;
 }
 
 function clamp(value: number, min: number, max: number) {

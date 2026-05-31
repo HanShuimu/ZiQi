@@ -294,7 +294,7 @@ describe("SpectrogramView", () => {
     const activeKey = screen.getByTitle("D#5");
 
     expect(status.textContent).toContain("D#5");
-    expect(status.textContent).toContain("00:06.000");
+    expect(status.textContent).toContain("00:06.000 (6000 ms)");
     expect(hoverRow.style.bottom).toBe("61.36363636363637%");
     expect(hoverRow.style.height).toBe("1.1363636363636365%");
     expect(hoverTimeLine.style.left).toBe("50%");
