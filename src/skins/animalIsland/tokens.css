@@ -21,8 +21,8 @@
   --skin-radius-item: 18px;
   --skin-radius-control: 999px;
   --skin-shadow-panel: 0 18px 34px rgba(65, 107, 72, 0.16);
-  --animal-island-background-glow-primary: rgba(255, 255, 255, 0.38);
-  --animal-island-background-glow-secondary: rgba(255, 255, 255, 0.32);
+  --skin-background-glow-primary: rgba(255, 255, 255, 0.38);
+  --skin-background-glow-secondary: rgba(255, 255, 255, 0.32);
   --analysis-playhead: #38bdf8;
   --analysis-playhead-strong: #0ea5e9;
   --analysis-playhead-glow: rgba(56, 189, 248, 0.8);
@@ -30,6 +30,7 @@
   --analysis-hover: #38bdf8;
   --analysis-hover-border: rgba(56, 189, 248, 0.7);
   --analysis-hover-fill: rgba(56, 189, 248, 0.16);
+  --analysis-piano-active-fill: rgba(56, 189, 248, 0.2);
   --analysis-time-grid: rgba(255, 255, 255, 0.16);
   --analysis-bar-grid: rgba(255, 255, 255, 0.68);
   --analysis-waveform-start: #f4b36e;

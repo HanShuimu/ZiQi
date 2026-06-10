@@ -7,7 +7,7 @@ const allowedFiles = new Set([
   normalize("src/skins/default/tokens.css"),
   normalize("src/skins/animalIsland/tokens.css")
 ]);
-const colorPattern = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/;
+const colorPattern = /#[0-9a-fA-F]{3,8}\b|rgba?\(|hsla?\(/i;
 const violations = [];
 
 for (const filePath of collectCssFiles(path.join(root, "src"))) {
@@ -33,15 +33,17 @@ if (violations.length > 0) {
 }
 
 function collectCssFiles(directory) {
-  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const entryPath = path.join(directory, entry.name);
+  return fs.readdirSync(directory, { withFileTypes: true })
+    .sort((left, right) => left.name.localeCompare(right.name))
+    .flatMap((entry) => {
+      const entryPath = path.join(directory, entry.name);
 
-    if (entry.isDirectory()) {
-      return collectCssFiles(entryPath);
-    }
+      if (entry.isDirectory()) {
+        return collectCssFiles(entryPath);
+      }
 
-    return entry.name.endsWith(".css") ? [entryPath] : [];
-  });
+      return entry.name.endsWith(".css") ? [entryPath] : [];
+    });
 }
 
 function normalize(value) {
