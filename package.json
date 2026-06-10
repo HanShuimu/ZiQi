@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "vite",
     "test": "vitest run --environment jsdom",
-    "build": "tsc -p tsconfig.electron.json && vite build",
+    "typecheck": "tsc -p tsconfig.renderer.json && tsc -p tsconfig.electron.json",
+    "build": "npm run typecheck && vite build",
     "lint": "eslint .",
     "start": "electron dist-electron/main.js"
   },

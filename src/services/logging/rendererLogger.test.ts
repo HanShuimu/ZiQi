@@ -136,7 +136,7 @@ describe("rendererLogger", () => {
     const { rendererLogger } = await import("./rendererLogger");
     const log = vi.fn<(entry: RendererLogEntry) => void>();
 
-    window.ziqiApp = { log } as ZiqiPreloadApi;
+    window.ziqiApp = { log } as unknown as ZiqiPreloadApi;
 
     rendererLogger.trace("project.open.start", "Open project command started");
 

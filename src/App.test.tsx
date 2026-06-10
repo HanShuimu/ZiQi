@@ -1,10 +1,13 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { Mock } from "vitest";
 import { App } from "./App";
 import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "./core/audio/types";
 import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "./core/audio/pitchHeatmap";
 import type { ProjectSummary } from "./core/project/types";
+import type { PitchEnergyService } from "./services/audio/browserPitchEnergyService";
+import type { SpectrogramService } from "./services/audio/browserSpectrogramService";
 
 class FakeAudioElement {
   static instances: FakeAudioElement[] = [];
@@ -336,7 +339,7 @@ describe("App local audio import", () => {
     };
     const spectrogramService = createSpectrogramService({
       buildOverviewFromAudioData: vi
-        .fn()
+        .fn<SpectrogramService["buildOverviewFromAudioData"]>()
         .mockResolvedValueOnce(createSpectrogramOverview())
         .mockRejectedValueOnce(new Error("Failed to generate spectrogram."))
     });
@@ -904,7 +907,7 @@ describe("App local audio import", () => {
     };
     const spectrogramService = createSpectrogramService({
       buildOverviewFromAudioData: vi
-        .fn()
+        .fn<SpectrogramService["buildOverviewFromAudioData"]>()
         .mockResolvedValueOnce(createSpectrogramOverview())
         .mockRejectedValueOnce(new Error("Failed to generate spectrogram."))
     });
@@ -1250,7 +1253,7 @@ describe("App local audio import", () => {
         outcome: "success"
       })
     }));
-    const loggedEvents = window.ziqiApp!.log.mock.calls.map(([entry]) => entry.event);
+    const loggedEvents = vi.mocked(window.ziqiApp!.log).mock.calls.map(([entry]) => entry.event);
     expect(loggedEvents.indexOf("project.open.start")).toBeLessThan(
       loggedEvents.indexOf("project.open.pitchHeatmap.end")
     );
@@ -1424,21 +1427,31 @@ function createPitchEnergyOverview(): PitchEnergyOverview {
   };
 }
 
-function createSpectrogramService(overrides?: {
-  buildOverviewFromAudioData?: ReturnType<typeof vi.fn>;
-}) {
+type SpectrogramServiceMock = {
+  buildOverviewFromAudioData: Mock<SpectrogramService["buildOverviewFromAudioData"]>;
+};
+
+type PitchEnergyServiceMock = {
+  buildOverviewFromAudioData: Mock<PitchEnergyService["buildOverviewFromAudioData"]>;
+};
+
+function createSpectrogramService(overrides?: Partial<SpectrogramServiceMock>): SpectrogramServiceMock {
   return {
     buildOverviewFromAudioData:
-      overrides?.buildOverviewFromAudioData ?? vi.fn().mockResolvedValue(createSpectrogramOverview())
+      overrides?.buildOverviewFromAudioData ??
+      vi
+        .fn<SpectrogramService["buildOverviewFromAudioData"]>()
+        .mockResolvedValue(createSpectrogramOverview())
   };
 }
 
-function createPitchEnergyService(overrides?: {
-  buildOverviewFromAudioData?: ReturnType<typeof vi.fn>;
-}) {
+function createPitchEnergyService(overrides?: Partial<PitchEnergyServiceMock>): PitchEnergyServiceMock {
   return {
     buildOverviewFromAudioData:
-      overrides?.buildOverviewFromAudioData ?? vi.fn().mockResolvedValue(createPitchEnergyOverview())
+      overrides?.buildOverviewFromAudioData ??
+      vi
+        .fn<PitchEnergyService["buildOverviewFromAudioData"]>()
+        .mockResolvedValue(createPitchEnergyOverview())
   };
 }
 
