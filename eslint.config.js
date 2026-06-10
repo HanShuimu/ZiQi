@@ -7,9 +7,46 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 const workspaceRoot = path.dirname(fileURLToPath(import.meta.url));
+const rawBusinessControlTags = new Set(["button", "input", "select", "textarea"]);
 
 const architecturePlugin = {
   rules: {
+    "no-raw-business-controls": {
+      meta: {
+        type: "problem",
+        docs: {
+          description: "Require business UI to use ui primitives for form controls."
+        },
+        messages: {
+          rawBusinessControl:
+            "Business UI must use ui primitives instead of raw form controls."
+        },
+        schema: []
+      },
+      create(context) {
+        return {
+          JSXOpeningElement(node) {
+            const importer = toProjectPath(context.filename);
+
+            if (
+              !importer ||
+              isTestFile(importer) ||
+              importer.startsWith("src/ui/") ||
+              importer.startsWith("src/skins/")
+            ) {
+              return;
+            }
+
+            if (
+              node.name.type === "JSXIdentifier" &&
+              rawBusinessControlTags.has(node.name.name)
+            ) {
+              context.report({ node, messageId: "rawBusinessControl" });
+            }
+          }
+        };
+      }
+    },
     "no-cross-feature-imports": {
       meta: {
         type: "problem",
@@ -138,6 +175,19 @@ export default tseslint.config(
           allowConstantExport: true
         }
       ]
+    }
+  },
+  {
+    files: [
+      "src/App.tsx",
+      "src/app/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/features/**/*.{ts,tsx}",
+      "src/workspaces/**/*.{ts,tsx}"
+    ],
+    ignores: ["src/**/*.test.{ts,tsx}", "src/ui/**", "src/skins/**"],
+    rules: {
+      "architecture/no-raw-business-controls": "error"
     }
   },
   {

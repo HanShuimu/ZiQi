@@ -129,6 +129,73 @@ describe("architecture lint boundaries", () => {
     );
   });
 
+  it("blocks raw buttons in business UI", async () => {
+    const messages = await lintText({
+      filePath: "src/features/spectrogramViewer/Control.tsx",
+      code: "export function Control() {\n  return <button type=\"button\">Play</button>;\n}\n"
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-raw-business-controls"
+      })
+    );
+  });
+
+  it("blocks raw inputs in legacy business components", async () => {
+    const messages = await lintText({
+      filePath: "src/components/LegacyControl.tsx",
+      code: "export function LegacyControl() {\n  return <input aria-label=\"Name\" />;\n}\n"
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-raw-business-controls"
+      })
+    );
+  });
+
+  it("allows raw controls in ui primitives", async () => {
+    const messages = await lintText({
+      filePath: "src/ui/components/Button.tsx",
+      code:
+        "export function Button() {\n  return <button type=\"button\"><input aria-label=\"Label\" /></button>;\n}\n"
+    });
+
+    expect(messages).not.toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-raw-business-controls"
+      })
+    );
+  });
+
+  it("allows raw controls in test files", async () => {
+    const messages = await lintText({
+      filePath: "src/features/spectrogramViewer/Control.test.tsx",
+      code: "export function TestControl() {\n  return <button type=\"button\"><input aria-label=\"Label\" /></button>;\n}\n"
+    });
+
+    expect(messages).not.toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-raw-business-controls"
+      })
+    );
+  });
+
+  it("allows raw controls in skin adapters", async () => {
+    const messages = await lintText({
+      filePath: "src/skins/default/adapter.tsx",
+      code:
+        "export function SkinButton() {\n  return <button type=\"button\"><input aria-label=\"Label\" /></button>;\n}\n"
+    });
+
+    expect(messages).not.toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-raw-business-controls"
+      })
+    );
+  });
+
   it("blocks services from importing React", async () => {
     const messages = await lintText({
       filePath: "src/services/playback/createPlaybackService.ts",
