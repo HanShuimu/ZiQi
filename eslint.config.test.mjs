@@ -129,30 +129,30 @@ describe("architecture lint boundaries", () => {
     );
   });
 
-  it("blocks raw buttons in business UI", async () => {
-    const messages = await lintText({
-      filePath: "src/features/spectrogramViewer/Control.tsx",
-      code: "export function Control() {\n  return <button type=\"button\">Play</button>;\n}\n"
-    });
+  it("blocks raw controls across business UI scope", async () => {
+    const businessPaths = [
+      "src/App.tsx",
+      "src/app/session/View.tsx",
+      "src/components/LegacyControl.tsx",
+      "src/features/spectrogramViewer/Control.tsx",
+      "src/workspaces/transcription/Workspace.tsx"
+    ];
+    const rawTags = ["button", "input", "select", "textarea"];
 
-    expect(messages).toContainEqual(
-      expect.objectContaining({
-        ruleId: "architecture/no-raw-business-controls"
-      })
-    );
-  });
+    for (const filePath of businessPaths) {
+      for (const tag of rawTags) {
+        const messages = await lintText({
+          filePath,
+          code: `export function Control() {\n  return <${tag} aria-label="Control" />;\n}\n`
+        });
 
-  it("blocks raw inputs in legacy business components", async () => {
-    const messages = await lintText({
-      filePath: "src/components/LegacyControl.tsx",
-      code: "export function LegacyControl() {\n  return <input aria-label=\"Name\" />;\n}\n"
-    });
-
-    expect(messages).toContainEqual(
-      expect.objectContaining({
-        ruleId: "architecture/no-raw-business-controls"
-      })
-    );
+        expect(messages).toContainEqual(
+          expect.objectContaining({
+            ruleId: "architecture/no-raw-business-controls"
+          })
+        );
+      }
+    }
   });
 
   it("allows raw controls in ui primitives", async () => {
