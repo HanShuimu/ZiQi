@@ -3,6 +3,7 @@ import { normalizeWorkspaceState } from "../../core/workspace/workspaceState";
 import type { ProjectCommandDependencies } from "./projectCommandTypes";
 
 export function createImportAudioCommand({
+  runtime,
   activePlaybackUrl,
   audioFacade,
   waveformService,
@@ -26,7 +27,7 @@ export function createImportAudioCommand({
 
     try {
       const nativeSelectStart = performance.now();
-      const selectedFile = await window.ziqiApp.selectAudioFile();
+      const selectedFile = await runtime.selectAudioFile();
       logger.trace("audio.import.nativeSelect.end", "Native audio selection completed", {
         durationMs: performance.now() - nativeSelectStart,
         canceled: selectedFile === null

@@ -21,6 +21,7 @@ import type { SkinId } from "../../core/userSettings/types";
 import { DEFAULT_USER_SETTINGS } from "../../core/userSettings/types";
 import { rendererLogger } from "../../services/logging/rendererLogger";
 import { createBrowserProjectAudioFacade } from "../../services/projectAudio/browserProjectAudioFacade";
+import { useAppRuntime } from "../runtime";
 import { AppSessionContext } from "./AppSessionContext";
 import type { AppSessionValue, ProjectLocation } from "./types";
 
@@ -37,6 +38,7 @@ export function AppSessionProvider({
   spectrogramService,
   pitchEnergyService
 }: AppSessionProviderProps) {
+  const runtime = useAppRuntime();
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [projectLocation, setProjectLocation] = useState<ProjectLocation | null>(null);
   const [waveformOverview, setWaveformOverview] = useState<WaveformOverview | null>(null);
@@ -78,7 +80,7 @@ export function AppSessionProvider({
   useEffect(() => {
     let isActive = true;
 
-    void window.ziqiApp.getUserSettings().then((settings) => {
+    void runtime.getUserSettings().then((settings) => {
       if (isActive) {
         setUiSkin(settings.uiSkin);
       }
@@ -87,12 +89,13 @@ export function AppSessionProvider({
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [runtime]);
 
   const value = useMemo<AppSessionValue>(
     () => {
       // eslint-disable-next-line react-hooks/refs
       const projectCommands = createProjectCommands({
+        runtime,
         project,
         projectLocation,
         activePlaybackUrl,
@@ -111,7 +114,7 @@ export function AppSessionProvider({
         setIsSavingProject,
         setImportError
       });
-      const skinCommands = createSkinCommands({ setUiSkin, setImportError });
+      const skinCommands = createSkinCommands({ runtime, setUiSkin, setImportError });
       const updateProjectAnalysisView = (analysisViewPatch: Partial<ProjectAnalysisView>) => {
         setProject((currentProject) => {
           if (!currentProject) {
@@ -162,6 +165,7 @@ export function AppSessionProvider({
       isSavingProject,
       importError,
       uiSkin,
+      runtime,
       audioFacade,
       activeWaveformService,
       activeSpectrogramService,

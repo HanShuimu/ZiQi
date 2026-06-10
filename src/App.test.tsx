@@ -157,6 +157,18 @@ describe("App local audio import", () => {
     expect(FakeAudioElement.instances[0].src).toBe("blob:audio-1");
   });
 
+  it("starts in a browser runtime without the Electron preload API", () => {
+    Object.defineProperty(window, "ziqiApp", {
+      configurable: true,
+      value: undefined
+    });
+
+    renderApp({});
+
+    expect(screen.getByText("No project loaded")).toBeTruthy();
+    expect(screen.getByText("Use the File menu to import audio or open an existing ZiQi project.")).toBeTruthy();
+  });
+
   it("revokes the current playback URL after a successful import unmounts", async () => {
     const audioData = new ArrayBuffer(8);
     window.ziqiApp.selectAudioFile = vi.fn().mockResolvedValue({

@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { RuntimeProvider, useAppRuntime } from "./app/runtime";
 import { AppSessionProvider } from "./app/session/AppSessionProvider";
 import { useAppSession } from "./app/session/useAppSession";
 import { useMenuCommands } from "./app/menu/useMenuCommands";
@@ -17,24 +18,27 @@ interface AppProps {
 
 export function App({ waveformService, spectrogramService, pitchEnergyService }: AppProps) {
   return (
-    <AppSessionProvider
-      waveformService={waveformService}
-      spectrogramService={spectrogramService}
-      pitchEnergyService={pitchEnergyService}
-    >
-      <AppContent />
-    </AppSessionProvider>
+    <RuntimeProvider>
+      <AppSessionProvider
+        waveformService={waveformService}
+        spectrogramService={spectrogramService}
+        pitchEnergyService={pitchEnergyService}
+      >
+        <AppContent />
+      </AppSessionProvider>
+    </RuntimeProvider>
   );
 }
 
 function AppContent() {
+  const runtime = useAppRuntime();
   const session = useAppSession();
   const skinDefinition = useMemo(
     () => getSkinDefinition(session.uiSkin),
     [session.uiSkin]
   );
 
-  useMenuCommands(session);
+  useMenuCommands({ runtime, ...session });
 
   return (
     <UiProvider skinId={skinDefinition.id} adapter={skinDefinition.adapter}>
