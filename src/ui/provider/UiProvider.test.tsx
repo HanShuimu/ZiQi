@@ -93,6 +93,39 @@ describe("UiProvider", () => {
     expect(onChange).toHaveBeenCalledWith(128);
   });
 
+  it("connects NumberField hint text to the input description", () => {
+    renderWithDefaultSkin(
+      <NumberField
+        label="Tempo with hint"
+        value={120}
+        hint="Whole beats per minute"
+        onChange={vi.fn()}
+      />
+    );
+
+    const input = screen.getByRole("spinbutton", { name: "Tempo with hint" });
+    const hint = screen.getByText("Whole beats per minute");
+
+    expect(hint.id).not.toBe("");
+    expect(input.getAttribute("aria-describedby")).toBe(hint.id);
+  });
+
+  it("ignores non-finite NumberField changes", () => {
+    const onChange = vi.fn();
+
+    renderWithDefaultSkin(<NumberField label="Invalid tempo" value={120} onChange={onChange} />);
+
+    const input = screen.getByRole("spinbutton", { name: "Invalid tempo" });
+    Object.defineProperty(input, "valueAsNumber", {
+      configurable: true,
+      value: Number.NaN
+    });
+
+    fireEvent.change(input);
+
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
   it("renders SliderField with accessible label and reports numeric changes", () => {
     const onChange = vi.fn();
 
@@ -105,6 +138,62 @@ describe("UiProvider", () => {
     });
 
     expect(onChange).toHaveBeenCalledWith(6);
+  });
+
+  it("connects SliderField hint text to the input description", () => {
+    renderWithDefaultSkin(
+      <SliderField
+        label="Zoom with hint"
+        value={4}
+        min={1}
+        max={8}
+        step={1}
+        hint="Controls horizontal scale"
+        onChange={vi.fn()}
+      />
+    );
+
+    const input = screen.getByRole("slider", { name: "Zoom with hint" });
+    const hint = screen.getByText("Controls horizontal scale");
+
+    expect(hint.id).not.toBe("");
+    expect(input.getAttribute("aria-describedby")).toBe(hint.id);
+  });
+
+  it("passes SliderField ariaValueText to the range input", () => {
+    renderWithDefaultSkin(
+      <SliderField
+        label="Zoom with aria text"
+        value={4}
+        min={1}
+        max={8}
+        step={1}
+        ariaValueText="Four bars"
+        onChange={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByRole("slider", { name: "Zoom with aria text" }).getAttribute("aria-valuetext")
+    ).toBe("Four bars");
+  });
+
+  it("ignores non-finite SliderField changes", () => {
+    const onChange = vi.fn();
+
+    renderWithDefaultSkin(
+      <SliderField label="Invalid zoom" value={4} min={1} max={8} step={1} onChange={onChange} />
+    );
+
+    const input = screen.getByRole("slider", { name: "Invalid zoom" });
+    Object.defineProperty(input, "valueAsNumber", {
+      configurable: true,
+      value: Number.NaN
+    });
+
+    fireEvent.change(input);
+
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("renders SegmentedControl options, selected state, and reports option changes", () => {
@@ -133,6 +222,26 @@ describe("UiProvider", () => {
     expect(onChange).toHaveBeenCalledWith("fast");
   });
 
+  it("reports numeric SegmentedControl option values as numbers", () => {
+    const onChange = vi.fn();
+
+    renderWithDefaultSkin(
+      <SegmentedControl
+        ariaLabel="Grid density"
+        value={1}
+        options={[
+          { label: "One", value: 1 },
+          { label: "Two", value: 2 }
+        ]}
+        onChange={onChange}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Two" }));
+
+    expect(onChange).toHaveBeenCalledWith(2);
+  });
+
   it("renders Toggle with accessible label and reports checked changes", () => {
     const onChange = vi.fn();
 
@@ -141,6 +250,23 @@ describe("UiProvider", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Loop playback" }));
 
     expect(onChange).toHaveBeenCalledWith(true);
+  });
+
+  it("connects Toggle hint text to the input description", () => {
+    renderWithDefaultSkin(
+      <Toggle
+        label="Loop playback with hint"
+        checked={false}
+        hint="Repeats the active loop range"
+        onChange={vi.fn()}
+      />
+    );
+
+    const input = screen.getByRole("checkbox", { name: "Loop playback with hint" });
+    const hint = screen.getByText("Repeats the active loop range");
+
+    expect(hint.id).not.toBe("");
+    expect(input.getAttribute("aria-describedby")).toBe(hint.id);
   });
 
   it("renders PanelSection label, title, and children", () => {
