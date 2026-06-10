@@ -167,6 +167,7 @@ describe("WorkbenchShell transport controls", () => {
     expect(controlZone.compareDocumentPosition(waveform) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText("Playback")).toBeTruthy();
     expect(screen.getByText("Speed")).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Playback speed" })).toBeTruthy();
     expect(screen.getByText("Loop")).toBeTruthy();
   });
 

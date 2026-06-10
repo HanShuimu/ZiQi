@@ -332,23 +332,23 @@ button:disabled {
   gap: 0.2rem;
 }
 
-.bar-grid-number-field input {
+.bar-grid-number-field .ui-number-input {
   box-sizing: border-box;
   width: 5.5rem;
 }
 
 .bpm-stepper {
-  align-items: center;
+  align-items: end;
   display: flex;
   gap: 0.25rem;
 }
 
-.bpm-stepper button {
+.bpm-stepper-button {
   min-width: 2rem;
   padding-inline: 0.45rem;
 }
 
-.bpm-stepper input {
+.bpm-number-input {
   width: 4.75rem;
 }
 
@@ -358,21 +358,8 @@ button:disabled {
   grid-template-columns: repeat(3, minmax(120px, 1fr));
 }
 
-.heatmap-display-controls label {
-  display: grid;
-  font-size: 0.72rem;
-  gap: 0.2rem;
-}
-
-.heatmap-display-controls input[type="range"] {
+.heatmap-display-controls .ui-slider-input {
   width: 100%;
-}
-
-.workspace-control-label {
-  color: var(--skin-accent);
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
 }
 
 .spectrogram-view {
@@ -445,12 +432,6 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-}
-
-.playback-rate-button[aria-pressed="true"] {
-  border-color: #111827;
-  background: #111827;
-  color: #ffffff;
 }
 
 .loop-summary {
