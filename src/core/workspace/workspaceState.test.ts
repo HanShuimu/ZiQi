@@ -11,6 +11,7 @@ describe("workspaceState", () => {
       preset: "pure-spectrum",
       activeDock: "analysis",
       gridEnabled: true,
+      beatsPerBar: 4,
       bpm: 120,
       beatOffsetMs: 0,
       playbackRate: 1,
@@ -31,8 +32,9 @@ describe("workspaceState", () => {
         preset: "spectrum-analysis",
         activeDock: "notes",
         gridEnabled: false,
-        bpm: 96,
-        beatOffsetMs: 42,
+        beatsPerBar: 3,
+        bpm: 96.4,
+        beatOffsetMs: -250.6,
         playbackRate: 0.75,
         loopRange: {
           startMs: 1_000,
@@ -50,8 +52,9 @@ describe("workspaceState", () => {
       preset: "spectrum-analysis",
       activeDock: "notes",
       gridEnabled: false,
+      beatsPerBar: 3,
       bpm: 96,
-      beatOffsetMs: 42,
+      beatOffsetMs: -251,
       playbackRate: 0.75,
       loopRange: {
         startMs: 1_000,
@@ -70,8 +73,9 @@ describe("workspaceState", () => {
         preset: "pure-spectrum",
         activeDock: "analysis",
         gridEnabled: true,
-        bpm: 120,
-        beatOffsetMs: 0,
+        beatsPerBar: -3,
+        bpm: 0,
+        beatOffsetMs: Number.NaN,
         playbackRate: 1.1,
         loopRange: {
           startMs: 5_000,
@@ -89,6 +93,7 @@ describe("workspaceState", () => {
       preset: "pure-spectrum",
       activeDock: "analysis",
       gridEnabled: true,
+      beatsPerBar: 4,
       bpm: 120,
       beatOffsetMs: 0,
       playbackRate: 1,
@@ -99,12 +104,68 @@ describe("workspaceState", () => {
     });
   });
 
+  it("fills bar grid defaults for older saved workspaces", () => {
+    const workspace = normalizeWorkspaceState(
+      {
+        preset: "pure-spectrum",
+        activeDock: "analysis",
+        gridEnabled: true,
+        bpm: 118,
+        beatOffsetMs: -120,
+        playbackRate: 1
+      },
+      12_000
+    );
+
+    expect(workspace.beatsPerBar).toBe(4);
+    expect(workspace.bpm).toBe(118);
+    expect(workspace.beatOffsetMs).toBe(-120);
+  });
+
+  it("falls back from non-number bar grid fields", () => {
+    const workspace = normalizeWorkspaceState(
+      {
+        preset: "pure-spectrum",
+        activeDock: "analysis",
+        gridEnabled: true,
+        beatsPerBar: "3",
+        bpm: true,
+        beatOffsetMs: "-250",
+        playbackRate: 1
+      },
+      12_000
+    );
+
+    expect(workspace.beatsPerBar).toBe(4);
+    expect(workspace.bpm).toBe(120);
+    expect(workspace.beatOffsetMs).toBe(0);
+  });
+
+  it("falls back when rounded positive bar grid fields would be zero", () => {
+    const workspace = normalizeWorkspaceState(
+      {
+        preset: "pure-spectrum",
+        activeDock: "analysis",
+        gridEnabled: true,
+        beatsPerBar: 0.4,
+        bpm: 0.4,
+        beatOffsetMs: 0,
+        playbackRate: 1
+      },
+      12_000
+    );
+
+    expect(workspace.beatsPerBar).toBe(4);
+    expect(workspace.bpm).toBe(120);
+  });
+
   it("clamps saved viewport and loop ranges to the audio duration", () => {
     const workspace = normalizeWorkspaceState(
       {
         preset: "pure-spectrum",
         activeDock: "analysis",
         gridEnabled: true,
+        beatsPerBar: 4,
         bpm: 120,
         beatOffsetMs: 0,
         playbackRate: 1.25,

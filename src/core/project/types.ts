@@ -52,6 +52,7 @@ export interface WorkspaceState {
   preset: "pure-spectrum" | "spectrum-analysis" | "wide-compare";
   activeDock: "analysis" | "stems" | "notes" | "compare" | "hidden";
   gridEnabled: boolean;
+  beatsPerBar: number;
   bpm: number;
   beatOffsetMs: number;
   playbackRate: number;

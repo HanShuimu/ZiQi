@@ -3,13 +3,27 @@ import {
   clampSpectrogramViewport,
   formatTimeLabel,
   formatViewportRange,
+  isTimeInsideViewport,
   timeToTrackPercent
 } from "../../core/spectrogramViewport";
 import type { SpectrogramViewport } from "../../core/spectrogramViewport";
 
+function formatPreciseTimeLabel(timeMs: number) {
+  const safeTimeMs = Number.isFinite(timeMs) ? Math.max(0, Math.round(timeMs)) : 0;
+  const totalSeconds = Math.floor(safeTimeMs / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  const milliseconds = safeTimeMs % 1000;
+
+  return `${minutes.toString().padStart(2, "0")}:${seconds
+    .toString()
+    .padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+}
+
 interface SpectrogramTimelineNavigatorProps {
   currentTimeMs: number;
   durationMs: number;
+  hoverTimeMs?: number;
   loopRange?: { startMs: number; endMs: number };
   viewport: SpectrogramViewport;
   onSeek?: (timeMs: number) => void;
@@ -19,6 +33,7 @@ interface SpectrogramTimelineNavigatorProps {
 export function SpectrogramTimelineNavigator({
   currentTimeMs,
   durationMs,
+  hoverTimeMs,
   loopRange,
   viewport,
   onSeek,
@@ -39,6 +54,9 @@ export function SpectrogramTimelineNavigator({
   const playheadPercent = timeToTrackPercent(currentTimeMs, durationMs);
   const loopLeftPercent = loopRange ? timeToTrackPercent(loopRange.startMs, durationMs) : 0;
   const loopRightPercent = loopRange ? timeToTrackPercent(loopRange.endMs, durationMs) : 0;
+  const shouldShowHoverTime =
+    Number.isFinite(hoverTimeMs) && isTimeInsideViewport(hoverTimeMs, viewport);
+  const hoverTimePercent = shouldShowHoverTime ? timeToTrackPercent(hoverTimeMs, durationMs) : 0;
 
   function timeForClientX(clientX: number, track: HTMLElement) {
     const bounds = track.getBoundingClientRect();
@@ -133,6 +151,15 @@ export function SpectrogramTimelineNavigator({
           data-testid="spectrogram-navigator-playhead"
           style={{ left: `${playheadPercent}%` }}
         />
+        {shouldShowHoverTime ? (
+          <div
+            className="spectrogram-navigator-hover-time"
+            data-testid="spectrogram-navigator-hover-time"
+            style={{ left: `${hoverTimePercent}%` }}
+          >
+            <span>{formatPreciseTimeLabel(hoverTimeMs)}</span>
+          </div>
+        ) : null}
       </div>
       <div
         className="spectrogram-navigator-viewport-track"

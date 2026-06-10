@@ -170,6 +170,97 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.getByText("Loop")).toBeTruthy();
   });
 
+  it("renders bar grid controls above the waveform", () => {
+    const project = createMockProjectSummary();
+
+    renderWorkbenchShell(<WorkbenchShell project={project} />);
+
+    expect(screen.getByText("Bar Grid")).toBeTruthy();
+    expect(screen.getByLabelText("Beats per bar")).toMatchObject({
+      type: "number",
+      value: "4"
+    });
+    expect(screen.getByLabelText("BPM")).toMatchObject({
+      type: "number",
+      value: "120"
+    });
+    expect(screen.getByLabelText("Beat offset milliseconds")).toMatchObject({
+      type: "number",
+      value: "0"
+    });
+    expect(screen.getByRole("button", { name: "Decrease BPM" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Increase BPM" })).toBeTruthy();
+  });
+
+  it("reports bar grid control changes for persistence", () => {
+    const project = createMockProjectSummary();
+    const onWorkspaceChange = vi.fn();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Beats per bar"), { target: { value: "3.7" } });
+    fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "96.6" } });
+    fireEvent.change(screen.getByLabelText("Beat offset milliseconds"), { target: { value: "-250.6" } });
+
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatsPerBar: 4 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 97 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatOffsetMs: -251 });
+  });
+
+  it("steps BPM by one from the bar grid arrow buttons", async () => {
+    const user = userEvent.setup();
+    const project = createMockProjectSummary();
+    const onWorkspaceChange = vi.fn();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Decrease BPM" }));
+    await user.click(screen.getByRole("button", { name: "Increase BPM" }));
+
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 119 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 121 });
+  });
+
+  it("keeps BPM at one when decreasing from the minimum bar grid value", async () => {
+    const user = userEvent.setup();
+    const project = {
+      ...createMockProjectSummary(),
+      workspace: {
+        ...createMockProjectSummary().workspace,
+        bpm: 1
+      }
+    };
+    const onWorkspaceChange = vi.fn();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Decrease BPM" }));
+
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 1 });
+    expect(onWorkspaceChange).not.toHaveBeenCalledWith({ bpm: 0 });
+  });
+
   it("renders a single play toggle in the spectrum timeline controls", async () => {
     const user = userEvent.setup();
     const project = createMockProjectSummary();

@@ -1,15 +1,22 @@
 import { Button } from "../../ui";
 import type { PitchHeatmapDisplaySettings } from "../../core/audio/types";
 import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../../core/audio/pitchHeatmap";
+import type { WorkspaceState } from "../../core/project/types";
 
 const PLAYBACK_RATE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5] as const;
 
 export interface WorkspaceControlZoneProps {
+  beatOffsetMs: number;
+  beatsPerBar: number;
+  bpm: number;
   currentTimeMs: number;
   durationMs: number;
   isPlaying: boolean;
   playbackRate: number;
   loopRange: { startMs: number; endMs: number } | undefined;
+  onBarGridChange: (
+    settings: Partial<Pick<WorkspaceState, "beatOffsetMs" | "beatsPerBar" | "bpm">>
+  ) => void;
   onLoopClear: () => Promise<void> | void;
   onLoopEndSet: (timeMs: number) => Promise<void> | void;
   onLoopStartSet: (timeMs: number) => Promise<void> | void;
@@ -20,11 +27,15 @@ export interface WorkspaceControlZoneProps {
 }
 
 export function WorkspaceControlZone({
+  beatOffsetMs,
+  beatsPerBar,
+  bpm,
   currentTimeMs,
   durationMs,
   isPlaying,
   playbackRate,
   loopRange,
+  onBarGridChange,
   onLoopClear,
   onLoopEndSet,
   onLoopStartSet,
@@ -61,6 +72,70 @@ export function WorkspaceControlZone({
             </button>
           ))}
         </div>
+      </div>
+
+      <div className="workspace-control-group bar-grid-controls" aria-label="Bar Grid controls">
+        <div className="workspace-control-label">Bar Grid</div>
+        <label className="bar-grid-number-field">
+          Beats
+          <input
+            aria-label="Beats per bar"
+            min={1}
+            onChange={(event) =>
+              onBarGridChange({
+                beatsPerBar: parsePositiveInteger(event.currentTarget.value, beatsPerBar)
+              })
+            }
+            step={1}
+            type="number"
+            value={beatsPerBar}
+          />
+        </label>
+        <div className="bar-grid-number-field">
+          <span>BPM</span>
+          <span className="bpm-stepper">
+            <button
+              aria-label="Decrease BPM"
+              onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) - 1) })}
+              type="button"
+            >
+              -
+            </button>
+            <input
+              aria-label="BPM"
+              min={1}
+              onChange={(event) =>
+                onBarGridChange({
+                  bpm: parsePositiveInteger(event.currentTarget.value, bpm)
+                })
+              }
+              step={1}
+              type="number"
+              value={bpm}
+            />
+            <button
+              aria-label="Increase BPM"
+              onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) + 1) })}
+              type="button"
+            >
+              +
+            </button>
+          </span>
+        </div>
+        <label className="bar-grid-number-field">
+          Offset ms
+          <input
+            aria-label="Beat offset milliseconds"
+            onChange={(event) =>
+              onBarGridChange({
+                beatOffsetMs: parseInteger(event.currentTarget.value, beatOffsetMs)
+              })
+            }
+            step={1}
+            type="number"
+            value={beatOffsetMs}
+          />
+        </label>
       </div>
 
       <div className="workspace-control-group" aria-label="Loop controls">
@@ -175,4 +250,14 @@ function formatTime(ms: number) {
   const minutes = Math.floor(seconds / 60);
   const remainder = seconds % 60;
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
+}
+
+function parsePositiveInteger(value: string, fallback: number) {
+  const parsed = parseInteger(value, fallback);
+  return parsed > 0 ? parsed : fallback;
+}
+
+function parseInteger(value: string, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
 }

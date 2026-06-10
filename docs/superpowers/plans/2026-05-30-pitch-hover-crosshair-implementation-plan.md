@@ -18,11 +18,13 @@
 - Create: `src/features/spectrogramViewer/pitchHover.test.ts`
   - Tests pitch lane alignment, Y-to-pitch mapping, X-to-time mapping, clamping, and precise time labels.
 - Modify: `src/features/spectrogramViewer/SpectrogramView.tsx`
-  - Adds local hover state, status strip markup, heatmap overlays, piano-key active state, and passes hover time to the navigator.
+  - Adds local hover state, status strip markup, heatmap overlays, and piano-key active state. Task 3 wires this hover state into the navigator after the navigator supports the prop.
 - Modify: `src/features/spectrogramViewer/SpectrogramView.test.tsx`
   - Tests status strip placement, hover state updates, piano key active state, overlay positions, clear-on-leave, and existing playback cursor behavior.
 - Modify: `src/capabilities/timelineViewport/SpectrogramTimelineNavigator.tsx`
   - Accepts optional `hoverTimeMs` and renders a full-timeline time marker and label while the hover time is inside the current viewport.
+- Modify: `src/features/spectrogramViewer/SpectrogramView.tsx`
+  - Passes the active hover time into `SpectrogramTimelineNavigator` after Task 3 adds navigator support.
 - Modify: `src/capabilities/timelineViewport/SpectrogramTimelineNavigator.test.tsx`
   - Tests hover time marker position, label, and no-marker behavior when hover time is absent or outside the viewport.
 - Modify: `src/styles.css`
@@ -588,12 +590,6 @@ After the `spectrogram-empty` block and before `timeGridLines.map`, add:
             ) : null}
 ```
 
-In the `SpectrogramTimelineNavigator` props, add:
-
-```tsx
-            hoverTimeMs={pointerState?.timeMs}
-```
-
 Remove the now-unused `getPianoKeyBottomPercent` function at the bottom of the file.
 
 - [ ] **Step 8: Add CSS for the status strip and overlays**
@@ -698,6 +694,8 @@ Expected: commit succeeds with the SpectrogramView UI, tests, and CSS.
 **Files:**
 - Modify: `src/capabilities/timelineViewport/SpectrogramTimelineNavigator.tsx`
 - Modify: `src/capabilities/timelineViewport/SpectrogramTimelineNavigator.test.tsx`
+- Modify: `src/features/spectrogramViewer/SpectrogramView.tsx`
+- Modify: `src/features/spectrogramViewer/SpectrogramView.test.tsx`
 - Modify: `src/styles.css`
 
 - [ ] **Step 1: Add failing timeline marker tests**
@@ -836,7 +834,42 @@ In `src/styles.css`, add after `.spectrogram-navigator-loop-range`:
 }
 ```
 
-- [ ] **Step 7: Run navigator tests and verify they pass**
+- [ ] **Step 7: Wire SpectrogramView hover time into the navigator**
+
+In `src/features/spectrogramViewer/SpectrogramView.tsx`, add this prop to `SpectrogramTimelineNavigator`:
+
+```tsx
+            hoverTimeMs={pointerState?.timeMs}
+```
+
+Append this test to `src/features/spectrogramViewer/SpectrogramView.test.tsx` inside the existing `describe("SpectrogramView", () => { ... })` block:
+
+```ts
+  it("passes hover time through to the timeline navigator", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        loopRange={undefined}
+        onSeek={vi.fn()}
+        onViewportChange={vi.fn()}
+        spectrogramOverview={createLongSpectrogramOverview(12, 4)}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+
+    expect(screen.getByTestId("spectrogram-navigator-hover-time").style.left).toBe("50%");
+    expect(screen.getByText("00:06.000")).toBeTruthy();
+  });
+```
+
+- [ ] **Step 8: Run navigator tests and verify they pass**
 
 Run:
 
@@ -846,7 +879,7 @@ npm test -- src/capabilities/timelineViewport/SpectrogramTimelineNavigator.test.
 
 Expected: PASS.
 
-- [ ] **Step 8: Run SpectrogramView tests again**
+- [ ] **Step 9: Run SpectrogramView tests again**
 
 Run:
 
@@ -856,12 +889,12 @@ npm test -- src/features/spectrogramViewer/SpectrogramView.test.tsx
 
 Expected: PASS, including the hover tests from Task 2.
 
-- [ ] **Step 9: Commit timeline hover marker**
+- [ ] **Step 10: Commit timeline hover marker**
 
 Run:
 
 ```powershell
-git add -- src/capabilities/timelineViewport/SpectrogramTimelineNavigator.tsx src/capabilities/timelineViewport/SpectrogramTimelineNavigator.test.tsx src/styles.css
+git add -- src/capabilities/timelineViewport/SpectrogramTimelineNavigator.tsx src/capabilities/timelineViewport/SpectrogramTimelineNavigator.test.tsx src/features/spectrogramViewer/SpectrogramView.tsx src/features/spectrogramViewer/SpectrogramView.test.tsx src/styles.css
 git commit -m "Add timeline hover time marker"
 ```
 

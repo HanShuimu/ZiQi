@@ -163,4 +163,53 @@ describe("SpectrogramTimelineNavigator", () => {
     expect(loopRange.style.left).toBe("25%");
     expect(loopRange.style.width).toBe("50%");
   });
+
+  it("renders a hover time marker on the full timeline when hover time is inside the viewport", () => {
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={0}
+        durationMs={20_000}
+        hoverTimeMs={15_000}
+        onViewportChange={vi.fn()}
+        viewport={{ startMs: 10_000, durationMs: 10_000 }}
+      />
+    );
+
+    const hoverTime = screen.getByTestId("spectrogram-navigator-hover-time");
+
+    expect(hoverTime.style.left).toBe("75%");
+    expect(hoverTime.textContent).toBe("00:15.000");
+    expect(hoverTime.parentElement?.classList.contains("spectrogram-navigator-playback-track")).toBe(true);
+  });
+
+  it("does not render a hover time marker when hover time is outside the viewport", () => {
+    render(
+      <SpectrogramTimelineNavigator
+        currentTimeMs={0}
+        durationMs={20_000}
+        hoverTimeMs={5_000}
+        onViewportChange={vi.fn()}
+        viewport={{ startMs: 10_000, durationMs: 10_000 }}
+      />
+    );
+
+    expect(screen.queryByTestId("spectrogram-navigator-hover-time")).toBeNull();
+  });
+
+  it("does not render a hover time marker for non-finite hover times", () => {
+    for (const hoverTimeMs of [Number.NaN, Number.POSITIVE_INFINITY]) {
+      const { unmount } = render(
+        <SpectrogramTimelineNavigator
+          currentTimeMs={0}
+          durationMs={20_000}
+          hoverTimeMs={hoverTimeMs}
+          onViewportChange={vi.fn()}
+          viewport={{ startMs: 0, durationMs: Number.POSITIVE_INFINITY }}
+        />
+      );
+
+      expect(screen.queryByTestId("spectrogram-navigator-hover-time")).toBeNull();
+      unmount();
+    }
+  });
 });

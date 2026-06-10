@@ -1,0 +1,212 @@
+import { describe, expect, it } from "vitest";
+import type { SpectrogramViewport } from "../../core/spectrogramViewport";
+import {
+  formatPreciseTimeLabel,
+  formatPreciseTimeWithMilliseconds,
+  getPitchHoverStateFromPoint,
+  getPitchLaneCssProperties,
+  getPitchLaneStyle
+} from "./pitchHover";
+
+const viewport: SpectrogramViewport = {
+  startMs: 60_000,
+  durationMs: 10_000
+};
+
+const bounds = {
+  left: 100,
+  top: 50,
+  width: 1_000,
+  height: 528
+};
+
+describe("pitch hover helpers", () => {
+  it("maps pitch indexes to exact 88-lane percentages", () => {
+    expect(getPitchLaneStyle(0)).toEqual({
+      bottomPercent: 0,
+      topPercent: 98.86363636363636,
+      heightPercent: 1.1363636363636365
+    });
+    expect(getPitchLaneStyle(87)).toEqual({
+      bottomPercent: 98.86363636363636,
+      topPercent: 0,
+      heightPercent: 1.1363636363636365
+    });
+  });
+
+  it("clamps pitch lane indexes to the 88-key range", () => {
+    expect(getPitchLaneStyle(-10)).toEqual(getPitchLaneStyle(0));
+    expect(getPitchLaneStyle(999)).toEqual(getPitchLaneStyle(87));
+    expect(getPitchLaneStyle(Number.NaN)).toEqual(getPitchLaneStyle(0));
+  });
+
+  it("maps pitch lane indexes to CSS percentage properties", () => {
+    expect(getPitchLaneCssProperties(87)).toEqual({
+      bottom: "98.86363636363636%",
+      height: "1.1363636363636365%"
+    });
+  });
+
+  it("maps the top of the heatmap to C8 and the bottom to A0", () => {
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 100,
+        clientY: 50,
+        bounds,
+        viewport
+      })
+    ).toMatchObject({
+      pitchIndex: 87,
+      midiNumber: 108,
+      noteName: "C8",
+      frequencyHz: 4186.009044809578,
+      yPercent: 0
+    });
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 100,
+        clientY: 577,
+        bounds,
+        viewport
+      })
+    ).toMatchObject({
+      pitchIndex: 0,
+      midiNumber: 21,
+      noteName: "A0",
+      frequencyHz: 27.5
+    });
+  });
+
+  it("maps pointer position to viewport time and heatmap percentages", () => {
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 600,
+        clientY: 50 + 528 / 2,
+        bounds,
+        viewport
+      })
+    ).toMatchObject({
+      xPercent: 50,
+      yPercent: 50,
+      timeMs: 65_000
+    });
+  });
+
+  it("rounds pointer time to whole milliseconds", () => {
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 101,
+        clientY: 50,
+        bounds: { ...bounds, width: 3 },
+        viewport: { startMs: 0, durationMs: 10_000 }
+      })
+    ).toMatchObject({
+      timeMs: 3_333
+    });
+  });
+
+  it("clamps pointer coordinates to the heatmap bounds", () => {
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: -10,
+        clientY: -10,
+        bounds,
+        viewport
+      })
+    ).toMatchObject({
+      xPercent: 0,
+      yPercent: 0,
+      pitchIndex: 87,
+      timeMs: 60_000
+    });
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 2_000,
+        clientY: 2_000,
+        bounds,
+        viewport
+      })
+    ).toMatchObject({
+      xPercent: 100,
+      yPercent: 100,
+      pitchIndex: 0,
+      timeMs: 70_000
+    });
+  });
+
+  it("returns null when geometry or viewport cannot support hover", () => {
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 0,
+        clientY: 0,
+        bounds: { ...bounds, width: 0 },
+        viewport
+      })
+    ).toBeNull();
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 0,
+        clientY: 0,
+        bounds,
+        viewport: { startMs: 0, durationMs: 0 }
+      })
+    ).toBeNull();
+  });
+
+  it("returns null for non-finite pointer geometry inputs", () => {
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: Number.NaN,
+        clientY: 0,
+        bounds,
+        viewport
+      })
+    ).toBeNull();
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 0,
+        clientY: Number.POSITIVE_INFINITY,
+        bounds,
+        viewport
+      })
+    ).toBeNull();
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 0,
+        clientY: 0,
+        bounds: { ...bounds, left: Number.NaN },
+        viewport
+      })
+    ).toBeNull();
+
+    expect(
+      getPitchHoverStateFromPoint({
+        clientX: 0,
+        clientY: 0,
+        bounds: { ...bounds, top: Number.POSITIVE_INFINITY },
+        viewport
+      })
+    ).toBeNull();
+  });
+
+  it("formats precise time labels with milliseconds", () => {
+    expect(formatPreciseTimeLabel(0)).toBe("00:00.000");
+    expect(formatPreciseTimeLabel(1000.6)).toBe("00:01.001");
+    expect(formatPreciseTimeLabel(84_320)).toBe("01:24.320");
+    expect(formatPreciseTimeLabel(3_661_009)).toBe("61:01.009");
+    expect(formatPreciseTimeLabel(Number.NaN)).toBe("00:00.000");
+    expect(formatPreciseTimeLabel(Number.POSITIVE_INFINITY)).toBe("00:00.000");
+  });
+
+  it("formats precise time labels with raw milliseconds", () => {
+    expect(formatPreciseTimeWithMilliseconds(0)).toBe("00:00.000 (0 ms)");
+    expect(formatPreciseTimeWithMilliseconds(1000.6)).toBe("00:01.001 (1001 ms)");
+    expect(formatPreciseTimeWithMilliseconds(84_320)).toBe("01:24.320 (84320 ms)");
+    expect(formatPreciseTimeWithMilliseconds(Number.NaN)).toBe("00:00.000 (0 ms)");
+  });
+});

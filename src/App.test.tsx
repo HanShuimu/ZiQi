@@ -1452,6 +1452,7 @@ function createProjectSummary(filePath: string): ProjectSummary {
       preset: "spectrum-analysis",
       activeDock: "analysis",
       gridEnabled: true,
+      beatsPerBar: 4,
       bpm: 120,
       beatOffsetMs: 0,
       playbackRate: 1

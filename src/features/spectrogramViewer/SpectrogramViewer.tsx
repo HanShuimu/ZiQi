@@ -140,10 +140,14 @@ export function SpectrogramViewer({
       </div>
 
       <WorkspaceControlZone
+        beatOffsetMs={project.workspace.beatOffsetMs}
+        beatsPerBar={project.workspace.beatsPerBar}
+        bpm={project.workspace.bpm}
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
         isPlaying={playbackState.isPlaying}
         loopRange={playbackState.loopRange ?? project.workspace.loopRange}
+        onBarGridChange={onWorkspaceChange}
         onLoopClear={handleLoopClear}
         onLoopEndSet={handleLoopEndSet}
         onLoopStartSet={handleLoopStartSet}
@@ -155,6 +159,9 @@ export function SpectrogramViewer({
       />
 
       <SpectrogramView
+        beatOffsetMs={project.workspace.beatOffsetMs}
+        beatsPerBar={project.workspace.beatsPerBar}
+        bpm={project.workspace.bpm}
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
         loopRange={playbackState.loopRange ?? project.workspace.loopRange}

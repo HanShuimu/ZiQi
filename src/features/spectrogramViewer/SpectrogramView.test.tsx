@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import { SpectrogramView } from "./SpectrogramView";
@@ -12,10 +13,21 @@ const drawCalls: Array<{
   width: number;
   height: number;
 }> = [];
+const appStyles = readFileSync("src/styles.css", "utf8");
+
+function getCssRuleBlock(selector: string) {
+  const escapedSelector = selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = appStyles.match(new RegExp(`${escapedSelector}\\s*{([^}]*)}`, "s"));
+  return match?.[1] ?? "";
+}
 
 function renderSpectrogramView(ui: React.ReactElement) {
+  return render(wrapWithUiProvider(ui));
+}
+
+function wrapWithUiProvider(ui: React.ReactElement) {
   const skin = getSkinDefinition("default");
-  return render(
+  return (
     <UiProvider skinId={skin.id} adapter={skin.adapter}>
       {ui}
     </UiProvider>
@@ -83,6 +95,20 @@ function stubCanvasFrameRect(element: Element) {
   });
 }
 
+function stubCanvasRect(element: Element, rect: Partial<DOMRect> = {}) {
+  vi.spyOn(element, "getBoundingClientRect").mockReturnValue({
+    x: rect.x ?? 0,
+    y: rect.y ?? 0,
+    width: rect.width ?? 1_000,
+    height: rect.height ?? 420,
+    top: rect.top ?? rect.y ?? 0,
+    right: rect.right ?? (rect.x ?? 0) + (rect.width ?? 1_000),
+    bottom: rect.bottom ?? (rect.y ?? 0) + (rect.height ?? 420),
+    left: rect.left ?? rect.x ?? 0,
+    toJSON: () => ({})
+  });
+}
+
 describe("SpectrogramView", () => {
   beforeEach(() => {
     drawCalls.length = 0;
@@ -137,6 +163,99 @@ describe("SpectrogramView", () => {
     expect(screen.getByTestId("spectrogram-cursor").style.left).toBe("30%");
     expect(screen.getByLabelText("Spectrogram time navigator")).toBeTruthy();
     expect(drawCalls.some((call) => call.fillStyle !== "rgb(0, 0, 0)")).toBe(true);
+  });
+
+  it("renders visible bar grid lines from beats, bpm, and offset", () => {
+    renderSpectrogramView(
+      <SpectrogramView
+        beatOffsetMs={500}
+        beatsPerBar={4}
+        bpm={120}
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getAllByTestId("spectrogram-bar-grid-line").map((line) => line.style.left)).toEqual([
+      "5%",
+      "25%",
+      "45%",
+      "65%",
+      "85%"
+    ]);
+  });
+
+  it("keeps negative-offset bar grid lines aligned to the viewport", () => {
+    renderSpectrogramView(
+      <SpectrogramView
+        beatOffsetMs={-500}
+        beatsPerBar={4}
+        bpm={120}
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getAllByTestId("spectrogram-bar-grid-line").map((line) => line.style.left)).toEqual([
+      "15%",
+      "35%",
+      "55%",
+      "75%",
+      "95%"
+    ]);
+  });
+
+  it("limits rendered bar grid lines for extreme bpm settings", () => {
+    renderSpectrogramView(
+      <SpectrogramView
+        beatOffsetMs={0}
+        beatsPerBar={1}
+        bpm={1_000_000}
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 0, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getAllByTestId("spectrogram-bar-grid-line")).toHaveLength(1_000);
   });
 
   it("limits long spectrogram bin drawing to the canvas pixel columns", () => {
@@ -198,6 +317,292 @@ describe("SpectrogramView", () => {
 
     expect(canvas.height).toBe(528);
     expect(spectrogramView.style.getPropertyValue("--spectrogram-display-height")).toBe("528px");
+    expect(getCssRuleBlock(".piano-axis")).toMatch(
+      /(^|\n)\s*height:\s*var\(--spectrogram-display-height\)/
+    );
+    expect(getCssRuleBlock(".spectrogram-canvas-frame")).toMatch(
+      /(^|\n)\s*height:\s*var\(--spectrogram-display-height\)/
+    );
+    expect(getCssRuleBlock(".spectrogram-canvas")).toMatch(/(^|\n)\s*height:\s*100%/);
+  });
+
+  it("idle pitch hover status strip appears above spectrogram rows", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const spectrogramView = container.querySelector(".spectrogram-view") as HTMLElement;
+    const status = screen.getByTestId("pitch-hover-status");
+
+    expect(status.textContent).toContain("Pointer");
+    expect(status.textContent).toContain("Hover over the heatmap");
+    expect(spectrogramView.firstElementChild).toBe(status);
+    expect(status.nextElementSibling?.classList.contains("spectrogram-time-grid")).toBe(true);
+  });
+
+  it("pointer move updates status, active piano key, hover row, hover time line", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+
+    const status = screen.getByTestId("pitch-hover-status");
+    const hoverRow = screen.getByTestId("pitch-hover-row");
+    const hoverTimeLine = screen.getByTestId("pitch-hover-time-line");
+    const activeKey = screen.getByTitle("D#5");
+
+    expect(status.textContent).toContain("D#5");
+    expect(status.textContent).toContain("00:06.000 (6000 ms)");
+    expect(hoverRow.style.bottom).toBe("61.36363636363637%");
+    expect(hoverRow.style.height).toBe("1.1363636363636365%");
+    expect(hoverTimeLine.style.left).toBe("50%");
+    expect(activeKey.classList.contains("piano-key-active")).toBe(true);
+    expect(activeKey.style.bottom).toBe(hoverRow.style.bottom);
+  });
+
+  it("maps hover pitch from the rendered canvas bounds instead of the outer frame", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    const canvas = container.querySelector(".spectrogram-canvas") as HTMLCanvasElement;
+    stubCanvasFrameRect(frame);
+    stubCanvasRect(canvas, { top: 100, bottom: 520, height: 420 });
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 260 });
+
+    const hoverRow = screen.getByTestId("pitch-hover-row");
+    const activeKey = screen.getByTitle("D#5");
+
+    expect(hoverRow.style.bottom).toBe("61.36363636363637%");
+    expect(activeKey.classList.contains("piano-key-active")).toBe(true);
+    expect(activeKey.style.bottom).toBe(hoverRow.style.bottom);
+  });
+
+  it("shows the hovered time in the timeline navigator", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+
+    const hoverTime = screen.getByTestId("spectrogram-navigator-hover-time");
+
+    expect(hoverTime.style.left).toBe("50%");
+    expect(hoverTime.textContent).toBe("00:06.000");
+  });
+
+  it("pointer leave clears state", () => {
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+    fireEvent.pointerLeave(frame);
+
+    const status = screen.getByTestId("pitch-hover-status");
+
+    expect(status.textContent).toContain("Pointer");
+    expect(status.textContent).toContain("Hover over the heatmap");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+  });
+
+  it("clears pitch hover state when pitch frames become unavailable", () => {
+    const { container, rerender } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("D#5");
+
+    rerender(wrapWithUiProvider(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={null}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("Pointer");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+  });
+
+  it("clears pitch hover state when the controlled viewport changes", () => {
+    const { container, rerender } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerMove(frame, { clientX: 500, clientY: 160 });
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("D#5");
+
+    rerender(wrapWithUiProvider(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 2_000, durationMs: 8_000 }}
+        waveformOverview={createWaveformOverview()}
+        isPlaying={false}
+        playbackRate={1}
+        onPlaybackToggle={vi.fn()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onLoopClear={vi.fn()}
+        onLoopEndSet={vi.fn()}
+        onLoopStartSet={vi.fn()}
+        onPlaybackRateChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("Pointer");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
   });
 
   it("keeps the lowest and highest piano keys inside the pitch axis", () => {
