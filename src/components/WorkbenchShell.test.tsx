@@ -215,6 +215,28 @@ describe("WorkbenchShell transport controls", () => {
     expect(onWorkspaceChange).toHaveBeenCalledWith({ beatOffsetMs: -251 });
   });
 
+  it("falls back to current bar grid values when number fields are cleared", () => {
+    const project = createMockProjectSummary();
+    const onWorkspaceChange = vi.fn();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Beats per bar"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Beat offset milliseconds"), { target: { value: "" } });
+
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatsPerBar: 4 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 120 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatOffsetMs: 0 });
+  });
+
   it("steps BPM by one from the bar grid arrow buttons", async () => {
     const user = userEvent.setup();
     const project = createMockProjectSummary();

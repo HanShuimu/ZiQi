@@ -72,7 +72,7 @@ export function WorkspaceControlZone({
           className="bar-grid-number-field"
           label="Beats per bar"
           min={1}
-          onChange={(value) =>
+          onRawChange={(value) =>
             onBarGridChange({
               beatsPerBar: parsePositiveInteger(value, beatsPerBar)
             })
@@ -94,7 +94,7 @@ export function WorkspaceControlZone({
             inputClassName="bpm-number-input"
             label="BPM"
             min={1}
-            onChange={(value) =>
+            onRawChange={(value) =>
               onBarGridChange({
                 bpm: parsePositiveInteger(value, bpm)
               })
@@ -114,7 +114,7 @@ export function WorkspaceControlZone({
         <NumberField
           className="bar-grid-number-field"
           label="Beat offset milliseconds"
-          onChange={(value) =>
+          onRawChange={(value) =>
             onBarGridChange({
               beatOffsetMs: parseInteger(value, beatOffsetMs)
             })
@@ -229,11 +229,12 @@ function formatTime(ms: number) {
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
-function parsePositiveInteger(value: number, fallback: number) {
+function parsePositiveInteger(value: number | string, fallback: number) {
   const parsed = parseInteger(value, fallback);
   return parsed > 0 ? parsed : fallback;
 }
 
-function parseInteger(value: number, fallback: number) {
-  return Number.isFinite(value) ? Math.round(value) : fallback;
+function parseInteger(value: number | string, fallback: number) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
 }

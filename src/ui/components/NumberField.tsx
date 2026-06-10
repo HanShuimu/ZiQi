@@ -11,7 +11,8 @@ export interface NumberFieldProps {
   className?: string;
   inputClassName?: string;
   hint?: ReactNode;
-  onChange(value: number): void;
+  onChange?(value: number): void;
+  onRawChange?(rawValue: string): void;
 }
 
 export function NumberField({
@@ -23,7 +24,8 @@ export function NumberField({
   className,
   inputClassName,
   hint,
-  onChange
+  onChange,
+  onRawChange
 }: NumberFieldProps) {
   const fieldId = useId();
   const inputId = `${fieldId}-input`;
@@ -41,10 +43,12 @@ export function NumberField({
         step={step}
         aria-describedby={hintId}
         onChange={(event) => {
+          onRawChange?.(event.currentTarget.value);
+
           const nextValue = event.currentTarget.valueAsNumber;
 
           if (Number.isFinite(nextValue)) {
-            onChange(nextValue);
+            onChange?.(nextValue);
           }
         }}
       />
