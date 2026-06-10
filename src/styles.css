@@ -27,6 +27,84 @@ button:disabled {
   opacity: 0.55;
 }
 
+.ui-field {
+  align-content: start;
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.ui-field-label,
+.ui-panel-section-label {
+  color: var(--skin-accent);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ui-field-hint {
+  color: var(--skin-text-muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.ui-number-input {
+  background: var(--skin-surface-strong);
+  border: 1px solid var(--skin-border-strong);
+  border-radius: var(--skin-radius-control);
+  color: var(--skin-text);
+  font: inherit;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  width: 5.5rem;
+}
+
+.ui-slider-input {
+  accent-color: var(--skin-accent);
+  width: 100%;
+}
+
+.ui-slider-value {
+  color: var(--skin-text-muted);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.ui-segmented-control {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.ui-segmented-control-option {
+  padding: 0.45rem 0.75rem;
+}
+
+.ui-segmented-control-option-selected {
+  background: var(--skin-accent-strong);
+  border-color: var(--skin-accent-strong);
+  color: #ffffff;
+}
+
+.ui-toggle-input {
+  accent-color: var(--skin-accent);
+  height: 1rem;
+  width: 1rem;
+}
+
+.ui-panel-section {
+  display: grid;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.ui-panel-section-title {
+  color: var(--skin-text);
+  font-size: 1rem;
+  margin: 0;
+}
+
 .app-shell {
   min-height: 100vh;
   padding: 1.5rem;
