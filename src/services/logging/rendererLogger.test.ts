@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createRendererLogger } from "./rendererLogger";
-import type { RendererLogEntry } from "../../types/global";
+import type { RendererLogEntry, ZiqiPreloadApi } from "../../types/global";
 
 afterEach(() => {
   vi.restoreAllMocks();
-  delete (window as Partial<Window>).ziqiApp;
+  delete window.ziqiApp;
 });
 
 describe("createRendererLogger", () => {
@@ -136,7 +136,7 @@ describe("rendererLogger", () => {
     const { rendererLogger } = await import("./rendererLogger");
     const log = vi.fn<(entry: RendererLogEntry) => void>();
 
-    window.ziqiApp = { log } as Window["ziqiApp"];
+    window.ziqiApp = { log } as ZiqiPreloadApi;
 
     rendererLogger.trace("project.open.start", "Open project command started");
 

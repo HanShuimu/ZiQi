@@ -1,6 +1,7 @@
+import type { ZiqiPreloadApi } from "../../types/global";
 import type { AppRuntime } from "./types";
 
-export function createElectronRuntime(ziqiApp: Window["ziqiApp"]): AppRuntime {
+export function createElectronRuntime(ziqiApp: ZiqiPreloadApi): AppRuntime {
   return {
     kind: "electron",
     getVersion: () => ziqiApp.getVersion(),

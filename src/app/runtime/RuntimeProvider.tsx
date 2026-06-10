@@ -12,7 +12,7 @@ export function RuntimeProvider({ children }: RuntimeProviderProps) {
   const runtime = useMemo(() => {
     const ziqiApp = typeof window === "undefined"
       ? undefined
-      : (window as Partial<Window>).ziqiApp;
+      : window.ziqiApp;
 
     return ziqiApp ? createElectronRuntime(ziqiApp) : createDevRuntime();
   }, []);
