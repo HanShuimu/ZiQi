@@ -40,7 +40,7 @@ describe("architecture lint boundaries", () => {
 
     expect(messages).toContainEqual(
       expect.objectContaining({
-        ruleId: "no-restricted-imports"
+        ruleId: "architecture/no-restricted-project-imports"
       })
     );
   });
@@ -54,7 +54,35 @@ describe("architecture lint boundaries", () => {
 
     expect(messages).toContainEqual(
       expect.objectContaining({
-        ruleId: "no-restricted-imports"
+        ruleId: "architecture/no-restricted-project-imports"
+      })
+    );
+  });
+
+  it("blocks core from importing services through deep relative paths", async () => {
+    const messages = await lintText({
+      filePath: "src/core/domain/deep/model.ts",
+      code:
+        'import { createBrowserWaveformService } from "../../../services/audio/browserWaveformService";\nexport const value = createBrowserWaveformService;\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
+    );
+  });
+
+  it("blocks services from importing app through deep relative paths", async () => {
+    const messages = await lintText({
+      filePath: "src/services/audio/deep/service.ts",
+      code:
+        'import { createRuntime } from "../../../app/runtime";\nexport const value = createRuntime;\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
       })
     );
   });
@@ -83,6 +111,11 @@ describe("architecture lint boundaries", () => {
     expect(messages).not.toContainEqual(
       expect.objectContaining({
         ruleId: "architecture/no-cross-feature-imports"
+      })
+    );
+    expect(messages).not.toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
       })
     );
   });
@@ -214,18 +247,35 @@ describe("architecture lint boundaries", () => {
     });
 
     expect(messages).toContainEqual(
-      expect.objectContaining({ ruleId: "no-restricted-imports" })
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
+    );
+  });
+
+  it("blocks features from importing legacy components through deep relative paths", async () => {
+    const messages = await lintText({
+      filePath: "src/features/example/deep/View.tsx",
+      code: 'import { WorkbenchShell } from "../../../components/WorkbenchShell";\nexport const value = WorkbenchShell;\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
     );
   });
 
   it("blocks electron/platform from importing src renderer files", async () => {
     const messages = await lintText({
       filePath: "electron/platform/ipc/settingsHandlers.ts",
-      code: 'import { App } from "../../src/App";\nexport const value = App;\n'
+      code: 'import { App } from "../../../src/App";\nexport const value = App;\n'
     });
 
     expect(messages).toContainEqual(
-      expect.objectContaining({ ruleId: "no-restricted-imports" })
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
     );
   });
 
@@ -236,7 +286,9 @@ describe("architecture lint boundaries", () => {
     });
 
     expect(messages).not.toContainEqual(
-      expect.objectContaining({ ruleId: "no-restricted-imports" })
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
     );
   });
 
