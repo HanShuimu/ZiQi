@@ -1,14 +1,15 @@
-import type { RendererLogEntry } from "../../types/global";
+import type { RendererLogEntry, ZiqiPreloadApi } from "../../types/global";
 
 export type RendererLogDetails = NonNullable<RendererLogEntry["details"]>;
+type RendererLogBridge = Pick<ZiqiPreloadApi, "log">;
 
 export interface RendererLogger {
   trace(event: string, message: string, details?: RendererLogDetails): void;
 }
 
 interface RendererLoggerOptions {
-  app?: Pick<Window["ziqiApp"], "log">;
-  getApp?: () => Pick<Window["ziqiApp"], "log"> | undefined;
+  app?: RendererLogBridge;
+  getApp?: () => RendererLogBridge | undefined;
   consoleSink?: Pick<Console, "trace" | "warn">;
   now?: () => Date;
 }
@@ -85,6 +86,6 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-function getWindowApp(): Pick<Window["ziqiApp"], "log"> | undefined {
+function getWindowApp(): RendererLogBridge | undefined {
   return typeof window === "undefined" ? undefined : window.ziqiApp;
 }

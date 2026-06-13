@@ -10,7 +10,7 @@ type DecodedAudioBuffer = {
 };
 
 type BuildOverviewOptions = {
-  framesPerSecond: number;
+  framesPerSecond?: number;
   onProgress?: (progress: { frameIndex: number; frameCount: number }) => void;
 };
 
@@ -46,8 +46,8 @@ describe("createBrowserPitchEnergyService", () => {
     const decodedAudio = new FakeAudioBuffer();
     const decodeAudioData = vi.fn().mockResolvedValue(decodedAudio);
     const buildOverviewFromBuffer = vi.fn(
-      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions) =>
-        createOverview(options.framesPerSecond)
+      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions = {}) =>
+        createOverview(options.framesPerSecond ?? 0)
     );
 
     Object.defineProperty(globalThis, "AudioContext", {
@@ -74,8 +74,8 @@ describe("createBrowserPitchEnergyService", () => {
     const decodedAudio = new FakeAudioBuffer();
     const decodeAudioData = vi.fn().mockResolvedValue(decodedAudio);
     const buildOverviewFromBuffer = vi.fn(
-      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions) =>
-        createOverview(options.framesPerSecond)
+      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions = {}) =>
+        createOverview(options.framesPerSecond ?? 0)
     );
 
     Object.defineProperty(globalThis, "AudioContext", {
@@ -102,10 +102,10 @@ describe("createBrowserPitchEnergyService", () => {
     const decodedAudio = new FakeAudioBuffer();
     const decodeAudioData = vi.fn().mockResolvedValue(decodedAudio);
     const buildOverviewFromBuffer = vi.fn(
-      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions) => {
+      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions = {}) => {
         options.onProgress?.({ frameIndex: 1, frameCount: 4 });
         options.onProgress?.({ frameIndex: 4, frameCount: 4 });
-        return createOverview(options.framesPerSecond);
+        return createOverview(options.framesPerSecond ?? 0);
       }
     );
     const logger = { trace: vi.fn() };
@@ -148,8 +148,8 @@ describe("createBrowserPitchEnergyService", () => {
     const decodedAudio = new FakeAudioBuffer();
     const decodeAudioData = vi.fn().mockResolvedValue(decodedAudio);
     const buildOverviewFromBuffer = vi.fn(
-      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions) =>
-        createOverview(options.framesPerSecond)
+      (_buffer: DecodedAudioBuffer, options: BuildOverviewOptions = {}) =>
+        createOverview(options.framesPerSecond ?? 0)
     );
     const logger = {
       trace: vi.fn(() => {

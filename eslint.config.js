@@ -7,9 +7,46 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 const workspaceRoot = path.dirname(fileURLToPath(import.meta.url));
+const rawBusinessControlTags = new Set(["button", "input", "select", "textarea"]);
 
 const architecturePlugin = {
   rules: {
+    "no-raw-business-controls": {
+      meta: {
+        type: "problem",
+        docs: {
+          description: "Require business UI to use ui primitives for form controls."
+        },
+        messages: {
+          rawBusinessControl:
+            "Business UI must use ui primitives instead of raw form controls."
+        },
+        schema: []
+      },
+      create(context) {
+        return {
+          JSXOpeningElement(node) {
+            const importer = toProjectPath(context.filename);
+
+            if (
+              !importer ||
+              isTestFile(importer) ||
+              importer.startsWith("src/ui/") ||
+              importer.startsWith("src/skins/")
+            ) {
+              return;
+            }
+
+            if (
+              node.name.type === "JSXIdentifier" &&
+              rawBusinessControlTags.has(node.name.name)
+            ) {
+              context.report({ node, messageId: "rawBusinessControl" });
+            }
+          }
+        };
+      }
+    },
     "no-cross-feature-imports": {
       meta: {
         type: "problem",
@@ -79,6 +116,41 @@ const architecturePlugin = {
           }
         };
       }
+    },
+    "no-restricted-project-imports": {
+      meta: {
+        type: "problem",
+        docs: {
+          description: "Prevent relative imports across internal architecture boundaries."
+        },
+        schema: []
+      },
+      create(context) {
+        function checkProjectImport(node) {
+          if (!node.source) {
+            return;
+          }
+
+          const importer = toProjectPath(context.filename);
+          const imported = resolveImportPath(importer, node.source.value);
+
+          if (!imported) {
+            return;
+          }
+
+          const message = getRestrictedProjectImportMessage(importer, imported);
+
+          if (message) {
+            context.report({ node, message });
+          }
+        }
+
+        return {
+          ExportAllDeclaration: checkProjectImport,
+          ExportNamedDeclaration: checkProjectImport,
+          ImportDeclaration: checkProjectImport
+        };
+      }
     }
   }
 };
@@ -132,12 +204,26 @@ export default tseslint.config(
       ],
       "architecture/no-business-skin-imports": "error",
       "architecture/no-cross-feature-imports": "error",
+      "architecture/no-restricted-project-imports": "error",
       "react-refresh/only-export-components": [
         "warn",
         {
           allowConstantExport: true
         }
       ]
+    }
+  },
+  {
+    files: [
+      "src/App.tsx",
+      "src/app/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/features/**/*.{ts,tsx}",
+      "src/workspaces/**/*.{ts,tsx}"
+    ],
+    ignores: ["src/**/*.test.{ts,tsx}", "src/ui/**", "src/skins/**"],
+    rules: {
+      "architecture/no-raw-business-controls": "error"
     }
   },
   {
@@ -186,30 +272,6 @@ export default tseslint.config(
               name: "animal-island-ui",
               message: "Core must stay independent from concrete UI libraries."
             }
-          ],
-          patterns: [
-            {
-              group: [
-                "../app/*",
-                "../../app/*",
-                "../capabilities/*",
-                "../../capabilities/*",
-                "../components/*",
-                "../../components/*",
-                "../features/*",
-                "../../features/*",
-                "../services/*",
-                "../../services/*",
-                "../skins/*",
-                "../../skins/*",
-                "../ui/*",
-                "../../ui/*",
-                "../workspaces/*",
-                "../../workspaces/*"
-              ],
-              message:
-                "Core may not import app, services, capabilities, features, workspaces, ui, skins, or legacy components."
-            }
           ]
         }
       ]
@@ -225,41 +287,6 @@ export default tseslint.config(
             {
               name: "react",
               message: "Services must not import React."
-            }
-          ],
-          patterns: [
-            {
-              group: [
-                "../app/*",
-                "../../app/*",
-                "../features/*",
-                "../../features/*",
-                "../workspaces/*",
-                "../../workspaces/*"
-              ],
-              message:
-                "Services may not import app composition, concrete features, or workspaces."
-            }
-          ]
-        }
-      ]
-    }
-  },
-  {
-    files: ["src/capabilities/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": [
-        "error",
-        {
-          patterns: [
-            {
-              group: [
-                "../features/*",
-                "../../features/*",
-                "../workspaces/*",
-                "../../workspaces/*"
-              ],
-              message: "Capabilities may not import concrete features or workspaces."
             }
           ]
         }
@@ -321,39 +348,6 @@ export default tseslint.config(
     }
   },
   {
-    files: ["src/app/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": ["error", {
-        patterns: [{
-          group: ["../components/*", "../../components/*"],
-          message: "App composition may not import legacy components directly."
-        }]
-      }]
-    }
-  },
-  {
-    files: ["src/workspaces/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": ["error", {
-        patterns: [{
-          group: ["../components/*", "../../components/*", "../skins/*", "../../skins/*"],
-          message: "Workspaces may only import features, capabilities, core, services, ui, and app/session."
-        }]
-      }]
-    }
-  },
-  {
-    files: ["src/features/**/*.{ts,tsx}"],
-    rules: {
-      "no-restricted-imports": ["error", {
-        patterns: [{
-          group: ["../components/*", "../../components/*"],
-          message: "Features must not import legacy components. Move shared code elsewhere."
-        }]
-      }]
-    }
-  },
-  {
     files: ["src/skins/**/adapter.tsx"],
     rules: {
       "react-refresh/only-export-components": "off"
@@ -361,13 +355,11 @@ export default tseslint.config(
   },
   {
     files: ["electron/platform/**/*.{ts,cts}"],
+    plugins: {
+      architecture: architecturePlugin
+    },
     rules: {
-      "no-restricted-imports": ["error", {
-        patterns: [{
-          group: ["../../src/*", "../src/*"],
-          message: "Electron platform modules must not import renderer source files."
-        }]
-      }]
+      "architecture/no-restricted-project-imports": "error"
     }
   },
 );
@@ -399,6 +391,78 @@ function resolveImportPath(importer, source) {
   const absoluteImporter = path.join(workspaceRoot, importer);
   const resolved = path.resolve(path.dirname(absoluteImporter), source);
   return normalizePath(path.relative(workspaceRoot, resolved));
+}
+
+function getRestrictedProjectImportMessage(importer, imported) {
+  if (
+    importer.startsWith("src/core/") &&
+    isProjectPathInAny(imported, [
+      "src/app/",
+      "src/services/",
+      "src/capabilities/",
+      "src/features/",
+      "src/workspaces/",
+      "src/ui/",
+      "src/skins/",
+      "src/components/"
+    ])
+  ) {
+    return "Core may not import app, services, capabilities, features, workspaces, ui, skins, or legacy components.";
+  }
+
+  if (
+    importer.startsWith("src/services/") &&
+    isProjectPathInAny(imported, [
+      "src/app/",
+      "src/features/",
+      "src/workspaces/"
+    ])
+  ) {
+    return "Services may not import app composition, concrete features, or workspaces.";
+  }
+
+  if (
+    importer.startsWith("src/capabilities/") &&
+    isProjectPathInAny(imported, ["src/features/", "src/workspaces/"])
+  ) {
+    return "Capabilities may not import concrete features or workspaces.";
+  }
+
+  if (
+    importer.startsWith("src/app/") &&
+    isProjectPathInAny(imported, ["src/components/"])
+  ) {
+    return "App composition may not import legacy components directly.";
+  }
+
+  if (
+    importer.startsWith("src/workspaces/") &&
+    isProjectPathInAny(imported, ["src/components/", "src/skins/"])
+  ) {
+    return "Workspaces may only import features, capabilities, core, services, ui, and app/session.";
+  }
+
+  if (
+    importer.startsWith("src/features/") &&
+    isProjectPathInAny(imported, ["src/components/"])
+  ) {
+    return "Features must not import legacy components. Move shared code elsewhere.";
+  }
+
+  if (importer.startsWith("electron/platform/") && imported.startsWith("src/")) {
+    return "Electron platform modules must not import renderer source files.";
+  }
+
+  return null;
+}
+
+function isProjectPathInAny(projectPath, prefixes) {
+  return prefixes.some((prefix) => isProjectPathIn(projectPath, prefix));
+}
+
+function isProjectPathIn(projectPath, prefix) {
+  const directory = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix;
+  return projectPath === directory || projectPath.startsWith(prefix);
 }
 
 function getFeatureName(projectPath) {

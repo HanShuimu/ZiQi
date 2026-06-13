@@ -1,6 +1,7 @@
 import type { ProjectCommandDependencies } from "./projectCommandTypes";
 
 export function createSaveProjectCommand({
+  runtime,
   project,
   projectLocation,
   logger,
@@ -25,7 +26,7 @@ export function createSaveProjectCommand({
 
     try {
       const nativeStart = performance.now();
-      const savedProject = await window.ziqiApp.saveProject({
+      const savedProject = await runtime.saveProject({
         project,
         ...(projectLocation ?? {})
       });

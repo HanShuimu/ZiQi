@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import type { SkinId } from "../../core/userSettings/types";
+import type { AppRuntime } from "../runtime";
 
 interface UseMenuCommandsOptions {
+  runtime: AppRuntime;
   importAudio: () => Promise<void>;
   openProject: () => Promise<void>;
   saveProject: () => Promise<void>;
@@ -9,6 +11,7 @@ interface UseMenuCommandsOptions {
 }
 
 export function useMenuCommands({
+  runtime,
   importAudio,
   openProject,
   saveProject,
@@ -28,13 +31,8 @@ export function useMenuCommands({
     changeSkin
   };
 
-  const ziqiApp = window.ziqiApp;
-
   useEffect(() => {
-    if (typeof ziqiApp.onMenuCommand !== "function") {
-      return;
-    }
-    return ziqiApp.onMenuCommand((command) => {
+    return runtime.onMenuCommand((command) => {
       const commands = commandsRef.current;
       if (command === "import-audio") {
         void commands.importAudio();
@@ -56,5 +54,5 @@ export function useMenuCommands({
         void commands.changeSkin("animal-island");
       }
     });
-  }, [ziqiApp]);
+  }, [runtime]);
 }

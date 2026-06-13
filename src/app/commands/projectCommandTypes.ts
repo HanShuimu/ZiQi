@@ -6,9 +6,11 @@ import type { SpectrogramService } from "../../services/audio/browserSpectrogram
 import type { WaveformService } from "../../services/audio/browserWaveformService";
 import type { RendererLogger } from "../../services/logging/rendererLogger";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
+import type { AppRuntime } from "../runtime";
 import type { ProjectLocation } from "../session/types";
 
 export interface ProjectCommandDependencies {
+  runtime: AppRuntime;
   project: ProjectSummary | null;
   projectLocation: ProjectLocation | null;
   activePlaybackUrl: MutableRefObject<string | null>;

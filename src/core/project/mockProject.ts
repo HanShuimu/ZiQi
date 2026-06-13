@@ -1,4 +1,5 @@
 import type { ProjectSummary } from "./types";
+import { createDefaultProjectAnalysisView } from "./analysisView";
 import { createDefaultWorkspaceState } from "../workspace/workspaceState";
 
 export function createMockProjectSummary(): ProjectSummary {
@@ -39,6 +40,7 @@ export function createMockProjectSummary(): ProjectSummary {
         kind: "marker"
       }
     ],
+    analysisView: createDefaultProjectAnalysisView(),
     workspace: createDefaultWorkspaceState(120_000)
   };
 }

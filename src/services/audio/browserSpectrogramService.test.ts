@@ -16,7 +16,7 @@ class FakeAudioBuffer {
 }
 
 class ThrowingAudioBuffer extends FakeAudioBuffer {
-  getChannelData() {
+  getChannelData(): ReturnType<FakeAudioBuffer["getChannelData"]> {
     throw new Error("spectrogram failed");
   }
 }

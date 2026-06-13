@@ -1,4 +1,4 @@
-import { Button } from "../../ui";
+import { Button, NumberField, PanelSection, SegmentedControl, SliderField } from "../../ui";
 import type { PitchHeatmapDisplaySettings } from "../../core/audio/types";
 import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../../core/audio/pitchHeatmap";
 import type { WorkspaceState } from "../../core/project/types";
@@ -46,9 +46,8 @@ export function WorkspaceControlZone({
 }: WorkspaceControlZoneProps) {
   return (
     <div className="workspace-control-zone" aria-label="Workspace controls">
-      <div className="workspace-control-group">
-        <div className="workspace-control-label">Playback</div>
-        <Button className="playback-toggle" activating={isPlaying} onClick={onPlaybackToggle}>
+      <PanelSection className="workspace-control-group" label="Playback">
+        <Button className="playback-toggle" activating={isPlaying} onClick={onPlaybackToggle} type="button">
           {isPlaying ? "Pause" : "Play"}
         </Button>
         <div className="playback-time">
@@ -56,191 +55,169 @@ export function WorkspaceControlZone({
           <span>/</span>
           <span>{formatTime(durationMs)}</span>
         </div>
-      </div>
+      </PanelSection>
 
-      <div className="workspace-control-group" aria-label="Playback speed">
-        <div className="workspace-control-label">Speed</div>
-        <div className="playback-rate-controls">
-          {PLAYBACK_RATE_OPTIONS.map((rate) => (
-            <button
-              aria-pressed={playbackRate === rate}
-              className="playback-rate-button"
-              key={rate}
-              onClick={() => onPlaybackRateChange(rate)}
-            >
-              {rate}x
-            </button>
-          ))}
-        </div>
-      </div>
+      <PanelSection className="workspace-control-group" label="Speed">
+        <SegmentedControl
+          ariaLabel="Playback speed"
+          className="playback-rate-controls"
+          options={PLAYBACK_RATE_OPTIONS.map((rate) => ({ label: `${rate}x`, value: rate }))}
+          value={playbackRate}
+          onChange={onPlaybackRateChange}
+        />
+      </PanelSection>
 
-      <div className="workspace-control-group bar-grid-controls" aria-label="Bar Grid controls">
-        <div className="workspace-control-label">Bar Grid</div>
-        <label className="bar-grid-number-field">
-          Beats
-          <input
-            aria-label="Beats per bar"
+      <PanelSection className="workspace-control-group bar-grid-controls" label="Bar Grid">
+        <NumberField
+          className="bar-grid-number-field"
+          label="Beats per bar"
+          min={1}
+          onRawChange={(value) =>
+            onBarGridChange({
+              beatsPerBar: parsePositiveInteger(value, beatsPerBar)
+            })
+          }
+          step={1}
+          value={beatsPerBar}
+        />
+        <div className="bpm-stepper">
+          <Button
+            aria-label="Decrease BPM"
+            className="bpm-stepper-button"
+            onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) - 1) })}
+            type="button"
+          >
+            -
+          </Button>
+          <NumberField
+            className="bar-grid-number-field"
+            inputClassName="bpm-number-input"
+            label="BPM"
             min={1}
-            onChange={(event) =>
+            onRawChange={(value) =>
               onBarGridChange({
-                beatsPerBar: parsePositiveInteger(event.currentTarget.value, beatsPerBar)
+                bpm: parsePositiveInteger(value, bpm)
               })
             }
             step={1}
-            type="number"
-            value={beatsPerBar}
+            value={bpm}
           />
-        </label>
-        <div className="bar-grid-number-field">
-          <span>BPM</span>
-          <span className="bpm-stepper">
-            <button
-              aria-label="Decrease BPM"
-              onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) - 1) })}
-              type="button"
-            >
-              -
-            </button>
-            <input
-              aria-label="BPM"
-              min={1}
-              onChange={(event) =>
-                onBarGridChange({
-                  bpm: parsePositiveInteger(event.currentTarget.value, bpm)
-                })
-              }
-              step={1}
-              type="number"
-              value={bpm}
-            />
-            <button
-              aria-label="Increase BPM"
-              onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) + 1) })}
-              type="button"
-            >
-              +
-            </button>
-          </span>
+          <Button
+            aria-label="Increase BPM"
+            className="bpm-stepper-button"
+            onClick={() => onBarGridChange({ bpm: Math.max(1, Math.round(bpm) + 1) })}
+            type="button"
+          >
+            +
+          </Button>
         </div>
-        <label className="bar-grid-number-field">
-          Offset ms
-          <input
-            aria-label="Beat offset milliseconds"
-            onChange={(event) =>
-              onBarGridChange({
-                beatOffsetMs: parseInteger(event.currentTarget.value, beatOffsetMs)
-              })
-            }
-            step={1}
-            type="number"
-            value={beatOffsetMs}
-          />
-        </label>
-      </div>
+        <NumberField
+          className="bar-grid-number-field"
+          label="Beat offset milliseconds"
+          onRawChange={(value) =>
+            onBarGridChange({
+              beatOffsetMs: parseInteger(value, beatOffsetMs)
+            })
+          }
+          step={1}
+          value={beatOffsetMs}
+        />
+      </PanelSection>
 
-      <div className="workspace-control-group" aria-label="Loop controls">
-        <div className="workspace-control-label">Loop</div>
-        <button onClick={() => onLoopStartSet(currentTimeMs)}>Set Loop Start</button>
-        <button onClick={() => onLoopEndSet(currentTimeMs)}>Set Loop End</button>
-        {loopRange ? <button onClick={onLoopClear}>Clear Loop</button> : null}
+      <PanelSection className="workspace-control-group" label="Loop">
+        <Button onClick={() => onLoopStartSet(currentTimeMs)} type="button">
+          Set Loop Start
+        </Button>
+        <Button onClick={() => onLoopEndSet(currentTimeMs)} type="button">
+          Set Loop End
+        </Button>
+        {loopRange ? (
+          <Button onClick={onLoopClear} type="button">
+            Clear Loop
+          </Button>
+        ) : null}
         {loopRange ? (
           <span className="loop-summary">
             Loop {formatTime(loopRange.startMs)}-{formatTime(loopRange.endMs)}
           </span>
         ) : null}
-      </div>
+      </PanelSection>
 
-      <div className="workspace-control-group heatmap-display-controls" aria-label="Heatmap Display">
-        <div className="workspace-control-label">Heatmap Display</div>
-        <label>
-          Gain
-          <input
-            aria-label="Gain"
-            max={24}
-            min={-48}
-            onChange={(event) =>
-              onPitchHeatmapDisplayChange({
-                ...pitchHeatmapDisplay,
-                gainDb: Number(event.currentTarget.value)
-              })
-            }
-            step={1}
-            type="range"
-            value={pitchHeatmapDisplay.gainDb}
-          />
-        </label>
-        <label>
-          Contrast
-          <input
-            aria-label="Contrast"
-            max={1.8}
-            min={0.6}
-            onChange={(event) =>
-              onPitchHeatmapDisplayChange({
-                ...pitchHeatmapDisplay,
-                contrast: Number(event.currentTarget.value)
-              })
-            }
-            step={0.1}
-            type="range"
-            value={pitchHeatmapDisplay.contrast}
-          />
-        </label>
-        <label>
-          Range
-          <input
-            aria-label="Range"
-            max={150}
-            min={80}
-            onChange={(event) =>
-              onPitchHeatmapDisplayChange({
-                ...pitchHeatmapDisplay,
-                dynamicRangeDb: Number(event.currentTarget.value)
-              })
-            }
-            step={1}
-            type="range"
-            value={pitchHeatmapDisplay.dynamicRangeDb}
-          />
-        </label>
-        <label>
-          Floor
-          <input
-            aria-label="Floor"
-            max={0}
-            min={-80}
-            onChange={(event) =>
-              onPitchHeatmapDisplayChange({
-                ...pitchHeatmapDisplay,
-                noiseFloorDb: Number(event.currentTarget.value)
-              })
-            }
-            step={1}
-            type="range"
-            value={pitchHeatmapDisplay.noiseFloorDb}
-          />
-        </label>
-        <label>
-          Intensity
-          <input
-            aria-label="Intensity"
-            max={1.4}
-            min={0.5}
-            onChange={(event) =>
-              onPitchHeatmapDisplayChange({
-                ...pitchHeatmapDisplay,
-                colorIntensity: Number(event.currentTarget.value)
-              })
-            }
-            step={0.1}
-            type="range"
-            value={pitchHeatmapDisplay.colorIntensity}
-          />
-        </label>
-        <button onClick={() => onPitchHeatmapDisplayChange(DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS)}>
+      <PanelSection className="workspace-control-group heatmap-display-controls" label="Heatmap Display">
+        <SliderField
+          ariaValueText={`Gain ${pitchHeatmapDisplay.gainDb} dB`}
+          label="Gain"
+          max={24}
+          min={-48}
+          onChange={(gainDb) =>
+            onPitchHeatmapDisplayChange({
+              ...pitchHeatmapDisplay,
+              gainDb
+            })
+          }
+          step={1}
+          value={pitchHeatmapDisplay.gainDb}
+        />
+        <SliderField
+          ariaValueText={`Contrast ${pitchHeatmapDisplay.contrast}`}
+          label="Contrast"
+          max={1.8}
+          min={0.6}
+          onChange={(contrast) =>
+            onPitchHeatmapDisplayChange({
+              ...pitchHeatmapDisplay,
+              contrast
+            })
+          }
+          step={0.1}
+          value={pitchHeatmapDisplay.contrast}
+        />
+        <SliderField
+          ariaValueText={`Range ${pitchHeatmapDisplay.dynamicRangeDb} dB`}
+          label="Range"
+          max={150}
+          min={80}
+          onChange={(dynamicRangeDb) =>
+            onPitchHeatmapDisplayChange({
+              ...pitchHeatmapDisplay,
+              dynamicRangeDb
+            })
+          }
+          step={1}
+          value={pitchHeatmapDisplay.dynamicRangeDb}
+        />
+        <SliderField
+          ariaValueText={`Floor ${pitchHeatmapDisplay.noiseFloorDb} dB`}
+          label="Floor"
+          max={0}
+          min={-80}
+          onChange={(noiseFloorDb) =>
+            onPitchHeatmapDisplayChange({
+              ...pitchHeatmapDisplay,
+              noiseFloorDb
+            })
+          }
+          step={1}
+          value={pitchHeatmapDisplay.noiseFloorDb}
+        />
+        <SliderField
+          ariaValueText={`Intensity ${pitchHeatmapDisplay.colorIntensity}`}
+          label="Intensity"
+          max={1.4}
+          min={0.5}
+          onChange={(colorIntensity) =>
+            onPitchHeatmapDisplayChange({
+              ...pitchHeatmapDisplay,
+              colorIntensity
+            })
+          }
+          step={0.1}
+          value={pitchHeatmapDisplay.colorIntensity}
+        />
+        <Button onClick={() => onPitchHeatmapDisplayChange(DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS)} type="button">
           Reset
-        </button>
-      </div>
+        </Button>
+      </PanelSection>
     </div>
   );
 }
@@ -252,12 +229,12 @@ function formatTime(ms: number) {
   return `${minutes}:${String(remainder).padStart(2, "0")}`;
 }
 
-function parsePositiveInteger(value: string, fallback: number) {
+function parsePositiveInteger(value: number | string, fallback: number) {
   const parsed = parseInteger(value, fallback);
   return parsed > 0 ? parsed : fallback;
 }
 
-function parseInteger(value: string, fallback: number) {
+function parseInteger(value: number | string, fallback: number) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? Math.round(parsed) : fallback;
 }

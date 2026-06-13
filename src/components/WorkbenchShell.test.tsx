@@ -167,6 +167,7 @@ describe("WorkbenchShell transport controls", () => {
     expect(controlZone.compareDocumentPosition(waveform) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText("Playback")).toBeTruthy();
     expect(screen.getByText("Speed")).toBeTruthy();
+    expect(screen.getByRole("group", { name: "Playback speed" })).toBeTruthy();
     expect(screen.getByText("Loop")).toBeTruthy();
   });
 
@@ -212,6 +213,28 @@ describe("WorkbenchShell transport controls", () => {
     expect(onWorkspaceChange).toHaveBeenCalledWith({ beatsPerBar: 4 });
     expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 97 });
     expect(onWorkspaceChange).toHaveBeenCalledWith({ beatOffsetMs: -251 });
+  });
+
+  it("falls back to current bar grid values when number fields are cleared", () => {
+    const project = createMockProjectSummary();
+    const onWorkspaceChange = vi.fn();
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={mockProjectAudioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText("Beats per bar"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("BPM"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText("Beat offset milliseconds"), { target: { value: "" } });
+
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatsPerBar: 4 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ bpm: 120 });
+    expect(onWorkspaceChange).toHaveBeenCalledWith({ beatOffsetMs: 0 });
   });
 
   it("steps BPM by one from the bar grid arrow buttons", async () => {
