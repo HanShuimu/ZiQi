@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { RuntimeProvider, useAppRuntime } from "./app/runtime";
 import { AppSessionProvider } from "./app/session/AppSessionProvider";
 import { useAppSession } from "./app/session/useAppSession";
+import { UiSettingsProvider, useUiSettings } from "./app/uiSettings";
 import { useMenuCommands } from "./app/menu/useMenuCommands";
 import { WorkbenchShell } from "./components/WorkbenchShell";
 import { getSkinDefinition } from "./skins/registry";
@@ -19,13 +20,15 @@ interface AppProps {
 export function App({ waveformService, spectrogramService, pitchEnergyService }: AppProps) {
   return (
     <RuntimeProvider>
-      <AppSessionProvider
-        waveformService={waveformService}
-        spectrogramService={spectrogramService}
-        pitchEnergyService={pitchEnergyService}
-      >
-        <AppContent />
-      </AppSessionProvider>
+      <UiSettingsProvider>
+        <AppSessionProvider
+          waveformService={waveformService}
+          spectrogramService={spectrogramService}
+          pitchEnergyService={pitchEnergyService}
+        >
+          <AppContent />
+        </AppSessionProvider>
+      </UiSettingsProvider>
     </RuntimeProvider>
   );
 }
@@ -33,12 +36,19 @@ export function App({ waveformService, spectrogramService, pitchEnergyService }:
 function AppContent() {
   const runtime = useAppRuntime();
   const session = useAppSession();
+  const uiSettings = useUiSettings();
   const skinDefinition = useMemo(
-    () => getSkinDefinition(session.uiSkin),
-    [session.uiSkin]
+    () => getSkinDefinition(uiSettings.uiSkin),
+    [uiSettings.uiSkin]
   );
 
-  useMenuCommands({ runtime, ...session });
+  useMenuCommands({
+    runtime,
+    importAudio: session.importAudio,
+    openProject: session.openProject,
+    saveProject: session.saveProject,
+    changeSkin: uiSettings.changeSkin
+  });
 
   return (
     <UiProvider skinId={skinDefinition.id} adapter={skinDefinition.adapter}>
