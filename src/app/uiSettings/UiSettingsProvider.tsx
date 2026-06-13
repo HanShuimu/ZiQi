@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { DEFAULT_USER_SETTINGS } from "../../core/userSettings/types";
 import type { SkinId } from "../../core/userSettings/types";
@@ -12,15 +12,23 @@ interface UiSettingsProviderProps {
 
 export function UiSettingsProvider({ children }: UiSettingsProviderProps) {
   const runtime = useAppRuntime();
+  const settingsRequestRef = useRef(0);
   const [uiSkin, setUiSkin] = useState<SkinId>(DEFAULT_USER_SETTINGS.uiSkin);
   const [settingsError, setSettingsError] = useState<string | null>(null);
 
   useEffect(() => {
     let isActive = true;
+    const requestId = settingsRequestRef.current + 1;
+    settingsRequestRef.current = requestId;
 
     void runtime.getUserSettings().then((settings) => {
-      if (isActive) {
+      if (isActive && requestId === settingsRequestRef.current) {
         setUiSkin(settings.uiSkin);
+        setSettingsError(null);
+      }
+    }, (error: unknown) => {
+      if (isActive && requestId === settingsRequestRef.current) {
+        setSettingsError(getSettingsErrorMessage(error, "Failed to load user settings."));
       }
     });
 
@@ -30,16 +38,21 @@ export function UiSettingsProvider({ children }: UiSettingsProviderProps) {
   }, [runtime]);
 
   const changeSkin = useCallback(async (nextSkin: SkinId) => {
+    const requestId = settingsRequestRef.current + 1;
+    settingsRequestRef.current = requestId;
     setUiSkin(nextSkin);
+    setSettingsError(null);
 
     try {
       const savedSettings = await runtime.updateUserSettings({ uiSkin: nextSkin });
-      setUiSkin(savedSettings.uiSkin);
-      setSettingsError(null);
+      if (requestId === settingsRequestRef.current) {
+        setUiSkin(savedSettings.uiSkin);
+        setSettingsError(null);
+      }
     } catch (error) {
-      setSettingsError(error instanceof Error
-        ? error.message
-        : "Failed to update user settings.");
+      if (requestId === settingsRequestRef.current) {
+        setSettingsError(getSettingsErrorMessage(error, "Failed to update user settings."));
+      }
     }
   }, [runtime]);
 
@@ -57,4 +70,8 @@ export function UiSettingsProvider({ children }: UiSettingsProviderProps) {
       {children}
     </UiSettingsContext.Provider>
   );
+}
+
+function getSettingsErrorMessage(error: unknown, fallbackMessage: string) {
+  return error instanceof Error ? error.message : fallbackMessage;
 }
