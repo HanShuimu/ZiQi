@@ -422,7 +422,7 @@ describe("SpectrogramView", () => {
     expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
   });
 
-  it("clears pitch hover state when pitch frames become unavailable", () => {
+  it("clears pitch hover state when pitch frames become unavailable and keeps it cleared when frames return", () => {
     const { container, rerender } = renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={0}
@@ -447,6 +447,24 @@ describe("SpectrogramView", () => {
         currentTimeMs={0}
         durationMs={12_000}
         spectrogramOverview={null}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onViewportChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("Pointer");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+
+    rerender(wrapWithUiProvider(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
         onSeek={vi.fn()}
@@ -487,6 +505,24 @@ describe("SpectrogramView", () => {
         durationMs={12_000}
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 2_000, durationMs: 8_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
+        onViewportChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("Pointer");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+
+    rerender(wrapWithUiProvider(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
         onSeek={vi.fn()}
         loopRange={undefined}

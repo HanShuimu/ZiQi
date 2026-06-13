@@ -25,8 +25,15 @@ export function usePitchHover({
     resetKey,
     pointerState: null
   }));
-  const pointerState =
-    pointerStateState.resetKey === resetKey ? pointerStateState.pointerState : null;
+  let activePointerState = pointerStateState.pointerState;
+
+  if (pointerStateState.resetKey !== resetKey) {
+    activePointerState = null;
+    setPointerStateState({
+      resetKey,
+      pointerState: null
+    });
+  }
 
   function handleSpectrogramPointerMove(event: PointerEvent<HTMLDivElement>) {
     if (!hasPitchFrames) {
@@ -57,5 +64,9 @@ export function usePitchHover({
     });
   }
 
-  return { handleSpectrogramPointerLeave, handleSpectrogramPointerMove, pointerState };
+  return {
+    handleSpectrogramPointerLeave,
+    handleSpectrogramPointerMove,
+    pointerState: activePointerState
+  };
 }
