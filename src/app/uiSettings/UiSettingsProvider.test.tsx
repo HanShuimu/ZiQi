@@ -11,7 +11,7 @@ function Probe() {
   return (
     <>
       <div>{uiSkin}</div>
-      <button type="button" onClick={() => void changeSkin("animal-island")}>
+      <button type="button" onClick={() => void changeSkin("default")}>
         Switch
       </button>
     </>
@@ -30,8 +30,8 @@ describe("UiSettingsProvider", () => {
         saveProject: vi.fn().mockResolvedValue(null),
         selectAudioFile: vi.fn().mockResolvedValue(null),
         onMenuCommand: vi.fn(() => () => {}),
-        getUserSettings: vi.fn().mockResolvedValue({ uiSkin: "default" }),
-        updateUserSettings: vi.fn().mockResolvedValue({ uiSkin: "animal-island" })
+        getUserSettings: vi.fn().mockResolvedValue({ uiSkin: "animal-island" }),
+        updateUserSettings: vi.fn().mockResolvedValue({ uiSkin: "default" })
       }
     });
   });
@@ -51,16 +51,17 @@ describe("UiSettingsProvider", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("default")).toBeTruthy();
+      expect(screen.getByText("animal-island")).toBeTruthy();
     });
+    expect(window.ziqiApp!.getUserSettings).toHaveBeenCalledOnce();
 
     await userEvent.click(screen.getByRole("button", { name: "Switch" }));
 
     await waitFor(() => {
-      expect(screen.getByText("animal-island")).toBeTruthy();
+      expect(screen.getByText("default")).toBeTruthy();
     });
     expect(window.ziqiApp!.updateUserSettings).toHaveBeenCalledWith({
-      uiSkin: "animal-island"
+      uiSkin: "default"
     });
   });
 });
