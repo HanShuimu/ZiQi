@@ -126,21 +126,29 @@ const architecturePlugin = {
         schema: []
       },
       create(context) {
-        return {
-          ImportDeclaration(node) {
-            const importer = toProjectPath(context.filename);
-            const imported = resolveImportPath(importer, node.source.value);
-
-            if (!imported) {
-              return;
-            }
-
-            const message = getRestrictedProjectImportMessage(importer, imported);
-
-            if (message) {
-              context.report({ node, message });
-            }
+        function checkProjectImport(node) {
+          if (!node.source) {
+            return;
           }
+
+          const importer = toProjectPath(context.filename);
+          const imported = resolveImportPath(importer, node.source.value);
+
+          if (!imported) {
+            return;
+          }
+
+          const message = getRestrictedProjectImportMessage(importer, imported);
+
+          if (message) {
+            context.report({ node, message });
+          }
+        }
+
+        return {
+          ExportAllDeclaration: checkProjectImport,
+          ExportNamedDeclaration: checkProjectImport,
+          ImportDeclaration: checkProjectImport
         };
       }
     }

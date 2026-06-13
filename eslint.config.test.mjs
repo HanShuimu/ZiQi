@@ -73,11 +73,51 @@ describe("architecture lint boundaries", () => {
     );
   });
 
+  it("blocks core from re-exporting services through deep relative paths", async () => {
+    const messages = await lintText({
+      filePath: "src/core/domain/deep/model.ts",
+      code:
+        'export { createBrowserWaveformService } from "../../../services/audio/browserWaveformService";\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
+    );
+  });
+
   it("blocks services from importing app through deep relative paths", async () => {
     const messages = await lintText({
       filePath: "src/services/audio/deep/service.ts",
       code:
         'import { createRuntime } from "../../../app/runtime";\nexport const value = createRuntime;\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
+    );
+  });
+
+  it("blocks services from re-exporting app through deep relative paths", async () => {
+    const messages = await lintText({
+      filePath: "src/services/audio/deep/service.ts",
+      code: 'export * from "../../../app/runtime";\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
+    );
+  });
+
+  it("blocks capabilities from re-exporting workspaces", async () => {
+    const messages = await lintText({
+      filePath: "src/capabilities/deep/index.ts",
+      code: 'export * from "../../workspaces/transcription/Workspace";\n'
     });
 
     expect(messages).toContainEqual(
@@ -270,6 +310,19 @@ describe("architecture lint boundaries", () => {
     const messages = await lintText({
       filePath: "electron/platform/ipc/settingsHandlers.ts",
       code: 'import { App } from "../../../src/App";\nexport const value = App;\n'
+    });
+
+    expect(messages).toContainEqual(
+      expect.objectContaining({
+        ruleId: "architecture/no-restricted-project-imports"
+      })
+    );
+  });
+
+  it("blocks electron/platform from re-exporting src renderer files", async () => {
+    const messages = await lintText({
+      filePath: "electron/platform/ipc/settingsHandlers.ts",
+      code: 'export { App } from "../../../src/App";\n'
     });
 
     expect(messages).toContainEqual(
