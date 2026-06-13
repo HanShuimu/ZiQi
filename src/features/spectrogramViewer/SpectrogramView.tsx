@@ -33,11 +33,15 @@ import {
   getPitchLaneCssProperties
 } from "./pitchHover";
 import type { HeatmapPointerState } from "./pitchHover";
+import {
+  createBarGridLines,
+  createTimeGridLines,
+  getRenderedWaveformPoints
+} from "./spectrogramModel";
+import { convertSpectrogramToPitchEnergy } from "./pitchEnergyAdapter";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = PITCH_HEATMAP_MIN_HEIGHT_PX;
-const MAX_BAR_GRID_LINES = 1_000;
-const MAX_RENDERED_WAVEFORM_POINTS = 800;
 const SPECTROGRAM_VIEW_STYLE = {
   "--spectrogram-display-height": `${CANVAS_HEIGHT}px`
 } as CSSProperties;
@@ -375,96 +379,6 @@ export function SpectrogramView({
   );
 }
 
-type RenderedWaveformPoint = WaveformOverview["points"][number];
-
-function getRenderedWaveformPoints(points: RenderedWaveformPoint[]): RenderedWaveformPoint[] {
-  if (points.length <= MAX_RENDERED_WAVEFORM_POINTS) {
-    return points;
-  }
-
-  return Array.from({ length: MAX_RENDERED_WAVEFORM_POINTS }, (_, index) => {
-    const startIndex = Math.floor((index * points.length) / MAX_RENDERED_WAVEFORM_POINTS);
-    const endIndex = Math.floor(((index + 1) * points.length) / MAX_RENDERED_WAVEFORM_POINTS);
-    const group = points.slice(startIndex, Math.max(startIndex + 1, endIndex));
-
-    return {
-      startMs: group[0].startMs,
-      endMs: group[group.length - 1].endMs,
-      peak: Math.max(...group.map((point) => point.peak))
-    };
-  });
-}
-
-function createTimeGridLines(viewport: SpectrogramViewport) {
-  if (viewport.durationMs <= 0) {
-    return [];
-  }
-
-  const durationSeconds = viewport.durationMs / 1000;
-  const intervalSeconds = chooseGridIntervalSeconds(durationSeconds);
-  const firstLineSeconds = Math.ceil(viewport.startMs / 1000 / intervalSeconds) * intervalSeconds;
-  const endSeconds = (viewport.startMs + viewport.durationMs) / 1000;
-  const positions: number[] = [];
-
-  for (
-    let lineSeconds = firstLineSeconds;
-    lineSeconds < endSeconds;
-    lineSeconds += intervalSeconds
-  ) {
-    const lineMs = lineSeconds * 1000;
-    const position = timeToViewportPercent(lineMs, viewport);
-    if (position > 0 && position < 100) {
-      positions.push(Math.round(position * 10) / 10);
-    }
-  }
-
-  return positions;
-}
-
-function createBarGridLines(
-  viewport: SpectrogramViewport,
-  settings: { beatOffsetMs: number; beatsPerBar: number; bpm: number }
-) {
-  const { beatOffsetMs, beatsPerBar, bpm } = settings;
-
-  if (
-    !Number.isFinite(viewport.startMs) ||
-    !Number.isFinite(viewport.durationMs) ||
-    !Number.isFinite(beatOffsetMs) ||
-    !Number.isFinite(beatsPerBar) ||
-    !Number.isFinite(bpm) ||
-    viewport.durationMs <= 0 ||
-    beatsPerBar <= 0 ||
-    bpm <= 0
-  ) {
-    return [];
-  }
-
-  const barDurationMs = (60_000 / bpm) * beatsPerBar;
-  if (!Number.isFinite(barDurationMs) || barDurationMs <= 0) {
-    return [];
-  }
-
-  const viewportEndMs = viewport.startMs + viewport.durationMs;
-  const firstBarIndex = Math.ceil((viewport.startMs - beatOffsetMs) / barDurationMs);
-  const lines: Array<{ leftPercent: number; timeMs: number }> = [];
-
-  for (
-    let barStartMs = beatOffsetMs + firstBarIndex * barDurationMs;
-    barStartMs < viewportEndMs && lines.length < MAX_BAR_GRID_LINES;
-    barStartMs += barDurationMs
-  ) {
-    if (barStartMs >= viewport.startMs) {
-      lines.push({
-        leftPercent: Math.round(timeToViewportPercent(barStartMs, viewport) * 1_000_000) / 1_000_000,
-        timeMs: barStartMs
-      });
-    }
-  }
-
-  return lines;
-}
-
 function getMaxEnergyForColumn(
   frames: PitchEnergyOverview["frames"],
   startFrameIndex: number,
@@ -478,40 +392,4 @@ function getMaxEnergyForColumn(
   }
 
   return maxEnergy;
-}
-
-function convertSpectrogramToPitchEnergy(
-  spectrogramOverview: SpectrogramOverview | null | undefined
-): PitchEnergyOverview | null {
-  if (!spectrogramOverview) {
-    return null;
-  }
-
-  return {
-    durationMs: spectrogramOverview.durationMs,
-    framesPerSecond: spectrogramOverview.framesPerSecond,
-    minMidiNumber: 21,
-    maxMidiNumber: 108,
-    notesPerFrame: PITCH_HEATMAP_NOTE_COUNT,
-    frames: spectrogramOverview.frames.map((frame) => ({
-      startMs: frame.startMs,
-      endMs: frame.endMs,
-      energies: Array.from({ length: PITCH_HEATMAP_NOTE_COUNT }, (_, index) => {
-        const sourceIndex = Math.floor((index * frame.magnitudes.length) / PITCH_HEATMAP_NOTE_COUNT);
-        return frame.magnitudes[sourceIndex] ?? 0;
-      })
-    }))
-  };
-}
-
-function chooseGridIntervalSeconds(durationSeconds: number) {
-  if (durationSeconds <= 30) {
-    return 5;
-  }
-
-  if (durationSeconds <= 180) {
-    return 15;
-  }
-
-  return 30;
 }
