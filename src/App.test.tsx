@@ -1365,7 +1365,9 @@ describe("App local audio import", () => {
     });
 
     expect(FakeAudioElement.instances[0].playbackRate).toBe(0.75);
-    expect(screen.getByText("Loop 0:01-0:04")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Loop" })).toMatchObject({
+      ariaPressed: "true"
+    });
     expect(screen.getByText("0:02-0:07")).toBeTruthy();
   });
 });
