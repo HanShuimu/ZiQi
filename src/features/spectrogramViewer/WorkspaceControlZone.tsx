@@ -13,16 +13,16 @@ export interface WorkspaceControlZoneProps {
   durationMs: number;
   isPlaying: boolean;
   playbackRate: number;
-  loopRange: { startMs: number; endMs: number } | undefined;
+  loopEnabled: boolean;
+  hasSelectedTimeRange: boolean;
   onBarGridChange: (
     settings: Partial<Pick<WorkspaceState, "beatOffsetMs" | "beatsPerBar" | "bpm">>
   ) => void;
-  onLoopClear: () => Promise<void> | void;
-  onLoopEndSet: (timeMs: number) => Promise<void> | void;
-  onLoopStartSet: (timeMs: number) => Promise<void> | void;
+  onLoopEnabledChange: (enabled: boolean) => Promise<void> | void;
   onPlaybackRateChange: (rate: number) => Promise<void> | void;
   onPlaybackToggle: () => Promise<void> | void;
   onPitchHeatmapDisplayChange: (settings: PitchHeatmapDisplaySettings) => void;
+  onSelectedTimeRangeClear: () => Promise<void> | void;
   pitchHeatmapDisplay: PitchHeatmapDisplaySettings;
 }
 
@@ -34,14 +34,14 @@ export function WorkspaceControlZone({
   durationMs,
   isPlaying,
   playbackRate,
-  loopRange,
+  loopEnabled,
+  hasSelectedTimeRange,
   onBarGridChange,
-  onLoopClear,
-  onLoopEndSet,
-  onLoopStartSet,
+  onLoopEnabledChange,
   onPlaybackRateChange,
   onPlaybackToggle,
   onPitchHeatmapDisplayChange,
+  onSelectedTimeRangeClear,
   pitchHeatmapDisplay
 }: WorkspaceControlZoneProps) {
   return (
@@ -140,13 +140,18 @@ export function WorkspaceControlZone({
 
       <div className="workspace-control-group" aria-label="Loop controls">
         <div className="workspace-control-label">Loop</div>
-        <button onClick={() => onLoopStartSet(currentTimeMs)}>Set Loop Start</button>
-        <button onClick={() => onLoopEndSet(currentTimeMs)}>Set Loop End</button>
-        {loopRange ? <button onClick={onLoopClear}>Clear Loop</button> : null}
-        {loopRange ? (
-          <span className="loop-summary">
-            Loop {formatTime(loopRange.startMs)}-{formatTime(loopRange.endMs)}
-          </span>
+        <button
+          aria-pressed={loopEnabled}
+          disabled={!hasSelectedTimeRange}
+          onClick={() => onLoopEnabledChange(!loopEnabled)}
+          type="button"
+        >
+          Loop
+        </button>
+        {hasSelectedTimeRange ? (
+          <button onClick={onSelectedTimeRangeClear} type="button">
+            Clear Selection
+          </button>
         ) : null}
       </div>
 

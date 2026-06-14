@@ -193,7 +193,7 @@ describe("WorkbenchShell transport controls", () => {
     expect(controlZone.compareDocumentPosition(waveform) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText("Playback")).toBeTruthy();
     expect(screen.getByText("Speed")).toBeTruthy();
-    expect(screen.getByText("Loop")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Loop" })).toBeTruthy();
   });
 
   it("renders bar grid controls above the waveform", () => {
@@ -427,9 +427,9 @@ describe("WorkbenchShell transport controls", () => {
     });
   });
 
-  it("uses an existing loop start when setting a loop end, then clears the range", async () => {
+  it("toggles loop playback from the selected time range", async () => {
     const user = userEvent.setup();
-    const project = {
+    let project = {
       ...createMockProjectSummary(),
       workspace: {
         ...createMockProjectSummary().workspace,
@@ -437,12 +437,20 @@ describe("WorkbenchShell transport controls", () => {
           startMs: 1_000,
           endMs: 4_000
         },
-        loopEnabled: true
+        loopEnabled: false
       }
     };
     const setLoopRange = vi.fn().mockResolvedValue(undefined);
     const clearLoopRange = vi.fn().mockResolvedValue(undefined);
-    const onWorkspaceChange = vi.fn();
+    const onWorkspaceChange = vi.fn((workspacePatch) => {
+      project = {
+        ...project,
+        workspace: {
+          ...project.workspace,
+          ...workspacePatch
+        }
+      };
+    });
     const audioFacade = {
       ...mockProjectAudioFacade,
       playback: {
@@ -451,17 +459,13 @@ describe("WorkbenchShell transport controls", () => {
         getState: vi.fn(() => ({
           isPlaying: false,
           currentTimeMs: 3_000,
-          playbackRate: 1,
-          loopRange: {
-            startMs: 1_000,
-            endMs: 4_000
-          }
+          playbackRate: 1
         })),
         setLoopRange
       }
     };
 
-    renderWorkbenchShell(
+    const view = renderWorkbenchShell(
       <WorkbenchShell
         project={project}
         audioFacade={audioFacade}
@@ -469,23 +473,53 @@ describe("WorkbenchShell transport controls", () => {
       />
     );
 
-    await user.click(screen.getByRole("button", { name: "Set Loop End" }));
+    expect(screen.queryByRole("button", { name: "Set Loop Start" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Set Loop End" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Clear Loop" })).toBeNull();
 
-    expect(setLoopRange).toHaveBeenCalledWith(1_000, 3_000);
+    const loopButton = screen.getByRole("button", { name: "Loop" });
+    expect(loopButton).toMatchObject({ disabled: false });
+
+    await user.click(loopButton);
+
+    expect(setLoopRange).toHaveBeenCalledWith(1_000, 4_000);
     expect(onWorkspaceChange).toHaveBeenLastCalledWith({
-      selectedTimeRange: {
-        startMs: 1_000,
-        endMs: 3_000
-      },
       loopEnabled: true
     });
 
-    await user.click(screen.getByRole("button", { name: "Clear Loop" }));
+    view.rerender(
+      wrapWorkbenchShell(
+        <WorkbenchShell
+          project={project}
+          audioFacade={audioFacade}
+          onWorkspaceChange={onWorkspaceChange}
+        />
+      )
+    );
+
+    await user.click(screen.getByRole("button", { name: "Loop" }));
 
     expect(clearLoopRange).toHaveBeenCalledOnce();
     expect(onWorkspaceChange).toHaveBeenLastCalledWith({
       loopEnabled: false
     });
+  });
+
+  it("disables loop playback when no time range is selected", () => {
+    const project = {
+      ...createMockProjectSummary(),
+      workspace: {
+        ...createMockProjectSummary().workspace,
+        selectedTimeRange: undefined,
+        loopEnabled: false
+      }
+    };
+
+    renderWorkbenchShell(<WorkbenchShell project={project} audioFacade={mockProjectAudioFacade} />);
+
+    expect(screen.getByRole("button", { name: "Loop" })).toMatchObject({ disabled: true });
+    expect(screen.queryByRole("button", { name: "Set Loop Start" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Set Loop End" })).toBeNull();
   });
 
   it("reports viewport changes for persistence", () => {
@@ -570,8 +604,12 @@ describe("WorkbenchShell transport controls", () => {
 });
 
 function renderWorkbenchShell(ui: React.ReactElement) {
+  return render(wrapWorkbenchShell(ui));
+}
+
+function wrapWorkbenchShell(ui: React.ReactElement) {
   const skin = getSkinDefinition("default");
-  return render(
+  return (
     <UiProvider skinId={skin.id} adapter={skin.adapter}>
       {ui}
     </UiProvider>
