@@ -407,10 +407,11 @@ describe("WorkbenchShell transport controls", () => {
       ...createMockProjectSummary(),
       workspace: {
         ...createMockProjectSummary().workspace,
-        loopRange: {
+        selectedTimeRange: {
           startMs: 1_000,
           endMs: 4_000
-        }
+        },
+        loopEnabled: true
       }
     };
     const setLoopRange = vi.fn().mockResolvedValue(undefined);
