@@ -54,13 +54,13 @@ describe("timeRuler", () => {
     ).toEqual([]);
   });
 
-  it("limits extreme natural ruler tick density", () => {
-    const ticks = createTimeRulerTicks({
-      viewport: { startMs: 0, durationMs: 100_000_000 },
-      targetMajorTickCount: 10_000
-    });
-
-    expect(ticks.length).toBeLessThanOrEqual(1_000);
+  it("returns no natural time ticks when tick density is too high", () => {
+    expect(
+      createTimeRulerTicks({
+        viewport: { startMs: 0, durationMs: 100_000_000 },
+        targetMajorTickCount: 10_000
+      })
+    ).toEqual([]);
   });
 
   it("formats sub-second major tick labels without duplicates", () => {
@@ -104,15 +104,15 @@ describe("timeRuler", () => {
     expect(ticks.find((tick) => tick.kind === "bar")?.timeMs).toBe(500);
   });
 
-  it("limits extreme beat density", () => {
-    const ticks = createBarBeatTicks({
-      viewport: { startMs: 0, durationMs: 10_000 },
-      bpm: 1_000_000,
-      beatsPerBar: 4,
-      beatOffsetMs: 0
-    });
-
-    expect(ticks.length).toBeLessThanOrEqual(1_000);
+  it("returns no bar or beat ticks when beat density is too high", () => {
+    expect(
+      createBarBeatTicks({
+        viewport: { startMs: 0, durationMs: 10_000 },
+        bpm: 1_000_000,
+        beatsPerBar: 4,
+        beatOffsetMs: 0
+      })
+    ).toEqual([]);
   });
 
   it("returns no bar or beat ticks for invalid viewport duration", () => {
@@ -130,6 +130,17 @@ describe("timeRuler", () => {
     expect(
       createBarBeatTicks({
         viewport: { startMs: Number.POSITIVE_INFINITY, durationMs: 4_000 },
+        bpm: 120,
+        beatsPerBar: 4,
+        beatOffsetMs: 0
+      })
+    ).toEqual([]);
+  });
+
+  it("returns no bar or beat ticks when viewport end cannot progress safely", () => {
+    expect(
+      createBarBeatTicks({
+        viewport: { startMs: Number.MAX_VALUE, durationMs: 1 },
         bpm: 120,
         beatsPerBar: 4,
         beatOffsetMs: 0

@@ -65,25 +65,24 @@ export function createTimeRulerTicks({
     return [];
   }
 
+  const majorTickCount = Math.floor((endTimeMs - startTimeMs) / intervalMs) + 1;
+  if (
+    !Number.isFinite(majorTickCount) ||
+    majorTickCount <= 0 ||
+    majorTickCount * 4 > MAX_TIME_RULER_TICKS
+  ) {
+    return [];
+  }
+
   const ticks: TimeRulerTick[] = [];
 
-  const addTick = (tick: TimeRulerTick) => {
-    if (ticks.length < MAX_TIME_RULER_TICKS) {
-      ticks.push(tick);
-    }
-  };
-
-  for (
-    let tickIndex = 0;
-    ticks.length < MAX_TIME_RULER_TICKS;
-    tickIndex += 1
-  ) {
+  for (let tickIndex = 0; tickIndex < majorTickCount; tickIndex += 1) {
     const timeMs = startTimeMs + tickIndex * intervalMs;
     if (!Number.isFinite(timeMs) || timeMs > endTimeMs) {
       break;
     }
 
-    addTick({
+    ticks.push({
       kind: "major",
       timeMs,
       leftPercent: timeToViewportPercent(timeMs, viewport),
@@ -92,7 +91,7 @@ export function createTimeRulerTicks({
 
     const mediumTimeMs = timeMs + intervalMs / 2;
     if (mediumTimeMs < endTimeMs) {
-      addTick({
+      ticks.push({
         kind: "medium",
         timeMs: mediumTimeMs,
         leftPercent: timeToViewportPercent(mediumTimeMs, viewport)
@@ -102,7 +101,7 @@ export function createTimeRulerTicks({
     const quarterMs = intervalMs / 4;
     for (const minorTimeMs of [timeMs + quarterMs, timeMs + quarterMs * 3]) {
       if (minorTimeMs < endTimeMs) {
-        addTick({
+        ticks.push({
           kind: "minor",
           timeMs: minorTimeMs,
           leftPercent: timeToViewportPercent(minorTimeMs, viewport)
@@ -145,15 +144,34 @@ export function createBarBeatTicks({
   }
 
   const viewportEndMs = viewport.startMs + viewport.durationMs;
+  if (!Number.isFinite(viewportEndMs) || viewportEndMs <= viewport.startMs) {
+    return [];
+  }
+
   const firstBeatIndex = Math.ceil((viewport.startMs - beatOffsetMs) / beatDurationMs);
+  if (!Number.isFinite(firstBeatIndex)) {
+    return [];
+  }
+
+  const firstBeatTimeMs = beatOffsetMs + firstBeatIndex * beatDurationMs;
+  if (!Number.isFinite(firstBeatTimeMs)) {
+    return [];
+  }
+
+  const beatTickCount =
+    Math.floor((viewportEndMs - firstBeatTimeMs) / beatDurationMs) + 1;
+  if (
+    !Number.isFinite(beatTickCount) ||
+    beatTickCount <= 0 ||
+    beatTickCount > MAX_BAR_BEAT_TICKS
+  ) {
+    return [];
+  }
+
   const ticks: BarBeatTick[] = [];
 
-  for (
-    let beatIndex = firstBeatIndex;
-    beatOffsetMs + beatIndex * beatDurationMs <= viewportEndMs &&
-    ticks.length < MAX_BAR_BEAT_TICKS;
-    beatIndex += 1
-  ) {
+  for (let tickOffset = 0; tickOffset < beatTickCount; tickOffset += 1) {
+    const beatIndex = firstBeatIndex + tickOffset;
     const timeMs = beatOffsetMs + beatIndex * beatDurationMs;
     if (timeMs < viewport.startMs) {
       continue;
