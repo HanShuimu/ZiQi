@@ -55,7 +55,6 @@ interface SpectrogramViewProps {
   bpm?: number;
   currentTimeMs: number;
   durationMs: number;
-  loopEnabled?: boolean;
   loopRange: { startMs: number; endMs: number } | undefined;
   pitchEnergyOverview?: PitchEnergyOverview | null | undefined;
   pitchHeatmapDisplay?: PitchHeatmapDisplaySettings;
@@ -64,7 +63,6 @@ interface SpectrogramViewProps {
   viewport?: SpectrogramViewport;
   waveformOverview: WaveformOverview | null | undefined;
   onSeek: (timeMs: number) => Promise<void> | void;
-  onSelectedTimeRangeChange?: (range: SelectedTimeRange | undefined) => void;
   onViewportChange: (viewport: SpectrogramViewport) => void;
 }
 
