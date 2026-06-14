@@ -170,6 +170,7 @@ export function SpectrogramViewer({
         durationMs={durationMs}
         loopRange={visibleLoopRange}
         onSeek={handleSeek}
+        onSelectedTimeRangeChange={(selectedTimeRange) => onWorkspaceChange({ selectedTimeRange })}
         onViewportChange={(spectrogramViewport) => onWorkspaceChange({ spectrogramViewport })}
         pitchEnergyOverview={pitchEnergyOverview}
         pitchHeatmapDisplay={pitchHeatmapDisplay}

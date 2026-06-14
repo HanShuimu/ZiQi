@@ -152,6 +152,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -179,6 +180,7 @@ describe("SpectrogramView", () => {
         viewport={{ startMs: 3_000, durationMs: 5_000 }}
         waveformOverview={createWaveformOverview()}
         onSeek={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -204,6 +206,7 @@ describe("SpectrogramView", () => {
         viewport={{ startMs: 3_000, durationMs: 5_000 }}
         waveformOverview={createWaveformOverview()}
         onSeek={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -236,6 +239,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -270,6 +274,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -304,6 +309,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -328,6 +334,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -363,6 +370,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -398,6 +406,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -429,6 +438,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -470,6 +480,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -507,6 +518,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -540,6 +552,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -577,6 +590,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -604,6 +618,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     ));
@@ -632,6 +647,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -659,6 +675,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     ));
@@ -686,6 +703,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -722,6 +740,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -747,6 +766,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -772,6 +792,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -810,12 +831,98 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
 
     expect(screen.queryByTestId("spectrogram-cursor")).toBeNull();
     expect(screen.queryByTestId("spectrogram-ruler-playhead")).toBeNull();
+  });
+
+  it("seeks on plain spectrogram click without clearing selection", () => {
+    const onSeek = vi.fn();
+    const onSelectedTimeRangeChange = vi.fn();
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        loopRange={undefined}
+        selectedTimeRange={{ startMs: 2_000, endMs: 4_000 }}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={onSeek}
+        onSelectedTimeRangeChange={onSelectedTimeRangeChange}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerDown(frame, { button: 0, clientX: 500, pointerId: 1 });
+    fireEvent.pointerUp(frame, { button: 0, clientX: 500, pointerId: 1 });
+
+    expect(onSeek).toHaveBeenCalledWith(6_000);
+    expect(onSelectedTimeRangeChange).not.toHaveBeenCalled();
+  });
+
+  it("creates a selected range with ctrl drag", () => {
+    const onSelectedTimeRangeChange = vi.fn();
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        loopRange={undefined}
+        selectedTimeRange={undefined}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={vi.fn()}
+        onSelectedTimeRangeChange={onSelectedTimeRangeChange}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerDown(frame, { button: 0, ctrlKey: true, clientX: 300, pointerId: 1 });
+    fireEvent.pointerMove(frame, { ctrlKey: true, clientX: 700, pointerId: 1 });
+    fireEvent.pointerUp(frame, { ctrlKey: true, clientX: 700, pointerId: 1 });
+
+    expect(onSelectedTimeRangeChange).toHaveBeenCalledWith({
+      startMs: 4_000,
+      endMs: 8_000
+    });
+  });
+
+  it("ignores tiny ctrl drags", () => {
+    const onSelectedTimeRangeChange = vi.fn();
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        loopRange={undefined}
+        selectedTimeRange={undefined}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={vi.fn()}
+        onSelectedTimeRangeChange={onSelectedTimeRangeChange}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+
+    fireEvent.pointerDown(frame, { button: 0, ctrlKey: true, clientX: 300, pointerId: 1 });
+    fireEvent.pointerMove(frame, { ctrlKey: true, clientX: 304, pointerId: 1 });
+    fireEvent.pointerUp(frame, { ctrlKey: true, clientX: 304, pointerId: 1 });
+
+    expect(onSelectedTimeRangeChange).not.toHaveBeenCalled();
   });
 
   it("zooms horizontally with ctrl wheel around the mouse position", () => {
@@ -835,6 +942,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -866,6 +974,7 @@ describe("SpectrogramView", () => {
         onLoopEndSet={vi.fn()}
         onLoopStartSet={vi.fn()}
         onPlaybackRateChange={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -896,6 +1005,7 @@ describe("SpectrogramView", () => {
         onPlaybackRateChange={vi.fn()}
         onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
+        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={onViewportChange}
       />
     );
