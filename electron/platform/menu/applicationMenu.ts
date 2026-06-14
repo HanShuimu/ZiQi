@@ -3,7 +3,8 @@ export const MENU_COMMANDS = {
   SAVE_PROJECT: "save-project",
   IMPORT_AUDIO: "import-audio",
   SET_SKIN_DEFAULT: "set-skin-default",
-  SET_SKIN_ANIMAL_ISLAND: "set-skin-animal-island"
+  SET_SKIN_ANIMAL_ISLAND: "set-skin-animal-island",
+  DESCRIBE_SELECTED_RANGE_FOR_LLM: "describe-selected-range-for-llm"
 } as const;
 
 export type MenuCommand = (typeof MENU_COMMANDS)[keyof typeof MENU_COMMANDS];
@@ -70,6 +71,15 @@ export function createApplicationMenuTemplate({
       }
     ]
   };
+  const debugMenu: AppMenuTemplateItem = {
+    label: "Debug",
+    submenu: [
+      {
+        label: "Describe Selected Range for LLM",
+        click: () => dispatch(MENU_COMMANDS.DESCRIBE_SELECTED_RANGE_FOR_LLM)
+      }
+    ]
+  };
 
   if (platform === "darwin") {
     return [
@@ -77,9 +87,10 @@ export function createApplicationMenuTemplate({
         label: "ZiQi",
         submenu: [{ role: "about" }, { role: "hide" }, { role: "quit" }]
       },
-      fileMenu
+      fileMenu,
+      debugMenu
     ];
   }
 
-  return [fileMenu];
+  return [fileMenu, debugMenu];
 }

@@ -6,6 +6,20 @@ import {
 } from "./applicationMenu.js";
 
 describe("app menu", () => {
+  it("creates File and Debug menus on Windows", () => {
+    const template = createApplicationMenuTemplate({
+      activeSkin: "default",
+      platform: "win32",
+      dispatch: vi.fn()
+    });
+    const debugMenu = template.find((item) => item.label === "Debug");
+
+    expect(template.map((item) => item.label)).toEqual(["File", "Debug"]);
+    expect(debugMenu?.submenu?.map((item) => item.label)).toEqual([
+      "Describe Selected Range for LLM"
+    ]);
+  });
+
   it("creates File menu items for project actions and skins", () => {
     const template = createApplicationMenuTemplate({
       activeSkin: "default",
@@ -64,6 +78,22 @@ describe("app menu", () => {
     expect(dispatch).toHaveBeenNthCalledWith(5, MENU_COMMANDS.SET_SKIN_ANIMAL_ISLAND);
   });
 
+  it("dispatches the selected range debug command from the Debug menu", () => {
+    const dispatch = vi.fn<(command: MenuCommand) => void>();
+    const template = createApplicationMenuTemplate({
+      activeSkin: "default",
+      platform: "win32",
+      dispatch
+    });
+    const debugMenu = template.find((item) => item.label === "Debug");
+
+    debugMenu?.submenu?.[0].click?.();
+
+    expect(dispatch).toHaveBeenCalledWith(
+      MENU_COMMANDS.DESCRIBE_SELECTED_RANGE_FOR_LLM
+    );
+  });
+
   it("keeps a standard app menu before File on macOS", () => {
     const template = createApplicationMenuTemplate({
       activeSkin: "default",
@@ -71,7 +101,6 @@ describe("app menu", () => {
       dispatch: vi.fn()
     });
 
-    expect(template[0].label).toBe("ZiQi");
-    expect(template[1].label).toBe("File");
+    expect(template.map((item) => item.label)).toEqual(["ZiQi", "File", "Debug"]);
   });
 });

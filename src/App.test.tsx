@@ -6,6 +6,24 @@ import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from 
 import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "./core/audio/pitchHeatmap";
 import type { ProjectSummary } from "./core/project/types";
 
+const observedWorkbenchShellDebugStates = vi.hoisted(() => [] as boolean[]);
+
+vi.mock("./components/WorkbenchShell", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./components/WorkbenchShell")>();
+  const { createElement } = await import("react");
+  const ActualWorkbenchShell = actual.WorkbenchShell;
+
+  return {
+    ...actual,
+    WorkbenchShell: (props: Parameters<typeof ActualWorkbenchShell>[0]) => {
+      observedWorkbenchShellDebugStates.push(
+        Boolean((props as { isDebugSelectionPanelOpen?: boolean }).isDebugSelectionPanelOpen)
+      );
+      return createElement(ActualWorkbenchShell, props);
+    }
+  };
+});
+
 class FakeAudioElement {
   static instances: FakeAudioElement[] = [];
   static currentTimeWrites = 0;
@@ -47,6 +65,7 @@ type MenuCommandListener = (
     | "import-audio"
     | "set-skin-default"
     | "set-skin-animal-island"
+    | "describe-selected-range-for-llm"
 ) => void;
 
 let menuCommandListener: MenuCommandListener | null;
@@ -56,6 +75,7 @@ describe("App local audio import", () => {
   beforeEach(() => {
     menuCommandListener = null;
     firstMenuCommandListener = null;
+    observedWorkbenchShellDebugStates.length = 0;
     FakeAudioElement.instances = [];
     FakeAudioElement.currentTimeWrites = 0;
     FakeAudioElement.throwOnCurrentTimeWrite = null;
@@ -1165,6 +1185,18 @@ describe("App local audio import", () => {
 
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledOnce();
+    });
+  });
+
+  it("opens debug selection state from the native menu command", async () => {
+    renderApp({});
+
+    expect(observedWorkbenchShellDebugStates.at(-1)).toBe(false);
+
+    menuCommandListener?.("describe-selected-range-for-llm");
+
+    await waitFor(() => {
+      expect(observedWorkbenchShellDebugStates.at(-1)).toBe(true);
     });
   });
 

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { AppSessionProvider } from "./app/session/AppSessionProvider";
 import { useAppSession } from "./app/session/useAppSession";
 import { useMenuCommands } from "./app/menu/useMenuCommands";
@@ -29,19 +29,25 @@ export function App({ waveformService, spectrogramService, pitchEnergyService }:
 
 function AppContent() {
   const session = useAppSession();
+  const [isDebugSelectionPanelOpen, setIsDebugSelectionPanelOpen] = useState(false);
   const skinDefinition = useMemo(
     () => getSkinDefinition(session.uiSkin),
     [session.uiSkin]
   );
 
-  useMenuCommands(session);
+  useMenuCommands({
+    ...session,
+    describeSelectedRangeForLlm: () => setIsDebugSelectionPanelOpen(true)
+  });
 
   return (
     <UiProvider skinId={skinDefinition.id} adapter={skinDefinition.adapter}>
       <WorkbenchShell
         audioFacade={session.audioFacade}
         importError={session.importError}
+        isDebugSelectionPanelOpen={isDebugSelectionPanelOpen}
         onProjectAnalysisViewChange={session.updateProjectAnalysisView}
+        onDebugSelectionPanelClose={() => setIsDebugSelectionPanelOpen(false)}
         onWorkspaceChange={session.updateWorkspace}
         project={session.project}
         pitchEnergyOverview={session.pitchEnergyOverview}

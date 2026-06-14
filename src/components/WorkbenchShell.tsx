@@ -13,7 +13,9 @@ interface WorkbenchShellProps {
   spectrogramOverview?: SpectrogramOverview | null;
   pitchEnergyOverview?: PitchEnergyOverview | null;
   importError?: string | null;
+  isDebugSelectionPanelOpen?: boolean;
   onProjectAnalysisViewChange?: (analysisViewPatch: Partial<ProjectAnalysisView>) => void;
+  onDebugSelectionPanelClose?: () => void;
   onWorkspaceChange?: (workspacePatch: Partial<WorkspaceState>) => void;
 }
 
@@ -44,9 +46,14 @@ export function WorkbenchShell({
   spectrogramOverview,
   pitchEnergyOverview,
   importError,
+  isDebugSelectionPanelOpen = false,
   onProjectAnalysisViewChange = () => {},
+  onDebugSelectionPanelClose = () => {},
   onWorkspaceChange = () => {}
 }: WorkbenchShellProps) {
+  void isDebugSelectionPanelOpen;
+  void onDebugSelectionPanelClose;
+
   if (!project) {
     return (
       <div className="app-shell">
