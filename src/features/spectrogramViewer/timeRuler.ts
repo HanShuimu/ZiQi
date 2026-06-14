@@ -16,6 +16,8 @@ const NICE_INTERVALS_MS = [
   300_000
 ] as const;
 
+const MAX_BAR_BEAT_TICKS = 1_000;
+
 export interface TimeRulerTick {
   kind: "major" | "medium" | "minor";
   timeMs: number;
@@ -37,11 +39,21 @@ export function createTimeRulerTicks({
   viewport: SpectrogramViewport;
   targetMajorTickCount?: number;
 }): TimeRulerTick[] {
-  if (viewport.durationMs <= 0) {
+  if (
+    !Number.isFinite(viewport.startMs) ||
+    !Number.isFinite(viewport.durationMs) ||
+    viewport.durationMs <= 0 ||
+    !Number.isFinite(targetMajorTickCount) ||
+    targetMajorTickCount <= 0
+  ) {
     return [];
   }
 
   const intervalMs = chooseNiceInterval(viewport.durationMs / targetMajorTickCount);
+  if (!Number.isFinite(intervalMs) || intervalMs <= 0) {
+    return [];
+  }
+
   const startTimeMs = Math.ceil(viewport.startMs / intervalMs) * intervalMs;
   const endTimeMs = viewport.startMs + viewport.durationMs;
   const ticks: TimeRulerTick[] = [];
@@ -97,19 +109,25 @@ export function createBarBeatTicks({
     !Number.isFinite(beatsPerBar) ||
     !Number.isFinite(beatOffsetMs) ||
     bpm <= 0 ||
-    beatsPerBar <= 0
+    beatsPerBar <= 0 ||
+    !Number.isInteger(beatsPerBar)
   ) {
     return [];
   }
 
   const beatDurationMs = 60_000 / bpm;
+  if (!Number.isFinite(beatDurationMs) || beatDurationMs <= 0) {
+    return [];
+  }
+
   const viewportEndMs = viewport.startMs + viewport.durationMs;
   const firstBeatIndex = Math.ceil((viewport.startMs - beatOffsetMs) / beatDurationMs);
   const ticks: BarBeatTick[] = [];
 
   for (
     let beatIndex = firstBeatIndex;
-    beatOffsetMs + beatIndex * beatDurationMs <= viewportEndMs;
+    beatOffsetMs + beatIndex * beatDurationMs <= viewportEndMs &&
+    ticks.length < MAX_BAR_BEAT_TICKS;
     beatIndex += 1
   ) {
     const timeMs = beatOffsetMs + beatIndex * beatDurationMs;

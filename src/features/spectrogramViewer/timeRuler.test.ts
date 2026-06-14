@@ -18,6 +18,34 @@ describe("timeRuler", () => {
     ]);
   });
 
+  it("returns no time ruler ticks for invalid viewport bounds", () => {
+    expect(
+      createTimeRulerTicks({
+        viewport: { startMs: 0, durationMs: Number.POSITIVE_INFINITY }
+      })
+    ).toEqual([]);
+    expect(
+      createTimeRulerTicks({
+        viewport: { startMs: Number.POSITIVE_INFINITY, durationMs: 1_000 }
+      })
+    ).toEqual([]);
+  });
+
+  it("returns no time ruler ticks for invalid target tick counts", () => {
+    expect(
+      createTimeRulerTicks({
+        viewport: { startMs: 0, durationMs: 1_000 },
+        targetMajorTickCount: 0
+      })
+    ).toEqual([]);
+    expect(
+      createTimeRulerTicks({
+        viewport: { startMs: 0, durationMs: 1_000 },
+        targetMajorTickCount: Number.POSITIVE_INFINITY
+      })
+    ).toEqual([]);
+  });
+
   it("creates bar and beat ticks from bpm, beats per bar, and offset", () => {
     const ticks = createBarBeatTicks({
       viewport: { startMs: 0, durationMs: 8_000 },
@@ -47,6 +75,17 @@ describe("timeRuler", () => {
     expect(ticks.find((tick) => tick.kind === "bar")?.timeMs).toBe(500);
   });
 
+  it("limits extreme beat density", () => {
+    const ticks = createBarBeatTicks({
+      viewport: { startMs: 0, durationMs: 10_000 },
+      bpm: 1_000_000,
+      beatsPerBar: 4,
+      beatOffsetMs: 0
+    });
+
+    expect(ticks.length).toBeLessThanOrEqual(1_000);
+  });
+
   it("returns no bar or beat ticks for invalid viewport duration", () => {
     expect(
       createBarBeatTicks({
@@ -64,6 +103,17 @@ describe("timeRuler", () => {
         viewport: { startMs: Number.POSITIVE_INFINITY, durationMs: 4_000 },
         bpm: 120,
         beatsPerBar: 4,
+        beatOffsetMs: 0
+      })
+    ).toEqual([]);
+  });
+
+  it("returns no bar or beat ticks for non-integer beats per bar", () => {
+    expect(
+      createBarBeatTicks({
+        viewport: { startMs: 0, durationMs: 4_000 },
+        bpm: 120,
+        beatsPerBar: 2.5,
         beatOffsetMs: 0
       })
     ).toEqual([]);
