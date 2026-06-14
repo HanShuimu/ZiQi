@@ -131,10 +131,32 @@ describe("timeRuler", () => {
     ).toEqual([]);
   });
 
+  it("does not include bar or beat ticks after the viewport end", () => {
+    const ticks = createBarBeatTicks({
+      viewport: { startMs: 0, durationMs: 60_000 },
+      bpm: 11,
+      beatsPerBar: 4,
+      beatOffsetMs: 0
+    });
+
+    expect(ticks.every((tick) => tick.timeMs <= 60_000)).toBe(true);
+  });
+
   it("returns no bar or beat ticks for invalid viewport duration", () => {
     expect(
       createBarBeatTicks({
         viewport: { startMs: 0, durationMs: Number.POSITIVE_INFINITY },
+        bpm: 120,
+        beatsPerBar: 4,
+        beatOffsetMs: 0
+      })
+    ).toEqual([]);
+  });
+
+  it("returns no bar or beat ticks when viewport end is not finite", () => {
+    expect(
+      createBarBeatTicks({
+        viewport: { startMs: Number.MAX_VALUE, durationMs: Number.MAX_VALUE },
         bpm: 120,
         beatsPerBar: 4,
         beatOffsetMs: 0

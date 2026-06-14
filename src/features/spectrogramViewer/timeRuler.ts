@@ -193,6 +193,10 @@ export function createBarBeatTicks({
       continue;
     }
 
+    if (timeMs > viewportEndMs) {
+      break;
+    }
+
     const normalizedBeatIndex = Math.round(beatIndex);
     const isBar = normalizedBeatIndex % beatsPerBar === 0;
     const barNumber = Math.floor(normalizedBeatIndex / beatsPerBar) + 1;
@@ -205,7 +209,7 @@ export function createBarBeatTicks({
     });
   }
 
-  return ticks.filter((tick) => tick.leftPercent >= 0 && tick.leftPercent <= 100);
+  return ticks.filter((tick) => tick.timeMs >= viewport.startMs && tick.timeMs <= viewportEndMs);
 }
 
 function chooseNiceInterval(rawIntervalMs: number) {
