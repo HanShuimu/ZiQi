@@ -23,7 +23,8 @@ export type MenuCommand =
   | "save-project"
   | "import-audio"
   | "set-skin-default"
-  | "set-skin-animal-island";
+  | "set-skin-animal-island"
+  | "describe-selected-range-for-llm";
 
 export type RendererLogEntry = {
   area: "renderer";

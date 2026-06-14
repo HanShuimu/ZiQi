@@ -9,6 +9,24 @@ import type { ProjectSummary } from "./core/project/types";
 import type { PitchEnergyService } from "./services/audio/browserPitchEnergyService";
 import type { SpectrogramService } from "./services/audio/browserSpectrogramService";
 
+const observedWorkbenchShellDebugStates = vi.hoisted(() => [] as boolean[]);
+
+vi.mock("./components/WorkbenchShell", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./components/WorkbenchShell")>();
+  const { createElement } = await import("react");
+  const ActualWorkbenchShell = actual.WorkbenchShell;
+
+  return {
+    ...actual,
+    WorkbenchShell: (props: Parameters<typeof ActualWorkbenchShell>[0]) => {
+      observedWorkbenchShellDebugStates.push(
+        Boolean((props as { isDebugSelectionPanelOpen?: boolean }).isDebugSelectionPanelOpen)
+      );
+      return createElement(ActualWorkbenchShell, props);
+    }
+  };
+});
+
 class FakeAudioElement {
   static instances: FakeAudioElement[] = [];
   static currentTimeWrites = 0;
@@ -50,6 +68,7 @@ type MenuCommandListener = (
     | "import-audio"
     | "set-skin-default"
     | "set-skin-animal-island"
+    | "describe-selected-range-for-llm"
 ) => void;
 
 let menuCommandListener: MenuCommandListener | null;
@@ -59,6 +78,7 @@ describe("App local audio import", () => {
   beforeEach(() => {
     menuCommandListener = null;
     firstMenuCommandListener = null;
+    observedWorkbenchShellDebugStates.length = 0;
     FakeAudioElement.instances = [];
     FakeAudioElement.currentTimeWrites = 0;
     FakeAudioElement.throwOnCurrentTimeWrite = null;
@@ -1183,6 +1203,18 @@ describe("App local audio import", () => {
     });
   });
 
+  it("opens debug selection state from the native menu command", async () => {
+    renderApp({});
+
+    expect(observedWorkbenchShellDebugStates.at(-1)).toBe(false);
+
+    menuCommandListener?.("describe-selected-range-for-llm");
+
+    await waitFor(() => {
+      expect(observedWorkbenchShellDebugStates.at(-1)).toBe(true);
+    });
+  });
+
   it("saves imported projects through the initial native menu listener", async () => {
     const audioData = new ArrayBuffer(8);
     window.ziqiApp!.selectAudioFile = vi.fn().mockResolvedValue({
@@ -1313,8 +1345,8 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(window.ziqiApp!.saveProject).toHaveBeenCalledWith(expect.objectContaining({
         project: expect.objectContaining({
-          workspace: expect.not.objectContaining({
-            loopRange: expect.anything()
+          workspace: expect.objectContaining({
+            loopEnabled: false
           })
         })
       }));
@@ -1352,10 +1384,11 @@ describe("App local audio import", () => {
     openedProject.workspace = {
       ...openedProject.workspace,
       playbackRate: 0.75,
-      loopRange: {
+      selectedTimeRange: {
         startMs: 1_000,
         endMs: 4_000
       },
+      loopEnabled: true,
       spectrogramViewport: {
         startMs: 2_000,
         durationMs: 5_000
@@ -1379,8 +1412,18 @@ describe("App local audio import", () => {
     });
 
     expect(FakeAudioElement.instances[0].playbackRate).toBe(0.75);
-    expect(screen.getByText("Loop 0:01-0:04")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Loop" })).toMatchObject({
+      ariaPressed: "true"
+    });
     expect(screen.getByText("0:02-0:07")).toBeTruthy();
+
+    await userEvent.click(screen.getByRole("button", { name: "Play" }));
+    FakeAudioElement.instances[0].currentTime = 4;
+    await waitFor(() => {
+      expect(screen.getByText("0:04")).toBeTruthy();
+    });
+    expect(FakeAudioElement.instances[0].currentTime).toBe(4);
+    await userEvent.click(screen.getByRole("button", { name: "Pause" }));
   });
 });
 
@@ -1480,7 +1523,8 @@ function createProjectSummary(filePath: string): ProjectSummary {
       beatsPerBar: 4,
       bpm: 120,
       beatOffsetMs: 0,
-      playbackRate: 1
+      playbackRate: 1,
+      loopEnabled: false
     }
   };
 }

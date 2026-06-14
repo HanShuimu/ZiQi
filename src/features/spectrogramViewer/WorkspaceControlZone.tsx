@@ -13,16 +13,16 @@ export interface WorkspaceControlZoneProps {
   durationMs: number;
   isPlaying: boolean;
   playbackRate: number;
-  loopRange: { startMs: number; endMs: number } | undefined;
+  loopEnabled: boolean;
+  hasSelectedTimeRange: boolean;
   onBarGridChange: (
     settings: Partial<Pick<WorkspaceState, "beatOffsetMs" | "beatsPerBar" | "bpm">>
   ) => void;
-  onLoopClear: () => Promise<void> | void;
-  onLoopEndSet: (timeMs: number) => Promise<void> | void;
-  onLoopStartSet: (timeMs: number) => Promise<void> | void;
+  onLoopEnabledChange: (enabled: boolean) => Promise<void> | void;
   onPlaybackRateChange: (rate: number) => Promise<void> | void;
   onPlaybackToggle: () => Promise<void> | void;
   onPitchHeatmapDisplayChange: (settings: PitchHeatmapDisplaySettings) => void;
+  onSelectedTimeRangeClear: () => Promise<void> | void;
   pitchHeatmapDisplay: PitchHeatmapDisplaySettings;
 }
 
@@ -34,14 +34,14 @@ export function WorkspaceControlZone({
   durationMs,
   isPlaying,
   playbackRate,
-  loopRange,
+  loopEnabled,
+  hasSelectedTimeRange,
   onBarGridChange,
-  onLoopClear,
-  onLoopEndSet,
-  onLoopStartSet,
+  onLoopEnabledChange,
   onPlaybackRateChange,
   onPlaybackToggle,
   onPitchHeatmapDisplayChange,
+  onSelectedTimeRangeClear,
   pitchHeatmapDisplay
 }: WorkspaceControlZoneProps) {
   return (
@@ -125,21 +125,19 @@ export function WorkspaceControlZone({
       </PanelSection>
 
       <PanelSection className="workspace-control-group" label="Loop">
-        <Button onClick={() => onLoopStartSet(currentTimeMs)} type="button">
-          Set Loop Start
+        <Button
+          aria-pressed={loopEnabled}
+          className="loop-toggle-button"
+          disabled={!hasSelectedTimeRange}
+          onClick={() => onLoopEnabledChange(!loopEnabled)}
+          type="button"
+        >
+          Loop
         </Button>
-        <Button onClick={() => onLoopEndSet(currentTimeMs)} type="button">
-          Set Loop End
-        </Button>
-        {loopRange ? (
-          <Button onClick={onLoopClear} type="button">
-            Clear Loop
+        {hasSelectedTimeRange ? (
+          <Button onClick={onSelectedTimeRangeClear} type="button">
+            Clear Selection
           </Button>
-        ) : null}
-        {loopRange ? (
-          <span className="loop-summary">
-            Loop {formatTime(loopRange.startMs)}-{formatTime(loopRange.endMs)}
-          </span>
         ) : null}
       </PanelSection>
 

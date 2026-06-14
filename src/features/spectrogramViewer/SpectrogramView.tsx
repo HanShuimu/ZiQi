@@ -6,6 +6,7 @@ import type {
   SpectrogramOverview,
   WaveformOverview
 } from "../../core/audio/types";
+import type { SelectedTimeRange } from "../../core/project/types";
 import {
   DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
   PITCH_HEATMAP_MIN_HEIGHT_PX
@@ -32,8 +33,11 @@ import { PitchAxis } from "./PitchAxis";
 import { PitchHeatmapCanvas } from "./PitchHeatmapCanvas";
 import { SpectrogramHoverStatus } from "./SpectrogramHoverStatus";
 import { SpectrogramOverlayLayer } from "./SpectrogramOverlayLayer";
+import { SpectrogramSelectionOverlay } from "./SpectrogramSelectionOverlay";
+import { SpectrogramTimeRuler } from "./SpectrogramTimeRuler";
 import { WaveformStrip } from "./WaveformStrip";
 import { usePitchHover } from "./usePitchHover";
+import { useSpectrogramSelection } from "./useSpectrogramSelection";
 import { useSpectrogramViewport } from "./useSpectrogramViewport";
 
 const SPECTROGRAM_VIEW_STYLE = {
@@ -50,13 +54,15 @@ interface SpectrogramViewProps {
   bpm?: number;
   currentTimeMs: number;
   durationMs: number;
-  loopRange: { startMs: number; endMs: number } | undefined;
+  loopRange?: { startMs: number; endMs: number };
   pitchEnergyOverview?: PitchEnergyOverview | null | undefined;
   pitchHeatmapDisplay?: PitchHeatmapDisplaySettings;
+  selectedTimeRange?: SelectedTimeRange;
   spectrogramOverview?: SpectrogramOverview | null | undefined;
   viewport?: SpectrogramViewport;
   waveformOverview: WaveformOverview | null | undefined;
   onSeek: (timeMs: number) => Promise<void> | void;
+  onSelectedTimeRangeChange?: (range: SelectedTimeRange | undefined) => void;
   onViewportChange: (viewport: SpectrogramViewport) => void;
 }
 
@@ -69,10 +75,12 @@ export function SpectrogramView({
   loopRange,
   pitchEnergyOverview,
   pitchHeatmapDisplay = DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
+  selectedTimeRange,
   spectrogramOverview,
   viewport: controlledViewport,
   waveformOverview,
   onSeek,
+  onSelectedTimeRangeChange = () => {},
   onViewportChange
 }: SpectrogramViewProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -84,6 +92,13 @@ export function SpectrogramView({
     onViewportChange,
     resetKey: viewportResetKey
   });
+  const { previewRange, selectionPointerHandlers } = useSpectrogramSelection({
+    durationMs,
+    viewport: activeViewport,
+    onSeek,
+    onSelectedTimeRangeChange
+  });
+  const displayedSelectedTimeRange = previewRange ?? selectedTimeRange;
 
   const visibleWaveformPoints = useMemo(
     () => filterWaveformPointsForViewport(waveformOverview, activeViewport),
@@ -163,6 +178,18 @@ export function SpectrogramView({
       <SpectrogramHoverStatus pointerState={pointerState} />
       <div className="spectrogram-time-grid">
         <div className="spectrogram-axis-spacer" />
+        <div className="spectrogram-ruler-row-container">
+          <SpectrogramTimeRuler
+            beatOffsetMs={beatOffsetMs}
+            beatsPerBar={beatsPerBar}
+            bpm={bpm}
+            currentTimeMs={currentTimeMs}
+            selectedTimeRange={displayedSelectedTimeRange}
+            viewport={activeViewport}
+          />
+        </div>
+
+        <div className="spectrogram-axis-spacer" />
         <WaveformStrip
           isPlaybackVisible={isPlaybackVisible}
           progressPercent={progressPercent}
@@ -174,8 +201,14 @@ export function SpectrogramView({
 
           <div
             className="spectrogram-canvas-frame"
+            onPointerCancel={selectionPointerHandlers.onPointerCancel}
+            onPointerDown={selectionPointerHandlers.onPointerDown}
             onPointerLeave={handleSpectrogramPointerLeave}
-            onPointerMove={handleSpectrogramPointerMove}
+            onPointerMove={(event) => {
+              selectionPointerHandlers.onPointerMove(event);
+              handleSpectrogramPointerMove(event);
+            }}
+            onPointerUp={selectionPointerHandlers.onPointerUp}
             onWheel={handleSpectrogramWheel}
           >
             <PitchHeatmapCanvas
@@ -187,6 +220,10 @@ export function SpectrogramView({
             {!hasPitchFrames ? (
               <div className="spectrogram-empty">Generating pitch heatmap...</div>
             ) : null}
+            <SpectrogramSelectionOverlay
+              selectedTimeRange={displayedSelectedTimeRange}
+              viewport={activeViewport}
+            />
             <SpectrogramOverlayLayer
               barGridLines={barGridLines}
               isPlaybackVisible={isPlaybackVisible}

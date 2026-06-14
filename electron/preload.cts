@@ -6,7 +6,8 @@ type MenuCommand =
   | "save-project"
   | "import-audio"
   | "set-skin-default"
-  | "set-skin-animal-island";
+  | "set-skin-animal-island"
+  | "describe-selected-range-for-llm";
 
 type UserSettings = {
   uiSkin: "default" | "animal-island";

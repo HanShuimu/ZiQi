@@ -2,6 +2,7 @@ import type { ProjectSummary, WorkspaceState } from "../core/project/types";
 import type { ProjectAnalysisView } from "../core/project/types";
 import type { ProjectAudioFacade } from "../services/projectAudio/interfaces";
 import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "../core/audio/types";
+import { DebugSelectionPanel } from "../features/spectrogramViewer/DebugSelectionPanel";
 import { mockProjectAudioFacade } from "../services/projectAudio/mockFacade";
 import { Panel } from "../ui";
 import { TranscriptionWorkspace } from "../workspaces/transcription/TranscriptionWorkspace";
@@ -13,7 +14,9 @@ interface WorkbenchShellProps {
   spectrogramOverview?: SpectrogramOverview | null;
   pitchEnergyOverview?: PitchEnergyOverview | null;
   importError?: string | null;
+  isDebugSelectionPanelOpen?: boolean;
   onProjectAnalysisViewChange?: (analysisViewPatch: Partial<ProjectAnalysisView>) => void;
+  onDebugSelectionPanelClose?: () => void;
   onWorkspaceChange?: (workspacePatch: Partial<WorkspaceState>) => void;
 }
 
@@ -44,7 +47,9 @@ export function WorkbenchShell({
   spectrogramOverview,
   pitchEnergyOverview,
   importError,
+  isDebugSelectionPanelOpen = false,
   onProjectAnalysisViewChange = () => {},
+  onDebugSelectionPanelClose = () => {},
   onWorkspaceChange = () => {}
 }: WorkbenchShellProps) {
   if (!project) {
@@ -66,6 +71,13 @@ export function WorkbenchShell({
             {importError ? <p className="error-copy">{importError}</p> : null}
           </div>
         </Panel>
+        <DebugSelectionPanel
+          isOpen={isDebugSelectionPanelOpen}
+          project={null}
+          pitchEnergyOverview={pitchEnergyOverview}
+          spectrogramOverview={spectrogramOverview}
+          onClose={onDebugSelectionPanelClose}
+        />
       </div>
     );
   }
@@ -85,6 +97,13 @@ export function WorkbenchShell({
         </div>
       </header>
       {importError ? <p className="error-copy">{importError}</p> : null}
+      <DebugSelectionPanel
+        isOpen={isDebugSelectionPanelOpen}
+        project={project}
+        pitchEnergyOverview={pitchEnergyOverview}
+        spectrogramOverview={spectrogramOverview}
+        onClose={onDebugSelectionPanelClose}
+      />
       <TranscriptionWorkspace
         project={project}
         audioFacade={audioFacade}

@@ -306,6 +306,69 @@ button:disabled {
   margin: 0.75rem 0 0;
 }
 
+.debug-selection-panel {
+  display: grid;
+  gap: 0.9rem;
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.debug-selection-header {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.debug-selection-status {
+  color: var(--skin-text);
+  font-weight: 700;
+  margin: 0.25rem 0 0;
+}
+
+.debug-selection-range {
+  color: var(--skin-text-muted);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+.debug-selection-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.debug-selection-output {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.debug-selection-output h3 {
+  font-size: 0.92rem;
+  margin: 0 0 0.45rem;
+}
+
+.debug-selection-output p,
+.debug-selection-output pre {
+  color: var(--skin-text-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.debug-selection-output p {
+  overflow-wrap: anywhere;
+}
+
+.debug-selection-output pre {
+  background: var(--skin-surface-strong);
+  border: 1px solid var(--skin-border);
+  border-radius: 8px;
+  overflow: auto;
+  padding: 0.75rem;
+  white-space: pre-wrap;
+}
+
 .workspace-control-zone {
   align-items: stretch;
   border: 1px solid var(--skin-border);
@@ -406,6 +469,112 @@ button:disabled {
   min-width: 0;
 }
 
+.spectrogram-ruler-row-container {
+  min-width: 0;
+}
+
+.spectrogram-time-ruler {
+  position: relative;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid var(--analysis-ruler-border);
+  border-radius: 8px;
+  background: var(--analysis-ruler-surface);
+  color: var(--analysis-ruler-text);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.spectrogram-ruler-row {
+  position: relative;
+  height: 50%;
+  border-bottom: 1px solid var(--analysis-ruler-row-border);
+}
+
+.spectrogram-ruler-row:last-child {
+  border-bottom: 0;
+}
+
+.spectrogram-ruler-row-name {
+  position: absolute;
+  top: 50%;
+  left: 0.45rem;
+  z-index: 3;
+  padding: 0 0.24rem;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  background: var(--analysis-ruler-row-label-bg);
+  color: var(--analysis-ruler-row-label-text);
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.spectrogram-ruler-row-track {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+}
+
+.spectrogram-ruler-selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  border-inline: 1px solid var(--analysis-ruler-selection-border);
+  background: var(--analysis-ruler-selection-bg);
+  pointer-events: none;
+}
+
+.spectrogram-ruler-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 4;
+  width: 2px;
+  transform: translateX(-1px);
+  background: var(--analysis-ruler-playhead);
+  box-shadow: 0 0 6px var(--analysis-ruler-playhead-glow);
+  pointer-events: none;
+}
+
+.spectrogram-ruler-tick {
+  position: absolute;
+  bottom: 0;
+  z-index: 2;
+  width: 1px;
+  transform: translateX(-0.5px);
+  background: var(--analysis-ruler-tick);
+  pointer-events: none;
+}
+
+.spectrogram-ruler-tick-major,
+.spectrogram-ruler-tick-bar {
+  top: 0.2rem;
+  background: var(--analysis-ruler-tick-strong);
+}
+
+.spectrogram-ruler-tick-medium,
+.spectrogram-ruler-tick-beat {
+  top: 0.52rem;
+}
+
+.spectrogram-ruler-tick-minor {
+  top: 0.78rem;
+  background: var(--analysis-ruler-tick-muted);
+}
+
+.spectrogram-ruler-label {
+  position: absolute;
+  top: 0.08rem;
+  left: 0.28rem;
+  max-width: 4.5rem;
+  overflow: hidden;
+  color: var(--analysis-ruler-label-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .spectrogram-waveform-row,
 .spectrogram-navigator-row {
   min-width: 0;
@@ -436,6 +605,12 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.loop-toggle-button[aria-pressed="true"] {
+  border-color: var(--skin-control-selected-bg);
+  background: var(--skin-control-selected-bg);
+  color: var(--skin-control-selected-text);
 }
 
 .loop-summary {
@@ -522,6 +697,19 @@ button:disabled {
   place-items: center;
   color: var(--analysis-empty-text);
   background: var(--analysis-spectrogram-bg);
+}
+
+.spectrogram-selection-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  border-inline: 2px solid var(--analysis-selection-boundary);
+  background: transparent;
+  box-shadow:
+    inset 1px 0 var(--analysis-selection-boundary-shadow),
+    inset -1px 0 var(--analysis-selection-boundary-shadow);
+  pointer-events: none;
 }
 
 .spectrogram-time-grid-line {
@@ -680,6 +868,10 @@ button:disabled {
 
   .spectrum-head {
     flex-direction: column;
+  }
+
+  .debug-selection-output {
+    grid-template-columns: 1fr;
   }
 
 }

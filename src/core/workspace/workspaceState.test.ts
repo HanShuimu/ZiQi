@@ -15,6 +15,24 @@ describe("workspaceState", () => {
       bpm: 120,
       beatOffsetMs: 0,
       playbackRate: 1,
+      loopEnabled: false,
+      spectrogramViewport: {
+        startMs: 0,
+        durationMs: 10_000
+      }
+    });
+  });
+
+  it("creates default selection and loop state", () => {
+    expect(createDefaultWorkspaceState(12_000)).toEqual({
+      preset: "pure-spectrum",
+      activeDock: "analysis",
+      gridEnabled: true,
+      beatsPerBar: 4,
+      bpm: 120,
+      beatOffsetMs: 0,
+      playbackRate: 1,
+      loopEnabled: false,
       spectrogramViewport: {
         startMs: 0,
         durationMs: 10_000
@@ -36,10 +54,11 @@ describe("workspaceState", () => {
         bpm: 96.4,
         beatOffsetMs: -250.6,
         playbackRate: 0.75,
-        loopRange: {
+        selectedTimeRange: {
           startMs: 1_000,
           endMs: 4_000
         },
+        loopEnabled: true,
         spectrogramViewport: {
           startMs: 2_000,
           durationMs: 5_000
@@ -56,10 +75,11 @@ describe("workspaceState", () => {
       bpm: 96,
       beatOffsetMs: -251,
       playbackRate: 0.75,
-      loopRange: {
+      selectedTimeRange: {
         startMs: 1_000,
         endMs: 4_000
       },
+      loopEnabled: true,
       spectrogramViewport: {
         startMs: 2_000,
         durationMs: 5_000
@@ -97,6 +117,7 @@ describe("workspaceState", () => {
       bpm: 120,
       beatOffsetMs: 0,
       playbackRate: 1,
+      loopEnabled: false,
       spectrogramViewport: {
         startMs: 0,
         durationMs: 10_000
@@ -120,6 +141,7 @@ describe("workspaceState", () => {
     expect(workspace.beatsPerBar).toBe(4);
     expect(workspace.bpm).toBe(118);
     expect(workspace.beatOffsetMs).toBe(-120);
+    expect(workspace.loopEnabled).toBe(false);
   });
 
   it("falls back from non-number bar grid fields", () => {
@@ -139,6 +161,7 @@ describe("workspaceState", () => {
     expect(workspace.beatsPerBar).toBe(4);
     expect(workspace.bpm).toBe(120);
     expect(workspace.beatOffsetMs).toBe(0);
+    expect(workspace.loopEnabled).toBe(false);
   });
 
   it("falls back when rounded positive bar grid fields would be zero", () => {
@@ -157,9 +180,10 @@ describe("workspaceState", () => {
 
     expect(workspace.beatsPerBar).toBe(4);
     expect(workspace.bpm).toBe(120);
+    expect(workspace.loopEnabled).toBe(false);
   });
 
-  it("clamps saved viewport and loop ranges to the audio duration", () => {
+  it("clamps saved viewport and selected ranges to the audio duration", () => {
     const workspace = normalizeWorkspaceState(
       {
         preset: "pure-spectrum",
@@ -169,10 +193,11 @@ describe("workspaceState", () => {
         bpm: 120,
         beatOffsetMs: 0,
         playbackRate: 1.25,
-        loopRange: {
+        selectedTimeRange: {
           startMs: 10_000,
           endMs: 20_000
         },
+        loopEnabled: true,
         spectrogramViewport: {
           startMs: 11_000,
           durationMs: 5_000
@@ -181,13 +206,86 @@ describe("workspaceState", () => {
       12_000
     );
 
-    expect(workspace.loopRange).toEqual({
+    expect(workspace.selectedTimeRange).toEqual({
       startMs: 10_000,
       endMs: 12_000
     });
+    expect(workspace.loopEnabled).toBe(true);
     expect(workspace.spectrogramViewport).toEqual({
       startMs: 7_000,
       durationMs: 5_000
     });
+  });
+
+  it("normalizes a valid selected time range and loop enabled state", () => {
+    const workspace = normalizeWorkspaceState(
+      {
+        preset: "pure-spectrum",
+        activeDock: "analysis",
+        gridEnabled: true,
+        beatsPerBar: 4,
+        bpm: 120,
+        beatOffsetMs: 0,
+        playbackRate: 1,
+        selectedTimeRange: {
+          startMs: 1000.4,
+          endMs: 4000.6
+        },
+        loopEnabled: true
+      },
+      12_000
+    );
+
+    expect(workspace.selectedTimeRange).toEqual({
+      startMs: 1000,
+      endMs: 4001
+    });
+    expect(workspace.loopEnabled).toBe(true);
+  });
+
+  it("discards invalid selected ranges and disables loop playback", () => {
+    const workspace = normalizeWorkspaceState(
+      {
+        preset: "pure-spectrum",
+        activeDock: "analysis",
+        gridEnabled: true,
+        beatsPerBar: 4,
+        bpm: 120,
+        beatOffsetMs: 0,
+        playbackRate: 1,
+        selectedTimeRange: {
+          startMs: 5000,
+          endMs: 2000
+        },
+        loopEnabled: true
+      },
+      12_000
+    );
+
+    expect(workspace.selectedTimeRange).toBeUndefined();
+    expect(workspace.loopEnabled).toBe(false);
+  });
+
+  it("ignores old loopRange when normalizing workspace state", () => {
+    const workspace = normalizeWorkspaceState(
+      {
+        preset: "pure-spectrum",
+        activeDock: "analysis",
+        gridEnabled: true,
+        beatsPerBar: 4,
+        bpm: 120,
+        beatOffsetMs: 0,
+        playbackRate: 1,
+        loopRange: {
+          startMs: 1000,
+          endMs: 4000
+        },
+        loopEnabled: true
+      },
+      12_000
+    );
+
+    expect(workspace.selectedTimeRange).toBeUndefined();
+    expect(workspace.loopEnabled).toBe(false);
   });
 });

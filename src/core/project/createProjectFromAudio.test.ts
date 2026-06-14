@@ -37,7 +37,8 @@ describe("createProjectFromAudio", () => {
         gridEnabled: true,
         bpm: 120,
         beatOffsetMs: 0,
-        playbackRate: 1
+        playbackRate: 1,
+        loopEnabled: false
       }
     });
   });

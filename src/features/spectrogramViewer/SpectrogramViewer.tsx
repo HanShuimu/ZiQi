@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import type { ProjectSummary, WorkspaceState } from "../../core/project/types";
+import type { ProjectSummary, SelectedTimeRange, WorkspaceState } from "../../core/project/types";
 import type { ProjectAnalysisView } from "../../core/project/types";
 import type { ProjectAudioFacade } from "../../services/projectAudio/interfaces";
 import type {
@@ -39,7 +39,8 @@ export function SpectrogramViewer({
   const [playbackState, setPlaybackState] = useState<PlaybackState>(() =>
     audioFacade.playback.getState()
   );
-  const [pendingLoopStartMs, setPendingLoopStartMs] = useState<number | null>(null);
+  const selectedTimeRange = project.workspace.selectedTimeRange;
+  const loopEnabled = project.workspace.loopEnabled;
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -70,31 +71,36 @@ export function SpectrogramViewer({
     onWorkspaceChange({ playbackRate: rate });
   }
 
-  function handleLoopStartSet(timeMs: number) {
-    setPendingLoopStartMs(timeMs);
+  async function applyPlaybackLoop(
+    enabled: boolean,
+    range: SelectedTimeRange | undefined = selectedTimeRange
+  ) {
+    if (enabled && range) {
+      await audioFacade.playback.setLoopRange(range.startMs, range.endMs);
+    } else {
+      await audioFacade.playback.clearLoopRange();
+    }
+
+    setPlaybackState(audioFacade.playback.getState());
   }
 
-  async function handleLoopEndSet(timeMs: number) {
-    const startMs = pendingLoopStartMs ?? playbackState.loopRange?.startMs;
-    if (typeof startMs !== "number" || timeMs <= startMs) {
+  async function handleLoopEnabledChange(enabled: boolean) {
+    await applyPlaybackLoop(enabled);
+    onWorkspaceChange({ loopEnabled: enabled && Boolean(selectedTimeRange) });
+  }
+
+  async function handleSelectedTimeRangeChange(nextRange: SelectedTimeRange | undefined) {
+    if (!nextRange) {
+      await applyPlaybackLoop(false, nextRange);
+      onWorkspaceChange({ selectedTimeRange: undefined, loopEnabled: false });
       return;
     }
 
-    const loopRange = {
-      startMs,
-      endMs: timeMs
-    };
+    if (loopEnabled) {
+      await applyPlaybackLoop(true, nextRange);
+    }
 
-    await audioFacade.playback.setLoopRange(loopRange.startMs, loopRange.endMs);
-    setPlaybackState(audioFacade.playback.getState());
-    onWorkspaceChange({ loopRange });
-  }
-
-  async function handleLoopClear() {
-    await audioFacade.playback.clearLoopRange();
-    setPendingLoopStartMs(null);
-    setPlaybackState(audioFacade.playback.getState());
-    onWorkspaceChange({ loopRange: undefined });
+    onWorkspaceChange({ selectedTimeRange: nextRange });
   }
 
   useEffect(() => {
@@ -146,14 +152,14 @@ export function SpectrogramViewer({
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
         isPlaying={playbackState.isPlaying}
-        loopRange={playbackState.loopRange ?? project.workspace.loopRange}
+        loopEnabled={loopEnabled}
+        hasSelectedTimeRange={Boolean(selectedTimeRange)}
         onBarGridChange={onWorkspaceChange}
-        onLoopClear={handleLoopClear}
-        onLoopEndSet={handleLoopEndSet}
-        onLoopStartSet={handleLoopStartSet}
+        onLoopEnabledChange={handleLoopEnabledChange}
         onPlaybackRateChange={handlePlaybackRateChange}
         onPlaybackToggle={handlePlaybackToggle}
         onPitchHeatmapDisplayChange={handlePitchHeatmapDisplayChange}
+        onSelectedTimeRangeClear={() => handleSelectedTimeRangeChange(undefined)}
         playbackRate={playbackState.playbackRate}
         pitchHeatmapDisplay={pitchHeatmapDisplay}
       />
@@ -164,11 +170,13 @@ export function SpectrogramViewer({
         bpm={project.workspace.bpm}
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
-        loopRange={playbackState.loopRange ?? project.workspace.loopRange}
+        loopRange={selectedTimeRange}
         onSeek={handleSeek}
+        onSelectedTimeRangeChange={handleSelectedTimeRangeChange}
         onViewportChange={(spectrogramViewport) => onWorkspaceChange({ spectrogramViewport })}
         pitchEnergyOverview={pitchEnergyOverview}
         pitchHeatmapDisplay={pitchHeatmapDisplay}
+        selectedTimeRange={selectedTimeRange}
         spectrogramOverview={spectrogramOverview}
         viewport={project.workspace.spectrogramViewport}
         waveformOverview={waveformOverview}

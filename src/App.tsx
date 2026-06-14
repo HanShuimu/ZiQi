@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { RuntimeProvider, useAppRuntime } from "./app/runtime";
 import { AppSessionProvider } from "./app/session/AppSessionProvider";
 import { useAppSession } from "./app/session/useAppSession";
@@ -37,6 +37,7 @@ function AppContent() {
   const runtime = useAppRuntime();
   const session = useAppSession();
   const uiSettings = useUiSettings();
+  const [isDebugSelectionPanelOpen, setIsDebugSelectionPanelOpen] = useState(false);
   const skinDefinition = useMemo(
     () => getSkinDefinition(uiSettings.uiSkin),
     [uiSettings.uiSkin]
@@ -47,7 +48,8 @@ function AppContent() {
     importAudio: session.importAudio,
     openProject: session.openProject,
     saveProject: session.saveProject,
-    changeSkin: uiSettings.changeSkin
+    changeSkin: uiSettings.changeSkin,
+    describeSelectedRangeForLlm: () => setIsDebugSelectionPanelOpen(true)
   });
 
   return (
@@ -55,7 +57,9 @@ function AppContent() {
       <WorkbenchShell
         audioFacade={session.audioFacade}
         importError={session.importError}
+        isDebugSelectionPanelOpen={isDebugSelectionPanelOpen}
         onProjectAnalysisViewChange={session.updateProjectAnalysisView}
+        onDebugSelectionPanelClose={() => setIsDebugSelectionPanelOpen(false)}
         onWorkspaceChange={session.updateWorkspace}
         project={session.project}
         pitchEnergyOverview={session.pitchEnergyOverview}

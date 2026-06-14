@@ -51,6 +51,22 @@
   --analysis-navigator-loop-border: rgba(180, 83, 9, 0.75);
   --analysis-navigator-hover-time: #2563eb;
   --analysis-navigator-hover-label-bg: rgba(30, 58, 138, 0.82);
+  --analysis-ruler-border: #d8c8b3;
+  --analysis-ruler-surface: #f6f1e9;
+  --analysis-ruler-text: #5f5448;
+  --analysis-ruler-row-border: rgba(95, 84, 72, 0.18);
+  --analysis-ruler-row-label-bg: rgba(246, 241, 233, 0.92);
+  --analysis-ruler-row-label-text: #6b6257;
+  --analysis-ruler-selection-border: rgba(180, 111, 13, 0.72);
+  --analysis-ruler-selection-bg: rgba(217, 148, 0, 0.24);
+  --analysis-ruler-playhead: #2563eb;
+  --analysis-ruler-playhead-glow: rgba(37, 99, 235, 0.55);
+  --analysis-ruler-tick: rgba(71, 85, 105, 0.42);
+  --analysis-ruler-tick-strong: rgba(30, 41, 59, 0.72);
+  --analysis-ruler-tick-muted: rgba(71, 85, 105, 0.24);
+  --analysis-ruler-label-text: #475569;
+  --analysis-selection-boundary: rgba(255, 255, 255, 0.9);
+  --analysis-selection-boundary-shadow: rgba(17, 24, 39, 0.86);
 }
 
 [data-skin="animal-island"] .anim-btn-activating {

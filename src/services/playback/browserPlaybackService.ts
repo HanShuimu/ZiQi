@@ -83,8 +83,9 @@ export class BrowserPlaybackService implements PlaybackService {
     }
 
     this.timerId = setInterval(() => {
+      const previousTimeMs = this.state.currentTimeMs;
       this.syncFromMedia();
-      this.applyLoopRange();
+      this.applyLoopRange(previousTimeMs);
     }, TICK_MS);
   }
 
@@ -102,9 +103,14 @@ export class BrowserPlaybackService implements PlaybackService {
     this.state.playbackRate = this.media.playbackRate;
   }
 
-  private applyLoopRange() {
+  private applyLoopRange(previousTimeMs: number) {
     const loopRange = this.state.loopRange;
-    if (!loopRange || this.state.currentTimeMs < loopRange.endMs) {
+    if (
+      !loopRange ||
+      previousTimeMs < loopRange.startMs ||
+      previousTimeMs >= loopRange.endMs ||
+      this.state.currentTimeMs < loopRange.endMs
+    ) {
       return;
     }
 

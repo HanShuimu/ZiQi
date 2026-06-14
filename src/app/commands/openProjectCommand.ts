@@ -87,11 +87,14 @@ export function createOpenProjectCommand({
             openedProject.project.sourceAudio.durationMs
           )
         };
+        const playbackLoopRange = normalizedProject.workspace.loopEnabled
+          ? normalizedProject.workspace.selectedTimeRange
+          : undefined;
         await audioFacade.playback.setPlaybackRate(normalizedProject.workspace.playbackRate);
-        if (normalizedProject.workspace.loopRange) {
+        if (playbackLoopRange) {
           await audioFacade.playback.setLoopRange(
-            normalizedProject.workspace.loopRange.startMs,
-            normalizedProject.workspace.loopRange.endMs
+            playbackLoopRange.startMs,
+            playbackLoopRange.endMs
           );
         } else {
           await audioFacade.playback.clearLoopRange();
@@ -129,10 +132,13 @@ export function createOpenProjectCommand({
           if (previousPlaybackUrl && project) {
             await audioFacade.source.load(project.sourceAudio.filePath, previousPlaybackUrl);
             await audioFacade.playback.setPlaybackRate(project.workspace.playbackRate);
-            if (project.workspace.loopRange) {
+            const previousPlaybackLoopRange = project.workspace.loopEnabled
+              ? project.workspace.selectedTimeRange
+              : undefined;
+            if (previousPlaybackLoopRange) {
               await audioFacade.playback.setLoopRange(
-                project.workspace.loopRange.startMs,
-                project.workspace.loopRange.endMs
+                previousPlaybackLoopRange.startMs,
+                previousPlaybackLoopRange.endMs
               );
             } else {
               await audioFacade.playback.clearLoopRange();
