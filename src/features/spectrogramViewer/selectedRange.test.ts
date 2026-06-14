@@ -49,6 +49,14 @@ describe("selectedRange helpers", () => {
     });
   });
 
+  it("discards ranges that collapse after rounding", () => {
+    expect(getRangeFromDrag({
+      anchorTimeMs: 0.5,
+      currentTimeMs: 1.4,
+      durationMs: 10
+    })).toBeUndefined();
+  });
+
   it("ignores tiny drags", () => {
     expect(isSelectionDragDistance({
       startClientX: 100,

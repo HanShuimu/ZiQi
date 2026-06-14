@@ -34,14 +34,16 @@ export function getRangeFromDrag({
 }): SelectedTimeRange | undefined {
   const startMs = Math.max(0, Math.min(durationMs, Math.min(anchorTimeMs, currentTimeMs)));
   const endMs = Math.max(0, Math.min(durationMs, Math.max(anchorTimeMs, currentTimeMs)));
+  const roundedStartMs = Math.round(startMs);
+  const roundedEndMs = Math.round(endMs);
 
-  if (endMs <= startMs) {
+  if (roundedEndMs <= roundedStartMs) {
     return undefined;
   }
 
   return {
-    startMs: Math.round(startMs),
-    endMs: Math.round(endMs)
+    startMs: roundedStartMs,
+    endMs: roundedEndMs
   };
 }
 
