@@ -142,6 +142,7 @@ export function WorkspaceControlZone({
         <div className="workspace-control-label">Loop</div>
         <button
           aria-pressed={loopEnabled}
+          className="loop-toggle-button"
           disabled={!hasSelectedTimeRange}
           onClick={() => onLoopEnabledChange(!loopEnabled)}
           type="button"

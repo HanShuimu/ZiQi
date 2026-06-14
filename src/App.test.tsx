@@ -1369,6 +1369,13 @@ describe("App local audio import", () => {
       ariaPressed: "true"
     });
     expect(screen.getByText("0:02-0:07")).toBeTruthy();
+
+    await userEvent.click(screen.getByRole("button", { name: "Play" }));
+    FakeAudioElement.instances[0].currentTime = 4;
+    await waitFor(() => {
+      expect(FakeAudioElement.instances[0].currentTime).toBe(1);
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Pause" }));
   });
 });
 

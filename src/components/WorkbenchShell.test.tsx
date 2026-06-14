@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS } from "../core/audio/pitchHeatmap";
@@ -131,6 +131,10 @@ describe("WorkbenchShell transport controls", () => {
     const project = createMockProjectSummary();
     const selectedProject = {
       ...project,
+      sourceAudio: {
+        ...project.sourceAudio,
+        durationMs: 10_000
+      },
       workspace: {
         ...project.workspace,
         loopEnabled: false,
@@ -151,6 +155,8 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.getByTestId("spectrogram-ruler-selection").style.width).toBe("40%");
     expect(screen.getByTestId("spectrogram-selection-overlay").style.left).toBe("20%");
     expect(screen.getByTestId("spectrogram-selection-overlay").style.width).toBe("40%");
+    expect(screen.getByTestId("spectrogram-navigator-loop-range").style.left).toBe("40%");
+    expect(screen.getByTestId("spectrogram-navigator-loop-range").style.width).toBe("20%");
   });
 
   it("uses high-contrast playhead classes for waveform and spectrogram cursors", () => {
@@ -479,6 +485,7 @@ describe("WorkbenchShell transport controls", () => {
 
     const loopButton = screen.getByRole("button", { name: "Loop" });
     expect(loopButton).toMatchObject({ disabled: false });
+    expect(loopButton.className).toContain("loop-toggle-button");
 
     await user.click(loopButton);
 
@@ -502,6 +509,121 @@ describe("WorkbenchShell transport controls", () => {
     expect(clearLoopRange).toHaveBeenCalledOnce();
     expect(onWorkspaceChange).toHaveBeenLastCalledWith({
       loopEnabled: false
+    });
+  });
+
+  it("clears the selected range and disables loop playback", async () => {
+    const user = userEvent.setup();
+    const project = {
+      ...createMockProjectSummary(),
+      workspace: {
+        ...createMockProjectSummary().workspace,
+        selectedTimeRange: {
+          startMs: 1_000,
+          endMs: 4_000
+        },
+        loopEnabled: true
+      }
+    };
+    const clearLoopRange = vi.fn().mockResolvedValue(undefined);
+    const onWorkspaceChange = vi.fn();
+    const audioFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        clearLoopRange,
+        getState: vi.fn(() => ({
+          isPlaying: false,
+          currentTimeMs: 3_000,
+          playbackRate: 1
+        }))
+      }
+    };
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={audioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+      />
+    );
+
+    await user.click(screen.getByRole("button", { name: "Clear Selection" }));
+
+    expect(clearLoopRange).toHaveBeenCalledOnce();
+    expect(onWorkspaceChange).toHaveBeenLastCalledWith({
+      selectedTimeRange: undefined,
+      loopEnabled: false
+    });
+  });
+
+  it("updates the playback loop when selecting a new range while loop playback is enabled", async () => {
+    const project = {
+      ...createMockProjectSummary(),
+      sourceAudio: {
+        ...createMockProjectSummary().sourceAudio,
+        durationMs: 12_000
+      },
+      workspace: {
+        ...createMockProjectSummary().workspace,
+        selectedTimeRange: {
+          startMs: 1_000,
+          endMs: 4_000
+        },
+        loopEnabled: true,
+        spectrogramViewport: {
+          startMs: 0,
+          durationMs: 10_000
+        }
+      }
+    };
+    const setLoopRange = vi.fn().mockResolvedValue(undefined);
+    const onWorkspaceChange = vi.fn();
+    const audioFacade = {
+      ...mockProjectAudioFacade,
+      playback: {
+        ...mockProjectAudioFacade.playback,
+        getState: vi.fn(() => ({
+          isPlaying: false,
+          currentTimeMs: 3_000,
+          playbackRate: 1
+        })),
+        setLoopRange
+      }
+    };
+
+    const { container } = renderWorkbenchShell(
+      <WorkbenchShell
+        project={project}
+        audioFacade={audioFacade}
+        onWorkspaceChange={onWorkspaceChange}
+      />
+    );
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    vi.spyOn(frame, "getBoundingClientRect").mockReturnValue({
+      x: 0,
+      y: 0,
+      width: 1_000,
+      height: 420,
+      top: 0,
+      right: 1_000,
+      bottom: 420,
+      left: 0,
+      toJSON: () => ({})
+    });
+
+    fireEvent.pointerDown(frame, { button: 0, ctrlKey: true, clientX: 200, pointerId: 1 });
+    fireEvent.pointerMove(frame, { ctrlKey: true, clientX: 600, pointerId: 1 });
+    fireEvent.pointerUp(frame, { ctrlKey: true, clientX: 600, pointerId: 1 });
+
+    await waitFor(() => {
+      expect(setLoopRange).toHaveBeenCalledWith(2_000, 6_000);
+      expect(onWorkspaceChange).toHaveBeenLastCalledWith({
+        selectedTimeRange: {
+          startMs: 2_000,
+          endMs: 6_000
+        }
+      });
     });
   });
 

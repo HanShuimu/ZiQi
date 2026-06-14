@@ -481,6 +481,12 @@ button:disabled {
   color: #ffffff;
 }
 
+.loop-toggle-button[aria-pressed="true"] {
+  border-color: #111827;
+  background: #111827;
+  color: #ffffff;
+}
+
 .loop-summary {
   color: #475569;
   font-size: 0.85rem;

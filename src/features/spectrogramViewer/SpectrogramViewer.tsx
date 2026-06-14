@@ -125,7 +125,6 @@ export function SpectrogramViewer({
   const durationMs = project.sourceAudio.durationMs;
   const pitchHeatmapDisplay =
     project.analysisView?.pitchHeatmapDisplay ?? DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS;
-  const visibleLoopRange = loopEnabled ? selectedTimeRange : undefined;
 
   function handlePitchHeatmapDisplayChange(nextSettings: PitchHeatmapDisplaySettings) {
     onProjectAnalysisViewChange({
@@ -171,7 +170,7 @@ export function SpectrogramViewer({
         bpm={project.workspace.bpm}
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
-        loopRange={visibleLoopRange}
+        loopRange={selectedTimeRange}
         onSeek={handleSeek}
         onSelectedTimeRangeChange={handleSelectedTimeRangeChange}
         onViewportChange={(spectrogramViewport) => onWorkspaceChange({ spectrogramViewport })}
