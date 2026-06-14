@@ -925,6 +925,70 @@ describe("SpectrogramView", () => {
     expect(onSelectedTimeRangeChange).not.toHaveBeenCalled();
   });
 
+  it("does not crash when a ctrl click releases an already inactive pointer capture", () => {
+    const onSelectedTimeRangeChange = vi.fn();
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        loopRange={undefined}
+        selectedTimeRange={{ startMs: 2_000, endMs: 4_000 }}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={vi.fn()}
+        onSelectedTimeRangeChange={onSelectedTimeRangeChange}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+    frame.setPointerCapture = vi.fn();
+    frame.releasePointerCapture = vi.fn(() => {
+      throw new DOMException("No active pointer capture.", "NotFoundError");
+    });
+
+    fireEvent.pointerDown(frame, { button: 0, ctrlKey: true, clientX: 300, pointerId: 1 });
+
+    expect(() => {
+      fireEvent.pointerUp(frame, { ctrlKey: true, clientX: 300, pointerId: 1 });
+    }).not.toThrow();
+    expect(onSelectedTimeRangeChange).not.toHaveBeenCalled();
+  });
+
+  it("does not crash when pointer capture is unavailable during ctrl selection", () => {
+    const onSelectedTimeRangeChange = vi.fn();
+    const { container } = renderSpectrogramView(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        loopRange={undefined}
+        selectedTimeRange={{ startMs: 2_000, endMs: 4_000 }}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={vi.fn()}
+        onSelectedTimeRangeChange={onSelectedTimeRangeChange}
+        onViewportChange={vi.fn()}
+      />
+    );
+
+    const frame = container.querySelector(".spectrogram-canvas-frame") as HTMLElement;
+    stubCanvasFrameRect(frame);
+    frame.setPointerCapture = vi.fn(() => {
+      throw new DOMException("No active pointer.", "NotFoundError");
+    });
+    frame.releasePointerCapture = vi.fn();
+
+    expect(() => {
+      fireEvent.pointerDown(frame, { button: 0, ctrlKey: true, clientX: 300, pointerId: 1 });
+    }).not.toThrow();
+    fireEvent.pointerUp(frame, { ctrlKey: true, clientX: 300, pointerId: 1 });
+
+    expect(onSelectedTimeRangeChange).not.toHaveBeenCalled();
+  });
+
   it("zooms horizontally with ctrl wheel around the mouse position", () => {
     const { container } = renderSpectrogramView(
       <SpectrogramView

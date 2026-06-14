@@ -160,12 +160,20 @@ export function useSpectrogramSelection({
 
 function capturePointer(element: HTMLElement, pointerId: number) {
   if (typeof element.setPointerCapture === "function") {
-    element.setPointerCapture(pointerId);
+    try {
+      element.setPointerCapture(pointerId);
+    } catch {
+      // Pointer capture is best-effort; selection still works while the pointer stays in frame.
+    }
   }
 }
 
 function releasePointer(element: HTMLElement, pointerId: number) {
   if (typeof element.releasePointerCapture === "function") {
-    element.releasePointerCapture(pointerId);
+    try {
+      element.releasePointerCapture(pointerId);
+    } catch {
+      // Browsers may have already released capture by pointerup/cancel.
+    }
   }
 }
