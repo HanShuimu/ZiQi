@@ -136,5 +136,5 @@ function formatSeconds(timeMs: number) {
 }
 
 function copyText(value: string) {
-  void navigator.clipboard?.writeText(value);
+  void navigator.clipboard?.writeText(value).catch(() => {});
 }

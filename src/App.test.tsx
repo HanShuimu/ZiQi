@@ -1405,8 +1405,9 @@ describe("App local audio import", () => {
     await userEvent.click(screen.getByRole("button", { name: "Play" }));
     FakeAudioElement.instances[0].currentTime = 4;
     await waitFor(() => {
-      expect(FakeAudioElement.instances[0].currentTime).toBe(1);
+      expect(screen.getByText("0:04")).toBeTruthy();
     });
+    expect(FakeAudioElement.instances[0].currentTime).toBe(4);
     await userEvent.click(screen.getByRole("button", { name: "Pause" }));
   });
 });

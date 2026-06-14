@@ -1,7 +1,7 @@
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { PitchEnergyOverview } from "../../core/audio/types";
+import type { PitchEnergyOverview, SpectrogramOverview } from "../../core/audio/types";
 import { createMockProjectSummary } from "../../core/project/mockProject";
 import type { ProjectSummary } from "../../core/project/types";
 import { getSkinDefinition } from "../../skins/registry";
@@ -67,6 +67,36 @@ describe("DebugSelectionPanel", () => {
     expect(screen.getAllByText(/Demo Track Study/).length).toBeGreaterThan(0);
     expect(screen.getByText(/1.000s to 2.500s/)).toBeTruthy();
     expect(screen.getByText(/"projectName": "Demo Track Study"/)).toBeTruthy();
+  });
+
+  it("shows generated spectrogram text when only spectrogram frames overlap the selection", () => {
+    renderDebugSelectionPanel(
+      <DebugSelectionPanel
+        isOpen={true}
+        project={createProjectWithSelection()}
+        spectrogramOverview={createSpectrogramOverview()}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("Selected range 1.000-2.500")).toBeTruthy();
+    expect(screen.getByText(/Spectrogram peak area/)).toBeTruthy();
+    expect(screen.getByText(/"strongestFrequencyHz": 350/)).toBeTruthy();
+  });
+
+  it("treats analysis frames that only touch the selection boundary as unavailable", () => {
+    renderDebugSelectionPanel(
+      <DebugSelectionPanel
+        isOpen={true}
+        project={createProjectWithSelection()}
+        spectrogramOverview={createBoundaryTouchingSpectrogramOverview()}
+        onClose={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("analysis unavailable")).toBeTruthy();
+    expect(screen.getByText("1.000-2.500")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Copy Text" })).toBeNull();
   });
 
   it("copies the generated text and JSON", async () => {
@@ -156,6 +186,41 @@ function createPitchEnergyOverview(): PitchEnergyOverview {
         startMs: 1_200,
         endMs: 1_700,
         energies: Array.from({ length: 88 }, (_, index) => (index === 39 ? 0.9 : 0))
+      }
+    ]
+  };
+}
+
+function createSpectrogramOverview(): SpectrogramOverview {
+  return {
+    durationMs: 6_000,
+    framesPerSecond: 2,
+    minFrequencyHz: 100,
+    maxFrequencyHz: 500,
+    binsPerFrame: 4,
+    frames: [
+      {
+        startMs: 1_200,
+        endMs: 1_700,
+        magnitudes: [0.1, 0.5, 0.8, 0.2]
+      }
+    ]
+  };
+}
+
+function createBoundaryTouchingSpectrogramOverview(): SpectrogramOverview {
+  return {
+    ...createSpectrogramOverview(),
+    frames: [
+      {
+        startMs: 500,
+        endMs: 1_000,
+        magnitudes: [0.9, 0.1, 0.1, 0.1]
+      },
+      {
+        startMs: 2_500,
+        endMs: 3_000,
+        magnitudes: [0.1, 0.1, 0.9, 0.1]
       }
     ]
   };

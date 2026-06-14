@@ -118,4 +118,29 @@ describe("BrowserPlaybackService", () => {
 
     vi.useRealTimers();
   });
+
+  it("does not jump back when playback starts after the loop range", async () => {
+    vi.useFakeTimers();
+    const media = new FakeMediaElement();
+    const service = new BrowserPlaybackService(media);
+
+    await service.setLoopRange(1_000, 2_000);
+    await service.play(2_500);
+    const writesAfterPlay = media.currentTimeWrites;
+
+    vi.advanceTimersByTime(50);
+
+    expect(media.currentTime).toBe(2.5);
+    expect(media.currentTimeWrites).toBe(writesAfterPlay);
+    expect(service.getState().currentTimeMs).toBe(2_500);
+
+    media.simulateBrowserCurrentTime(2.75);
+    vi.advanceTimersByTime(50);
+
+    expect(media.currentTime).toBe(2.75);
+    expect(media.currentTimeWrites).toBe(writesAfterPlay);
+    expect(service.getState().currentTimeMs).toBe(2_750);
+
+    vi.useRealTimers();
+  });
 });

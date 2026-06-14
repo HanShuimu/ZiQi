@@ -83,7 +83,41 @@ describe("describeSelectedRangeForLlm", () => {
     });
 
     expect(description.text).toContain("No pitch-energy frames are available");
+    expect(description.text).toContain("Spectrogram peak area");
+    expect(description.text).toContain("350 Hz");
     expect(description.json.pitchSummary.peakMoments).toEqual([]);
+    expect(description.json.spectrogramSummary).toMatchObject({
+      frequencyRangeHz: {
+        minHz: 100,
+        maxHz: 500,
+        binCount: 4
+      },
+      strongestFrequencyHz: 350,
+      strongestFrequencyBand: "mid",
+      averageMagnitudeByFrequencyBand: {
+        low: 0.15,
+        mid: 0.45,
+        high: 0.55
+      }
+    });
+    expect(description.json.spectrogramSummary.peakMoments).toEqual([
+      {
+        startMs: 2_500,
+        endMs: 3_000,
+        timeMs: 2_750,
+        frequencyHz: 450,
+        frequencyBand: "high",
+        magnitude: 0.9
+      },
+      {
+        startMs: 2_000,
+        endMs: 2_500,
+        timeMs: 2_250,
+        frequencyHz: 350,
+        frequencyBand: "mid",
+        magnitude: 0.8
+      }
+    ]);
     expect(description.json.source.analysisKind).toBe("spectrogram");
   });
 
@@ -172,14 +206,19 @@ function createSpectrogramOverview(): SpectrogramOverview {
   return {
     durationMs: 6_000,
     framesPerSecond: 2,
-    minFrequencyHz: 27.5,
-    maxFrequencyHz: 4_186,
+    minFrequencyHz: 100,
+    maxFrequencyHz: 500,
     binsPerFrame: 4,
     frames: [
       {
         startMs: 2_000,
         endMs: 2_500,
         magnitudes: [0.1, 0.5, 0.8, 0.2]
+      },
+      {
+        startMs: 2_500,
+        endMs: 3_000,
+        magnitudes: [0.2, 0.1, 0.4, 0.9]
       }
     ]
   };
