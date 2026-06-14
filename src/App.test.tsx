@@ -1337,10 +1337,11 @@ describe("App local audio import", () => {
     openedProject.workspace = {
       ...openedProject.workspace,
       playbackRate: 0.75,
-      loopRange: {
+      selectedTimeRange: {
         startMs: 1_000,
         endMs: 4_000
       },
+      loopEnabled: true,
       spectrogramViewport: {
         startMs: 2_000,
         durationMs: 5_000

@@ -446,17 +446,18 @@ describe("WorkbenchShell transport controls", () => {
 
     expect(setLoopRange).toHaveBeenCalledWith(1_000, 3_000);
     expect(onWorkspaceChange).toHaveBeenLastCalledWith({
-      loopRange: {
+      selectedTimeRange: {
         startMs: 1_000,
         endMs: 3_000
-      }
+      },
+      loopEnabled: true
     });
 
     await user.click(screen.getByRole("button", { name: "Clear Loop" }));
 
     expect(clearLoopRange).toHaveBeenCalledOnce();
     expect(onWorkspaceChange).toHaveBeenLastCalledWith({
-      loopRange: undefined
+      loopEnabled: false
     });
   });
 

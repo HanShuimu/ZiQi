@@ -87,14 +87,14 @@ export function SpectrogramViewer({
 
     await audioFacade.playback.setLoopRange(loopRange.startMs, loopRange.endMs);
     setPlaybackState(audioFacade.playback.getState());
-    onWorkspaceChange({ loopRange });
+    onWorkspaceChange({ selectedTimeRange: loopRange, loopEnabled: true });
   }
 
   async function handleLoopClear() {
     await audioFacade.playback.clearLoopRange();
     setPendingLoopStartMs(null);
     setPlaybackState(audioFacade.playback.getState());
-    onWorkspaceChange({ loopRange: undefined });
+    onWorkspaceChange({ loopEnabled: false });
   }
 
   useEffect(() => {
@@ -119,6 +119,10 @@ export function SpectrogramViewer({
   const durationMs = project.sourceAudio.durationMs;
   const pitchHeatmapDisplay =
     project.analysisView?.pitchHeatmapDisplay ?? DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS;
+  const workspaceLoopRange = project.workspace.loopEnabled
+    ? project.workspace.selectedTimeRange
+    : undefined;
+  const visibleLoopRange = playbackState.loopRange ?? workspaceLoopRange;
 
   function handlePitchHeatmapDisplayChange(nextSettings: PitchHeatmapDisplaySettings) {
     onProjectAnalysisViewChange({
@@ -146,7 +150,7 @@ export function SpectrogramViewer({
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
         isPlaying={playbackState.isPlaying}
-        loopRange={playbackState.loopRange ?? project.workspace.loopRange}
+        loopRange={visibleLoopRange}
         onBarGridChange={onWorkspaceChange}
         onLoopClear={handleLoopClear}
         onLoopEndSet={handleLoopEndSet}
@@ -164,7 +168,7 @@ export function SpectrogramViewer({
         bpm={project.workspace.bpm}
         currentTimeMs={playbackState.currentTimeMs}
         durationMs={durationMs}
-        loopRange={playbackState.loopRange ?? project.workspace.loopRange}
+        loopRange={visibleLoopRange}
         onSeek={handleSeek}
         onViewportChange={(spectrogramViewport) => onWorkspaceChange({ spectrogramViewport })}
         pitchEnergyOverview={pitchEnergyOverview}
