@@ -149,7 +149,7 @@ export function createBarBeatTicks({
   }
 
   const firstBeatIndex = Math.ceil((viewport.startMs - beatOffsetMs) / beatDurationMs);
-  if (!Number.isFinite(firstBeatIndex)) {
+  if (!Number.isFinite(firstBeatIndex) || !Number.isSafeInteger(firstBeatIndex)) {
     return [];
   }
 
@@ -165,6 +165,11 @@ export function createBarBeatTicks({
     beatTickCount <= 0 ||
     beatTickCount > MAX_BAR_BEAT_TICKS
   ) {
+    return [];
+  }
+
+  const lastBeatIndex = firstBeatIndex + beatTickCount - 1;
+  if (!Number.isSafeInteger(lastBeatIndex)) {
     return [];
   }
 

@@ -148,6 +148,17 @@ describe("timeRuler", () => {
     ).toEqual([]);
   });
 
+  it("returns no bar or beat ticks when first beat index is unsafe", () => {
+    expect(
+      createBarBeatTicks({
+        viewport: { startMs: Number.MAX_SAFE_INTEGER + 1_000, durationMs: 10 },
+        bpm: 60_000,
+        beatsPerBar: 4,
+        beatOffsetMs: 0
+      })
+    ).toEqual([]);
+  });
+
   it("returns no bar or beat ticks for non-integer beats per bar", () => {
     expect(
       createBarBeatTicks({
