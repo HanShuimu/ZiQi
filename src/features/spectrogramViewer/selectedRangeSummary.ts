@@ -175,7 +175,7 @@ function summarizePitchFrames({
     { midiNumber: minMidiNumber, energy: 0 }
   );
   const peakMoments = frames
-    .map((frame) => getPeakMoment(frame, selectedTimeRange, minMidiNumber))
+    .map((frame) => getPeakMoment(frame, selectedTimeRange, minMidiNumber, pitchCount))
     .filter((moment): moment is PeakMoment => moment !== null)
     .sort((left, right) => right.energy - left.energy || left.timeMs - right.timeMs)
     .slice(0, PEAK_MOMENT_LIMIT);
@@ -255,12 +255,13 @@ function averageBands(frames: PitchEnergyFrame[], pitchCount: number) {
 function getPeakMoment(
   frame: PitchEnergyFrame,
   selectedTimeRange: SelectedTimeRange,
-  minMidiNumber: number
+  minMidiNumber: number,
+  pitchCount: number
 ): PeakMoment | null {
   let peakPitchIndex = 0;
   let peakEnergy = 0;
 
-  for (let pitchIndex = 0; pitchIndex < frame.energies.length; pitchIndex += 1) {
+  for (let pitchIndex = 0; pitchIndex < pitchCount; pitchIndex += 1) {
     const energy = clampEnergy(frame.energies[pitchIndex] ?? 0);
     if (energy > peakEnergy) {
       peakEnergy = energy;
@@ -319,12 +320,33 @@ function createSummaryText({
 }) {
   const rangeText = `${formatSeconds(range.startMs)} to ${formatSeconds(range.endMs)}`;
   const beatText = `${beatContext.startBarBeat} to ${beatContext.endBarBeat} at ${beatContext.bpm} BPM, ${beatContext.beatsPerBar}/4, offset ${beatContext.beatOffsetMs} ms`;
-  const pitchText =
-    hasPitchFrames && pitchSummary.strongestMidiRange && pitchSummary.strongestNoteRange
-      ? `Strongest pitch area: ${pitchSummary.strongestNoteRange.startNote} (MIDI ${pitchSummary.strongestMidiRange.startMidiNumber}); peak moments: ${formatPeakMoments(pitchSummary.peakMoments)}.`
-      : `No pitch-energy frames are available for this selection${hasSpectrogramFrames ? "; spectrogram frames overlap the range" : ""}.`;
+  const pitchText = createPitchSummaryText({
+    pitchSummary,
+    hasPitchFrames,
+    hasSpectrogramFrames
+  });
 
   return `Project "${projectName}", audio "${audioName}", selected range ${rangeText} (${formatSeconds(range.durationMs)} duration). Beat context: ${beatText}. ${pitchText}`;
+}
+
+function createPitchSummaryText({
+  pitchSummary,
+  hasPitchFrames,
+  hasSpectrogramFrames
+}: {
+  pitchSummary: PitchSummary;
+  hasPitchFrames: boolean;
+  hasSpectrogramFrames: boolean;
+}) {
+  if (hasPitchFrames && pitchSummary.strongestMidiRange && pitchSummary.strongestNoteRange) {
+    return `Strongest pitch area: ${pitchSummary.strongestNoteRange.startNote} (MIDI ${pitchSummary.strongestMidiRange.startMidiNumber}); peak moments: ${formatPeakMoments(pitchSummary.peakMoments)}.`;
+  }
+
+  if (hasPitchFrames) {
+    return "Pitch-energy frames overlap this selection, but no significant pitch peak was detected.";
+  }
+
+  return `No pitch-energy frames are available for this selection${hasSpectrogramFrames ? "; spectrogram frames overlap the range" : ""}.`;
 }
 
 function formatPeakMoments(peakMoments: PeakMoment[]) {

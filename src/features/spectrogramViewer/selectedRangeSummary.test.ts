@@ -86,6 +86,61 @@ describe("describeSelectedRangeForLlm", () => {
     expect(description.json.pitchSummary.peakMoments).toEqual([]);
     expect(description.json.source.analysisKind).toBe("spectrogram");
   });
+
+  it("describes overlapping silent pitch frames as having no significant pitch peak", () => {
+    const description = describeSelectedRangeForLlm({
+      projectName: "Silent Pitch",
+      audioName: "near-silence.wav",
+      selectedTimeRange: { startMs: 2_000, endMs: 3_500 },
+      beatSettings: { bpm: 120, beatsPerBar: 4, beatOffsetMs: 0 },
+      pitchEnergyOverview: createPitchEnergyOverview([
+        createPitchFrame(2_000, 2_500, [
+          [60, 0],
+          [61, Number.NaN]
+        ]),
+        createPitchFrame(2_500, 3_000, [
+          [64, Number.POSITIVE_INFINITY]
+        ])
+      ]),
+      spectrogramOverview: null
+    });
+
+    expect(description.text).not.toContain("No pitch-energy frames are available");
+    expect(description.text).toContain("no significant pitch");
+    expect(description.json.pitchSummary.peakMoments).toEqual([]);
+    expect(description.json.source.analysisKind).toBe("pitch-energy");
+  });
+
+  it("does not report peak moments beyond the declared pitch count", () => {
+    const description = describeSelectedRangeForLlm({
+      projectName: "Short Pitch Map",
+      audioName: "short.wav",
+      selectedTimeRange: { startMs: 2_000, endMs: 3_500 },
+      beatSettings: { bpm: 120, beatsPerBar: 4, beatOffsetMs: 0 },
+      pitchEnergyOverview: {
+        ...createPitchEnergyOverview([
+          {
+            startMs: 2_000,
+            endMs: 2_500,
+            energies: [0.2, 0.4, 0.99]
+          }
+        ]),
+        notesPerFrame: 2 as 88
+      },
+      spectrogramOverview: null
+    });
+
+    expect(description.json.pitchSummary.peakMoments).toEqual([
+      {
+        startMs: 2_000,
+        endMs: 2_500,
+        timeMs: 2_250,
+        midiNumber: 22,
+        noteName: "A#0",
+        energy: 0.4
+      }
+    ]);
+  });
 });
 
 function createPitchEnergyOverview(frames: PitchEnergyOverview["frames"]): PitchEnergyOverview {
