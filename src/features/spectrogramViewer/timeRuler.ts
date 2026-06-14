@@ -13,7 +13,14 @@ const NICE_INTERVALS_MS = [
   30_000,
   60_000,
   120_000,
-  300_000
+  300_000,
+  600_000,
+  900_000,
+  1_200_000,
+  1_800_000,
+  3_600_000,
+  7_200_000,
+  14_400_000
 ] as const;
 
 const MAX_TIME_RULER_TICKS = 1_000;
@@ -111,7 +118,9 @@ export function createTimeRulerTicks({
     }
   }
 
-  return ticks.filter((tick) => tick.timeMs >= viewport.startMs && tick.timeMs <= endTimeMs);
+  return ticks
+    .filter((tick) => tick.timeMs >= viewport.startMs && tick.timeMs <= endTimeMs)
+    .sort((left, right) => left.timeMs - right.timeMs);
 }
 
 export function createBarBeatTicks({

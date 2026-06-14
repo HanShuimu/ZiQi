@@ -100,6 +100,36 @@ describe("timeRuler", () => {
     expect(ticks.every((tick) => tick.timeMs >= 250 && tick.timeMs <= 1_250)).toBe(true);
   });
 
+  it("returns natural time ticks in ascending time order", () => {
+    const ticks = createTimeRulerTicks({
+      viewport: { startMs: 0, durationMs: 2_000 },
+      targetMajorTickCount: 2
+    });
+
+    expect(ticks.map((tick) => tick.timeMs)).toEqual(
+      [...ticks].map((tick) => tick.timeMs).sort((left, right) => left - right)
+    );
+  });
+
+  it("uses human friendly minute intervals for long viewports", () => {
+    const majorTimes = createTimeRulerTicks({
+      viewport: { startMs: 0, durationMs: 7_200_000 },
+      targetMajorTickCount: 6
+    })
+      .filter((tick) => tick.kind === "major")
+      .map((tick) => tick.timeMs);
+
+    expect(majorTimes).toEqual([
+      0,
+      1_200_000,
+      2_400_000,
+      3_600_000,
+      4_800_000,
+      6_000_000,
+      7_200_000
+    ]);
+  });
+
   it("formats sub-second major tick labels without duplicates", () => {
     const labels = createTimeRulerTicks({
       viewport: { startMs: 0, durationMs: 200 },
