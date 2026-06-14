@@ -83,6 +83,48 @@ describe("WorkbenchShell transport controls", () => {
     expect(screen.queryByRole("button", { name: "Import Audio" })).toBeNull();
   });
 
+  it("renders the debug selection panel no-project status when opened without a project", () => {
+    renderWorkbenchShell(<WorkbenchShell project={null} isDebugSelectionPanelOpen={true} />);
+
+    expect(screen.getByText("Please open a project first.")).toBeTruthy();
+  });
+
+  it("renders the debug selection panel missing range status when opened for a project", () => {
+    const project = {
+      ...createMockProjectSummary(),
+      workspace: {
+        ...createMockProjectSummary().workspace,
+        selectedTimeRange: undefined
+      }
+    };
+
+    renderWorkbenchShell(
+      <WorkbenchShell project={project} isDebugSelectionPanelOpen={true} />
+    );
+
+    expect(screen.getByText("Please select a time range first.")).toBeTruthy();
+  });
+
+  it("renders the debug selection panel unavailable analysis status for a selected range", () => {
+    const project = {
+      ...createMockProjectSummary(),
+      workspace: {
+        ...createMockProjectSummary().workspace,
+        selectedTimeRange: {
+          startMs: 1_000,
+          endMs: 2_500
+        }
+      }
+    };
+
+    renderWorkbenchShell(
+      <WorkbenchShell project={project} isDebugSelectionPanelOpen={true} />
+    );
+
+    expect(screen.getByText("analysis unavailable")).toBeTruthy();
+    expect(screen.getByText("1.000-2.500")).toBeTruthy();
+  });
+
   it("renders real waveform overview data when a project is loaded", async () => {
     const project = createMockProjectSummary();
     const waveformOverview: WaveformOverview = {
