@@ -218,6 +218,7 @@ describe("SpectrogramView", () => {
     expect(screen.getByTestId("spectrogram-ruler-selection").style.width).toBe("40%");
     expect(screen.getByTestId("spectrogram-selection-overlay").style.left).toBe("20%");
     expect(screen.getByTestId("spectrogram-selection-overlay").style.width).toBe("40%");
+    expect(document.querySelector(".spectrogram-selection-label")).toBeNull();
   });
 
   it("renders visible bar grid lines from beats, bpm, and offset", () => {
@@ -959,4 +960,3 @@ describe("SpectrogramView", () => {
     }));
   });
 });
-

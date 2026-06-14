@@ -580,24 +580,6 @@ button:disabled {
   pointer-events: none;
 }
 
-.spectrogram-selection-label {
-  position: absolute;
-  top: 0.45rem;
-  left: 50%;
-  max-width: calc(100% - 0.5rem);
-  overflow: hidden;
-  padding: 0.12rem 0.32rem;
-  transform: translateX(-50%);
-  border-radius: 4px;
-  background: rgba(17, 24, 39, 0.88);
-  color: #f8fafc;
-  font-size: 0.68rem;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .spectrogram-time-grid-line {
   position: absolute;
   top: 0;

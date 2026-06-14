@@ -173,6 +173,7 @@ export function SpectrogramViewer({
         onViewportChange={(spectrogramViewport) => onWorkspaceChange({ spectrogramViewport })}
         pitchEnergyOverview={pitchEnergyOverview}
         pitchHeatmapDisplay={pitchHeatmapDisplay}
+        selectedTimeRange={project.workspace.selectedTimeRange}
         spectrogramOverview={spectrogramOverview}
         viewport={project.workspace.spectrogramViewport}
         waveformOverview={waveformOverview}

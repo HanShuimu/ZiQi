@@ -35,15 +35,6 @@ export function SpectrogramSelectionOverlay({
       className="spectrogram-selection-overlay"
       data-testid="spectrogram-selection-overlay"
       style={overlayStyle}
-    >
-      <span className="spectrogram-selection-label">
-        {formatSelectionSeconds(selectedTimeRange.startMs)}-{formatSelectionSeconds(selectedTimeRange.endMs)}
-      </span>
-    </div>
+    />
   );
-}
-
-function formatSelectionSeconds(timeMs: number) {
-  const seconds = Math.max(0, timeMs) / 1000;
-  return seconds.toFixed(3).padStart(7, "0");
 }

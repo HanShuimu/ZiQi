@@ -127,6 +127,32 @@ describe("WorkbenchShell transport controls", () => {
     expect(document.querySelector(".spectrogram-navigator-row")).toBeTruthy();
   });
 
+  it("renders persisted selected range through the spectrogram viewer path", () => {
+    const project = createMockProjectSummary();
+    const selectedProject = {
+      ...project,
+      workspace: {
+        ...project.workspace,
+        loopEnabled: false,
+        selectedTimeRange: { startMs: 4_000, endMs: 6_000 },
+        spectrogramViewport: { startMs: 3_000, durationMs: 5_000 }
+      }
+    };
+
+    renderWorkbenchShell(
+      <WorkbenchShell
+        project={selectedProject}
+        audioFacade={mockProjectAudioFacade}
+        spectrogramOverview={createSpectrogramOverview()}
+      />
+    );
+
+    expect(screen.getByTestId("spectrogram-ruler-selection").style.left).toBe("20%");
+    expect(screen.getByTestId("spectrogram-ruler-selection").style.width).toBe("40%");
+    expect(screen.getByTestId("spectrogram-selection-overlay").style.left).toBe("20%");
+    expect(screen.getByTestId("spectrogram-selection-overlay").style.width).toBe("40%");
+  });
+
   it("uses high-contrast playhead classes for waveform and spectrogram cursors", () => {
     const project = createMockProjectSummary();
     const waveformOverview: WaveformOverview = {
