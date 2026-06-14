@@ -16,11 +16,9 @@ import {
 } from "../../services/audio/browserPitchEnergyService";
 import type { PitchEnergyOverview, SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
 import { createProjectCommands } from "../commands/projectCommands";
-import { createSkinCommands } from "../commands/skinCommands";
-import type { SkinId } from "../../core/userSettings/types";
-import { DEFAULT_USER_SETTINGS } from "../../core/userSettings/types";
 import { rendererLogger } from "../../services/logging/rendererLogger";
 import { createBrowserProjectAudioFacade } from "../../services/projectAudio/browserProjectAudioFacade";
+import { useAppRuntime } from "../runtime";
 import { AppSessionContext } from "./AppSessionContext";
 import type { AppSessionValue, ProjectLocation } from "./types";
 
@@ -37,6 +35,7 @@ export function AppSessionProvider({
   spectrogramService,
   pitchEnergyService
 }: AppSessionProviderProps) {
+  const runtime = useAppRuntime();
   const [project, setProject] = useState<ProjectSummary | null>(null);
   const [projectLocation, setProjectLocation] = useState<ProjectLocation | null>(null);
   const [waveformOverview, setWaveformOverview] = useState<WaveformOverview | null>(null);
@@ -46,7 +45,6 @@ export function AppSessionProvider({
   const [isOpeningProject, setIsOpeningProject] = useState(false);
   const [isSavingProject, setIsSavingProject] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
-  const [uiSkin, setUiSkin] = useState<SkinId>(DEFAULT_USER_SETTINGS.uiSkin);
   const activePlaybackUrl = useRef<string | null>(null);
   const audioFacade = useMemo(
     () => createBrowserProjectAudioFacade(new Audio()),
@@ -75,24 +73,11 @@ export function AppSessionProvider({
     };
   }, []);
 
-  useEffect(() => {
-    let isActive = true;
-
-    void window.ziqiApp.getUserSettings().then((settings) => {
-      if (isActive) {
-        setUiSkin(settings.uiSkin);
-      }
-    });
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
-
   const value = useMemo<AppSessionValue>(
     () => {
       // eslint-disable-next-line react-hooks/refs
       const projectCommands = createProjectCommands({
+        runtime,
         project,
         projectLocation,
         activePlaybackUrl,
@@ -111,7 +96,6 @@ export function AppSessionProvider({
         setIsSavingProject,
         setImportError
       });
-      const skinCommands = createSkinCommands({ setUiSkin, setImportError });
       const updateProjectAnalysisView = (analysisViewPatch: Partial<ProjectAnalysisView>) => {
         setProject((currentProject) => {
           if (!currentProject) {
@@ -138,7 +122,6 @@ export function AppSessionProvider({
         isOpeningProject,
         isSavingProject,
         importError,
-        uiSkin,
         audioFacade,
         waveformService: activeWaveformService,
         spectrogramService: activeSpectrogramService,
@@ -146,7 +129,6 @@ export function AppSessionProvider({
         importAudio: projectCommands.importAudio,
         saveProject: projectCommands.saveProject,
         openProject: projectCommands.openProject,
-        changeSkin: skinCommands.changeSkin,
         updateProjectAnalysisView,
         updateWorkspace: projectCommands.updateWorkspace
       };
@@ -161,7 +143,7 @@ export function AppSessionProvider({
       isOpeningProject,
       isSavingProject,
       importError,
-      uiSkin,
+      runtime,
       audioFacade,
       activeWaveformService,
       activeSpectrogramService,

@@ -54,9 +54,15 @@ export function SpectrogramTimelineNavigator({
   const playheadPercent = timeToTrackPercent(currentTimeMs, durationMs);
   const loopLeftPercent = loopRange ? timeToTrackPercent(loopRange.startMs, durationMs) : 0;
   const loopRightPercent = loopRange ? timeToTrackPercent(loopRange.endMs, durationMs) : 0;
+  const safeHoverTimeMs =
+    typeof hoverTimeMs === "number" && Number.isFinite(hoverTimeMs)
+      ? hoverTimeMs
+      : null;
   const shouldShowHoverTime =
-    Number.isFinite(hoverTimeMs) && isTimeInsideViewport(hoverTimeMs, viewport);
-  const hoverTimePercent = shouldShowHoverTime ? timeToTrackPercent(hoverTimeMs, durationMs) : 0;
+    safeHoverTimeMs !== null && isTimeInsideViewport(safeHoverTimeMs, viewport);
+  const hoverTimePercent = shouldShowHoverTime
+    ? timeToTrackPercent(safeHoverTimeMs, durationMs)
+    : 0;
 
   function timeForClientX(clientX: number, track: HTMLElement) {
     const bounds = track.getBoundingClientRect();
@@ -102,6 +108,7 @@ export function SpectrogramTimelineNavigator({
       return;
     }
 
+    const trackElement = track;
     const startClientX = event.clientX;
     const startViewport = viewport;
     if (typeof thumb.setPointerCapture === "function") {
@@ -109,7 +116,7 @@ export function SpectrogramTimelineNavigator({
     }
 
     function handlePointerMove(pointerEvent: PointerEvent) {
-      const bounds = track.getBoundingClientRect();
+      const bounds = trackElement.getBoundingClientRect();
       const deltaRatio = bounds.width > 0 ? (pointerEvent.clientX - startClientX) / bounds.width : 0;
       onViewportChangeRef.current(
         clampSpectrogramViewport(
@@ -157,7 +164,7 @@ export function SpectrogramTimelineNavigator({
             data-testid="spectrogram-navigator-hover-time"
             style={{ left: `${hoverTimePercent}%` }}
           >
-            <span>{formatPreciseTimeLabel(hoverTimeMs)}</span>
+            <span>{formatPreciseTimeLabel(safeHoverTimeMs ?? 0)}</span>
           </div>
         ) : null}
       </div>

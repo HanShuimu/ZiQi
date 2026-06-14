@@ -3,6 +3,7 @@ import { normalizeProjectAnalysisView } from "../../core/project/analysisView";
 import type { ProjectCommandDependencies } from "./projectCommandTypes";
 
 export function createOpenProjectCommand({
+  runtime,
   project,
   activePlaybackUrl,
   audioFacade,
@@ -29,7 +30,7 @@ export function createOpenProjectCommand({
 
     try {
       const nativeStart = performance.now();
-      const openedProject = await window.ziqiApp.openProject();
+      const openedProject = await runtime.openProject();
       logger.trace("project.open.native.end", "Native open project completed", {
         durationMs: performance.now() - nativeStart,
         canceled: openedProject === null
@@ -100,7 +101,7 @@ export function createOpenProjectCommand({
         }
         await audioFacade.playback.seek(0);
         logger.trace("project.open.playbackState.end", "Applied project playback state");
-        await window.ziqiApp.activateOpenedProject({
+        await runtime.activateOpenedProject({
           projectFilePath: openedProject.projectFilePath,
           projectRootPath: openedProject.projectRootPath
         });

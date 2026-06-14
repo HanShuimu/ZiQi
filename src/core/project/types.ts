@@ -48,6 +48,13 @@ export interface WorkspaceSpectrogramViewport {
   durationMs: number;
 }
 
+/**
+ * WorkspaceState includes a few compatibility fields from earlier workbench
+ * layouts. The focused UI currently consumes playback, loop, viewport, and
+ * bar-grid fields. `preset`, `activeDock`, and `gridEnabled` remain persisted
+ * so older project files normalize safely while future workspace designs are
+ * still unsettled.
+ */
 export interface WorkspaceState {
   preset: "pure-spectrum" | "spectrum-analysis" | "wide-compare";
   activeDock: "analysis" | "stems" | "notes" | "compare" | "hidden";

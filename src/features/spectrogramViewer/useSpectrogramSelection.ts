@@ -64,14 +64,18 @@ export function useSpectrogramSelection({
 
   const handlePointerMove = useCallback<PointerEventHandler<HTMLElement>>(
     (event) => {
+      const pointerId = event.pointerId;
+      const currentClientX = event.clientX;
+      const bounds = event.currentTarget.getBoundingClientRect();
+
       setDragState((currentDragState) => {
-        if (!currentDragState || currentDragState.pointerId !== event.pointerId) {
+        if (!currentDragState || currentDragState.pointerId !== pointerId) {
           return currentDragState;
         }
 
         const hasSelectionDistance = isSelectionDragDistance({
           startClientX: currentDragState.startClientX,
-          currentClientX: event.clientX,
+          currentClientX,
           thresholdPx: SELECTION_DRAG_THRESHOLD_PX
         });
 
@@ -83,9 +87,8 @@ export function useSpectrogramSelection({
           };
         }
 
-        const bounds = event.currentTarget.getBoundingClientRect();
         const currentTimeMs = getTimeFromClientX({
-          clientX: event.clientX,
+          clientX: currentClientX,
           bounds,
           viewport,
           durationMs

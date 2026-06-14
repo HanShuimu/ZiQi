@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+﻿import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SpectrogramOverview, WaveformOverview } from "../../core/audio/types";
@@ -143,16 +143,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -230,16 +222,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 0, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -265,16 +249,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 0, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -300,16 +276,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 0, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -325,16 +293,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createLongSpectrogramOverview(1_200, 4)}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -361,16 +321,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -397,16 +349,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -429,16 +373,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -471,16 +407,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -509,16 +437,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -543,16 +463,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -572,7 +484,7 @@ describe("SpectrogramView", () => {
     expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
   });
 
-  it("clears pitch hover state when pitch frames become unavailable", () => {
+  it("clears pitch hover state when pitch frames become unavailable and keeps it cleared when frames return", () => {
     const { container, rerender } = renderSpectrogramView(
       <SpectrogramView
         currentTimeMs={0}
@@ -581,16 +493,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -609,16 +513,26 @@ describe("SpectrogramView", () => {
         spectrogramOverview={null}
         viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("Pointer");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+
+    rerender(wrapWithUiProvider(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
         onViewportChange={vi.fn()}
       />
     ));
@@ -638,16 +552,8 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 1_000, durationMs: 10_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -666,16 +572,26 @@ describe("SpectrogramView", () => {
         spectrogramOverview={createSpectrogramOverview()}
         viewport={{ startMs: 2_000, durationMs: 8_000 }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
+        onViewportChange={vi.fn()}
+      />
+    ));
+
+    expect(screen.getByTestId("pitch-hover-status").textContent).toContain("Pointer");
+    expect(screen.queryByTestId("pitch-hover-row")).toBeNull();
+    expect(screen.queryByTestId("pitch-hover-time-line")).toBeNull();
+    expect(screen.getByTitle("D#5").classList.contains("piano-key-active")).toBe(false);
+
+    rerender(wrapWithUiProvider(
+      <SpectrogramView
+        currentTimeMs={0}
+        durationMs={12_000}
+        spectrogramOverview={createSpectrogramOverview()}
+        viewport={{ startMs: 1_000, durationMs: 10_000 }}
+        waveformOverview={createWaveformOverview()}
+        onSeek={vi.fn()}
+        loopRange={undefined}
         onViewportChange={vi.fn()}
       />
     ));
@@ -694,16 +610,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -731,16 +639,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={null}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -757,16 +657,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={{ ...createSpectrogramOverview(), frames: [] }}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -783,16 +675,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -822,16 +706,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createSpectrogramOverview()}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -997,16 +873,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createLongSpectrogramOverview(12, 4)}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -1029,16 +897,8 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createLongSpectrogramOverview(12, 4)}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={vi.fn()}
       />
     );
@@ -1060,14 +920,7 @@ describe("SpectrogramView", () => {
         selectedTimeRange={undefined}
         spectrogramOverview={createLongSpectrogramOverview(12, 4)}
         waveformOverview={createWaveformOverview()}
-        isPlaying={false}
-        playbackRate={1}
         loopRange={undefined}
-        onLoopClear={vi.fn()}
-        onLoopEndSet={vi.fn()}
-        onLoopStartSet={vi.fn()}
-        onPlaybackRateChange={vi.fn()}
-        onPlaybackToggle={vi.fn()}
         onSeek={vi.fn()}
         onSelectedTimeRangeChange={vi.fn()}
         onViewportChange={onViewportChange}

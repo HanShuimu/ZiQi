@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
+import { RuntimeProvider, useAppRuntime } from "./app/runtime";
 import { AppSessionProvider } from "./app/session/AppSessionProvider";
 import { useAppSession } from "./app/session/useAppSession";
+import { UiSettingsProvider, useUiSettings } from "./app/uiSettings";
 import { useMenuCommands } from "./app/menu/useMenuCommands";
 import { WorkbenchShell } from "./components/WorkbenchShell";
 import { getSkinDefinition } from "./skins/registry";
@@ -17,26 +19,36 @@ interface AppProps {
 
 export function App({ waveformService, spectrogramService, pitchEnergyService }: AppProps) {
   return (
-    <AppSessionProvider
-      waveformService={waveformService}
-      spectrogramService={spectrogramService}
-      pitchEnergyService={pitchEnergyService}
-    >
-      <AppContent />
-    </AppSessionProvider>
+    <RuntimeProvider>
+      <UiSettingsProvider>
+        <AppSessionProvider
+          waveformService={waveformService}
+          spectrogramService={spectrogramService}
+          pitchEnergyService={pitchEnergyService}
+        >
+          <AppContent />
+        </AppSessionProvider>
+      </UiSettingsProvider>
+    </RuntimeProvider>
   );
 }
 
 function AppContent() {
+  const runtime = useAppRuntime();
   const session = useAppSession();
+  const uiSettings = useUiSettings();
   const [isDebugSelectionPanelOpen, setIsDebugSelectionPanelOpen] = useState(false);
   const skinDefinition = useMemo(
-    () => getSkinDefinition(session.uiSkin),
-    [session.uiSkin]
+    () => getSkinDefinition(uiSettings.uiSkin),
+    [uiSettings.uiSkin]
   );
 
   useMenuCommands({
-    ...session,
+    runtime,
+    importAudio: session.importAudio,
+    openProject: session.openProject,
+    saveProject: session.saveProject,
+    changeSkin: uiSettings.changeSkin,
     describeSelectedRangeForLlm: () => setIsDebugSelectionPanelOpen(true)
   });
 

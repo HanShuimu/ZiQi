@@ -34,18 +34,20 @@ export type RendererLogEntry = {
   details?: Record<string, string | number | boolean | null | undefined>;
 };
 
+export interface ZiqiPreloadApi {
+  getVersion(): Promise<string>;
+  log(entry: RendererLogEntry): void;
+  getUserSettings(): Promise<UserSettings>;
+  updateUserSettings(patch: Partial<UserSettings>): Promise<UserSettings>;
+  selectAudioFile(): Promise<{ audioData: ArrayBuffer; filePath: string } | null>;
+  saveProject(request: SaveProjectRequest): Promise<SaveProjectResult | null>;
+  openProject(): Promise<OpenProjectResult | null>;
+  activateOpenedProject(request: ProjectLocation): Promise<void>;
+  onMenuCommand(callback: (command: MenuCommand) => void): () => void;
+}
+
 declare global {
   interface Window {
-    ziqiApp: {
-      getVersion(): Promise<string>;
-      log(entry: RendererLogEntry): void;
-      getUserSettings(): Promise<UserSettings>;
-      updateUserSettings(patch: Partial<UserSettings>): Promise<UserSettings>;
-      selectAudioFile(): Promise<{ audioData: ArrayBuffer; filePath: string } | null>;
-      saveProject(request: SaveProjectRequest): Promise<SaveProjectResult | null>;
-      openProject(): Promise<OpenProjectResult | null>;
-      activateOpenedProject(request: ProjectLocation): Promise<void>;
-      onMenuCommand(callback: (command: MenuCommand) => void): () => void;
-    };
+    ziqiApp?: ZiqiPreloadApi;
   }
 }

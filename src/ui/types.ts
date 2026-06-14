@@ -5,8 +5,11 @@ export type BackgroundProps = Record<string, never>;
 export interface ButtonProps {
   variant?: "primary" | "secondary" | "ghost";
   size?: "sm" | "md";
+  type?: "button" | "submit" | "reset";
   disabled?: boolean;
   activating?: boolean;
+  "aria-label"?: string;
+  "aria-pressed"?: boolean;
   className?: string;
   onClick?: () => void;
   children: ReactNode;
