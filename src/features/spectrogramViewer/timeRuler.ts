@@ -154,7 +154,7 @@ export function createBarBeatTicks({
   }
 
   const firstBeatTimeMs = beatOffsetMs + firstBeatIndex * beatDurationMs;
-  if (!Number.isFinite(firstBeatTimeMs)) {
+  if (!isSafeBeatTime(firstBeatTimeMs)) {
     return [];
   }
 
@@ -173,11 +173,20 @@ export function createBarBeatTicks({
     return [];
   }
 
+  const lastBeatTimeMs = beatOffsetMs + lastBeatIndex * beatDurationMs;
+  if (!isSafeBeatTime(lastBeatTimeMs)) {
+    return [];
+  }
+
   const ticks: BarBeatTick[] = [];
 
   for (let tickOffset = 0; tickOffset < beatTickCount; tickOffset += 1) {
     const beatIndex = firstBeatIndex + tickOffset;
     const timeMs = beatOffsetMs + beatIndex * beatDurationMs;
+    if (!isSafeBeatTime(timeMs)) {
+      return [];
+    }
+
     if (timeMs < viewport.startMs) {
       continue;
     }
@@ -199,6 +208,10 @@ export function createBarBeatTicks({
 
 function chooseNiceInterval(rawIntervalMs: number) {
   return NICE_INTERVALS_MS.find((interval) => interval >= rawIntervalMs) ?? NICE_INTERVALS_MS.at(-1)!;
+}
+
+function isSafeBeatTime(timeMs: number) {
+  return Number.isFinite(timeMs) && Number.isSafeInteger(Math.round(timeMs));
 }
 
 function formatRulerTime(timeMs: number, intervalMs: number) {
