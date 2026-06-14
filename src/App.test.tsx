@@ -1298,8 +1298,8 @@ describe("App local audio import", () => {
     await waitFor(() => {
       expect(window.ziqiApp.saveProject).toHaveBeenCalledWith(expect.objectContaining({
         project: expect.objectContaining({
-          workspace: expect.not.objectContaining({
-            loopRange: expect.anything()
+          workspace: expect.objectContaining({
+            loopEnabled: false
           })
         })
       }));
@@ -1456,7 +1456,8 @@ function createProjectSummary(filePath: string): ProjectSummary {
       beatsPerBar: 4,
       bpm: 120,
       beatOffsetMs: 0,
-      playbackRate: 1
+      playbackRate: 1,
+      loopEnabled: false
     }
   };
 }
