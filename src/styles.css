@@ -337,6 +337,112 @@ button:disabled {
   min-width: 0;
 }
 
+.spectrogram-ruler-row-container {
+  min-width: 0;
+}
+
+.spectrogram-time-ruler {
+  position: relative;
+  height: 44px;
+  overflow: hidden;
+  border: 1px solid #d8c8b3;
+  border-radius: 8px;
+  background: #f6f1e9;
+  color: #5f5448;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.spectrogram-ruler-row {
+  position: relative;
+  height: 50%;
+  border-bottom: 1px solid rgba(95, 84, 72, 0.18);
+}
+
+.spectrogram-ruler-row:last-child {
+  border-bottom: 0;
+}
+
+.spectrogram-ruler-row-name {
+  position: absolute;
+  top: 50%;
+  left: 0.45rem;
+  z-index: 3;
+  padding: 0 0.24rem;
+  transform: translateY(-50%);
+  border-radius: 3px;
+  background: rgba(246, 241, 233, 0.92);
+  color: #6b6257;
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.spectrogram-ruler-row-track {
+  position: absolute;
+  inset: 0;
+  min-width: 0;
+}
+
+.spectrogram-ruler-selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  border-inline: 1px solid rgba(180, 111, 13, 0.72);
+  background: rgba(217, 148, 0, 0.24);
+  pointer-events: none;
+}
+
+.spectrogram-ruler-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 4;
+  width: 2px;
+  transform: translateX(-1px);
+  background: #2563eb;
+  box-shadow: 0 0 6px rgba(37, 99, 235, 0.55);
+  pointer-events: none;
+}
+
+.spectrogram-ruler-tick {
+  position: absolute;
+  bottom: 0;
+  z-index: 2;
+  width: 1px;
+  transform: translateX(-0.5px);
+  background: rgba(71, 85, 105, 0.42);
+  pointer-events: none;
+}
+
+.spectrogram-ruler-tick-major,
+.spectrogram-ruler-tick-bar {
+  top: 0.2rem;
+  background: rgba(30, 41, 59, 0.72);
+}
+
+.spectrogram-ruler-tick-medium,
+.spectrogram-ruler-tick-beat {
+  top: 0.52rem;
+}
+
+.spectrogram-ruler-tick-minor {
+  top: 0.78rem;
+  background: rgba(71, 85, 105, 0.24);
+}
+
+.spectrogram-ruler-label {
+  position: absolute;
+  top: 0.08rem;
+  left: 0.28rem;
+  max-width: 4.5rem;
+  overflow: hidden;
+  color: #475569;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .spectrogram-waveform-row,
 .spectrogram-navigator-row {
   min-width: 0;
@@ -459,6 +565,37 @@ button:disabled {
   place-items: center;
   color: #d8c8b3;
   background: #000;
+}
+
+.spectrogram-selection-overlay {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  box-sizing: border-box;
+  border-inline: 2px solid rgba(255, 255, 255, 0.9);
+  background: transparent;
+  box-shadow:
+    inset 1px 0 rgba(17, 24, 39, 0.86),
+    inset -1px 0 rgba(17, 24, 39, 0.86);
+  pointer-events: none;
+}
+
+.spectrogram-selection-label {
+  position: absolute;
+  top: 0.45rem;
+  left: 50%;
+  max-width: calc(100% - 0.5rem);
+  overflow: hidden;
+  padding: 0.12rem 0.32rem;
+  transform: translateX(-50%);
+  border-radius: 4px;
+  background: rgba(17, 24, 39, 0.88);
+  color: #f8fafc;
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .spectrogram-time-grid-line {

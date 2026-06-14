@@ -7,6 +7,7 @@ import type {
   SpectrogramOverview,
   WaveformOverview
 } from "../../core/audio/types";
+import type { SelectedTimeRange } from "../../core/project/types";
 import {
   DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
   PITCH_HEATMAP_MIN_HEIGHT_PX,
@@ -33,6 +34,8 @@ import {
   getPitchLaneCssProperties
 } from "./pitchHover";
 import type { HeatmapPointerState } from "./pitchHover";
+import { SpectrogramSelectionOverlay } from "./SpectrogramSelectionOverlay";
+import { SpectrogramTimeRuler } from "./SpectrogramTimeRuler";
 
 const CANVAS_WIDTH = 960;
 const CANVAS_HEIGHT = PITCH_HEATMAP_MIN_HEIGHT_PX;
@@ -52,13 +55,16 @@ interface SpectrogramViewProps {
   bpm?: number;
   currentTimeMs: number;
   durationMs: number;
+  loopEnabled?: boolean;
   loopRange: { startMs: number; endMs: number } | undefined;
   pitchEnergyOverview?: PitchEnergyOverview | null | undefined;
   pitchHeatmapDisplay?: PitchHeatmapDisplaySettings;
+  selectedTimeRange?: SelectedTimeRange;
   spectrogramOverview?: SpectrogramOverview | null | undefined;
   viewport?: SpectrogramViewport;
   waveformOverview: WaveformOverview | null | undefined;
   onSeek: (timeMs: number) => Promise<void> | void;
+  onSelectedTimeRangeChange?: (range: SelectedTimeRange | undefined) => void;
   onViewportChange: (viewport: SpectrogramViewport) => void;
 }
 
@@ -71,6 +77,7 @@ export function SpectrogramView({
   loopRange,
   pitchEnergyOverview,
   pitchHeatmapDisplay = DEFAULT_PITCH_HEATMAP_DISPLAY_SETTINGS,
+  selectedTimeRange,
   spectrogramOverview,
   viewport: controlledViewport,
   waveformOverview,
@@ -259,6 +266,18 @@ export function SpectrogramView({
       </div>
       <div className="spectrogram-time-grid">
         <div className="spectrogram-axis-spacer" />
+        <div className="spectrogram-ruler-row-container">
+          <SpectrogramTimeRuler
+            beatOffsetMs={beatOffsetMs}
+            beatsPerBar={beatsPerBar}
+            bpm={bpm}
+            currentTimeMs={currentTimeMs}
+            selectedTimeRange={selectedTimeRange}
+            viewport={activeViewport}
+          />
+        </div>
+
+        <div className="spectrogram-axis-spacer" />
         <div className="waveform-overview spectrogram-waveform-row" aria-label="Audio waveform overview" role="img">
           <div className="waveform-grid waveform-grid-compact">
             {renderedWaveformPoints.map((point) => (
@@ -318,6 +337,7 @@ export function SpectrogramView({
             {!hasPitchFrames ? (
               <div className="spectrogram-empty">Generating pitch heatmap...</div>
             ) : null}
+            <SpectrogramSelectionOverlay selectedTimeRange={selectedTimeRange} viewport={activeViewport} />
             {pointerState ? (
               <>
                 <div
