@@ -39,6 +39,22 @@ describe("timeRuler", () => {
     ).toEqual([]);
   });
 
+  it("returns no time ruler ticks when viewport end cannot progress", () => {
+    expect(
+      createTimeRulerTicks({
+        viewport: { startMs: 1e20, durationMs: 1 }
+      })
+    ).toEqual([]);
+  });
+
+  it("returns no time ruler ticks for negative viewport start", () => {
+    expect(
+      createTimeRulerTicks({
+        viewport: { startMs: -1, durationMs: 1_000 }
+      })
+    ).toEqual([]);
+  });
+
   it("returns no time ruler ticks for invalid target tick counts", () => {
     expect(
       createTimeRulerTicks({
@@ -130,6 +146,17 @@ describe("timeRuler", () => {
     expect(
       createBarBeatTicks({
         viewport: { startMs: Number.POSITIVE_INFINITY, durationMs: 4_000 },
+        bpm: 120,
+        beatsPerBar: 4,
+        beatOffsetMs: 0
+      })
+    ).toEqual([]);
+  });
+
+  it("returns no bar or beat ticks for negative viewport start", () => {
+    expect(
+      createBarBeatTicks({
+        viewport: { startMs: -1, durationMs: 4_000 },
         bpm: 120,
         beatsPerBar: 4,
         beatOffsetMs: 0

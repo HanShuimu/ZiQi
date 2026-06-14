@@ -43,6 +43,7 @@ export function createTimeRulerTicks({
   if (
     !Number.isFinite(viewport.startMs) ||
     !Number.isFinite(viewport.durationMs) ||
+    viewport.startMs < 0 ||
     viewport.durationMs <= 0 ||
     !Number.isFinite(targetMajorTickCount) ||
     targetMajorTickCount <= 0
@@ -56,7 +57,7 @@ export function createTimeRulerTicks({
   }
 
   const endTimeMs = viewport.startMs + viewport.durationMs;
-  if (!Number.isFinite(endTimeMs)) {
+  if (!Number.isFinite(endTimeMs) || endTimeMs <= viewport.startMs) {
     return [];
   }
 
@@ -127,6 +128,7 @@ export function createBarBeatTicks({
   if (
     !Number.isFinite(viewport.startMs) ||
     !Number.isFinite(viewport.durationMs) ||
+    viewport.startMs < 0 ||
     viewport.durationMs <= 0 ||
     !Number.isFinite(bpm) ||
     !Number.isFinite(beatsPerBar) ||
