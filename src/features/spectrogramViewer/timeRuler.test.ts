@@ -46,4 +46,26 @@ describe("timeRuler", () => {
 
     expect(ticks.find((tick) => tick.kind === "bar")?.timeMs).toBe(500);
   });
+
+  it("returns no bar or beat ticks for invalid viewport duration", () => {
+    expect(
+      createBarBeatTicks({
+        viewport: { startMs: 0, durationMs: Number.POSITIVE_INFINITY },
+        bpm: 120,
+        beatsPerBar: 4,
+        beatOffsetMs: 0
+      })
+    ).toEqual([]);
+  });
+
+  it("returns no bar or beat ticks for invalid viewport start", () => {
+    expect(
+      createBarBeatTicks({
+        viewport: { startMs: Number.POSITIVE_INFINITY, durationMs: 4_000 },
+        bpm: 120,
+        beatsPerBar: 4,
+        beatOffsetMs: 0
+      })
+    ).toEqual([]);
+  });
 });

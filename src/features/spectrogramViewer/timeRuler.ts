@@ -90,6 +90,8 @@ export function createBarBeatTicks({
   beatOffsetMs: number;
 }): BarBeatTick[] {
   if (
+    !Number.isFinite(viewport.startMs) ||
+    !Number.isFinite(viewport.durationMs) ||
     viewport.durationMs <= 0 ||
     !Number.isFinite(bpm) ||
     !Number.isFinite(beatsPerBar) ||
