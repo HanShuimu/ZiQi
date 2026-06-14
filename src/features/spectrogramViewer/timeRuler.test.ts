@@ -79,6 +79,27 @@ describe("timeRuler", () => {
     ).toEqual([]);
   });
 
+  it("keeps natural major ticks sparse for long viewports", () => {
+    const ticks = createTimeRulerTicks({
+      viewport: { startMs: 0, durationMs: 7_200_000 },
+      targetMajorTickCount: 6
+    });
+
+    expect(ticks.filter((tick) => tick.kind === "major").length).toBeLessThanOrEqual(7);
+    expect(ticks.length).toBeGreaterThan(0);
+  });
+
+  it("creates subdivision ticks near a non-aligned viewport start", () => {
+    const ticks = createTimeRulerTicks({
+      viewport: { startMs: 250, durationMs: 1_000 },
+      targetMajorTickCount: 1
+    });
+
+    expect(ticks.some((tick) => tick.kind === "medium" && tick.timeMs === 500)).toBe(true);
+    expect(ticks.some((tick) => tick.kind === "minor" && tick.timeMs === 250)).toBe(true);
+    expect(ticks.every((tick) => tick.timeMs >= 250 && tick.timeMs <= 1_250)).toBe(true);
+  });
+
   it("formats sub-second major tick labels without duplicates", () => {
     const labels = createTimeRulerTicks({
       viewport: { startMs: 0, durationMs: 200 },

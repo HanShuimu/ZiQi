@@ -61,12 +61,12 @@ export function createTimeRulerTicks({
     return [];
   }
 
-  const startTimeMs = Math.ceil(viewport.startMs / intervalMs) * intervalMs;
-  if (!Number.isFinite(startTimeMs)) {
+  const gridStartTimeMs = Math.floor(viewport.startMs / intervalMs) * intervalMs;
+  if (!Number.isFinite(gridStartTimeMs)) {
     return [];
   }
 
-  const majorTickCount = Math.floor((endTimeMs - startTimeMs) / intervalMs) + 1;
+  const majorTickCount = Math.floor((endTimeMs - gridStartTimeMs) / intervalMs) + 1;
   if (
     !Number.isFinite(majorTickCount) ||
     majorTickCount <= 0 ||
@@ -78,7 +78,7 @@ export function createTimeRulerTicks({
   const ticks: TimeRulerTick[] = [];
 
   for (let tickIndex = 0; tickIndex < majorTickCount; tickIndex += 1) {
-    const timeMs = startTimeMs + tickIndex * intervalMs;
+    const timeMs = gridStartTimeMs + tickIndex * intervalMs;
     if (!Number.isFinite(timeMs) || timeMs > endTimeMs) {
       break;
     }
@@ -111,7 +111,7 @@ export function createTimeRulerTicks({
     }
   }
 
-  return ticks.filter((tick) => tick.leftPercent >= 0 && tick.leftPercent <= 100);
+  return ticks.filter((tick) => tick.timeMs >= viewport.startMs && tick.timeMs <= endTimeMs);
 }
 
 export function createBarBeatTicks({
@@ -213,7 +213,20 @@ export function createBarBeatTicks({
 }
 
 function chooseNiceInterval(rawIntervalMs: number) {
-  return NICE_INTERVALS_MS.find((interval) => interval >= rawIntervalMs) ?? NICE_INTERVALS_MS.at(-1)!;
+  const fixedInterval = NICE_INTERVALS_MS.find((interval) => interval >= rawIntervalMs);
+  if (fixedInterval) {
+    return fixedInterval;
+  }
+
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawIntervalMs)));
+  for (const multiplier of [1, 2, 5, 10]) {
+    const intervalMs = multiplier * magnitude;
+    if (intervalMs >= rawIntervalMs) {
+      return intervalMs;
+    }
+  }
+
+  return 10 * magnitude;
 }
 
 function isSafeBeatTime(timeMs: number) {
