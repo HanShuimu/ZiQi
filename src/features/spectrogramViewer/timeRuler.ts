@@ -16,6 +16,7 @@ const NICE_INTERVALS_MS = [
   300_000
 ] as const;
 
+const MAX_TIME_RULER_TICKS = 1_000;
 const MAX_BAR_BEAT_TICKS = 1_000;
 
 export interface TimeRulerTick {
@@ -54,21 +55,44 @@ export function createTimeRulerTicks({
     return [];
   }
 
-  const startTimeMs = Math.ceil(viewport.startMs / intervalMs) * intervalMs;
   const endTimeMs = viewport.startMs + viewport.durationMs;
+  if (!Number.isFinite(endTimeMs)) {
+    return [];
+  }
+
+  const startTimeMs = Math.ceil(viewport.startMs / intervalMs) * intervalMs;
+  if (!Number.isFinite(startTimeMs)) {
+    return [];
+  }
+
   const ticks: TimeRulerTick[] = [];
 
-  for (let timeMs = startTimeMs; timeMs <= endTimeMs; timeMs += intervalMs) {
-    ticks.push({
+  const addTick = (tick: TimeRulerTick) => {
+    if (ticks.length < MAX_TIME_RULER_TICKS) {
+      ticks.push(tick);
+    }
+  };
+
+  for (
+    let tickIndex = 0;
+    ticks.length < MAX_TIME_RULER_TICKS;
+    tickIndex += 1
+  ) {
+    const timeMs = startTimeMs + tickIndex * intervalMs;
+    if (!Number.isFinite(timeMs) || timeMs > endTimeMs) {
+      break;
+    }
+
+    addTick({
       kind: "major",
       timeMs,
       leftPercent: timeToViewportPercent(timeMs, viewport),
-      label: formatRulerTime(timeMs)
+      label: formatRulerTime(timeMs, intervalMs)
     });
 
     const mediumTimeMs = timeMs + intervalMs / 2;
     if (mediumTimeMs < endTimeMs) {
-      ticks.push({
+      addTick({
         kind: "medium",
         timeMs: mediumTimeMs,
         leftPercent: timeToViewportPercent(mediumTimeMs, viewport)
@@ -78,7 +102,7 @@ export function createTimeRulerTicks({
     const quarterMs = intervalMs / 4;
     for (const minorTimeMs of [timeMs + quarterMs, timeMs + quarterMs * 3]) {
       if (minorTimeMs < endTimeMs) {
-        ticks.push({
+        addTick({
           kind: "minor",
           timeMs: minorTimeMs,
           leftPercent: timeToViewportPercent(minorTimeMs, viewport)
@@ -154,11 +178,25 @@ function chooseNiceInterval(rawIntervalMs: number) {
   return NICE_INTERVALS_MS.find((interval) => interval >= rawIntervalMs) ?? NICE_INTERVALS_MS.at(-1)!;
 }
 
-function formatRulerTime(timeMs: number) {
+function formatRulerTime(timeMs: number, intervalMs: number) {
   const safeTimeMs = Math.max(0, Math.round(timeMs));
   const totalSeconds = Math.floor(safeTimeMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
+
+  if (intervalMs < 1_000) {
+    const milliseconds = safeTimeMs % 1000;
+
+    if (minutes > 0) {
+      return `${minutes}:${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(
+        3,
+        "0"
+      )}`;
+    }
+
+    return `${String(seconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
+  }
+
   const tenths = Math.floor((safeTimeMs % 1000) / 100);
 
   if (minutes > 0) {

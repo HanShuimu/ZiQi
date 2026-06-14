@@ -31,6 +31,14 @@ describe("timeRuler", () => {
     ).toEqual([]);
   });
 
+  it("returns no time ruler ticks when viewport end is invalid", () => {
+    expect(
+      createTimeRulerTicks({
+        viewport: { startMs: Number.MAX_VALUE, durationMs: Number.MAX_VALUE }
+      })
+    ).toEqual([]);
+  });
+
   it("returns no time ruler ticks for invalid target tick counts", () => {
     expect(
       createTimeRulerTicks({
@@ -44,6 +52,27 @@ describe("timeRuler", () => {
         targetMajorTickCount: Number.POSITIVE_INFINITY
       })
     ).toEqual([]);
+  });
+
+  it("limits extreme natural ruler tick density", () => {
+    const ticks = createTimeRulerTicks({
+      viewport: { startMs: 0, durationMs: 100_000_000 },
+      targetMajorTickCount: 10_000
+    });
+
+    expect(ticks.length).toBeLessThanOrEqual(1_000);
+  });
+
+  it("formats sub-second major tick labels without duplicates", () => {
+    const labels = createTimeRulerTicks({
+      viewport: { startMs: 0, durationMs: 200 },
+      targetMajorTickCount: 4
+    })
+      .filter((tick) => tick.kind === "major")
+      .map((tick) => tick.label);
+
+    expect(labels).toEqual(["00.000", "00.050", "00.100", "00.150", "00.200"]);
+    expect(new Set(labels).size).toBe(labels.length);
   });
 
   it("creates bar and beat ticks from bpm, beats per bar, and offset", () => {
