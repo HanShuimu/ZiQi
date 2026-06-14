@@ -1,5 +1,6 @@
 import { clampSpectrogramViewport, createDefaultSpectrogramViewport } from "../../core/spectrogramViewport";
-import type { LoopRange, WorkspaceState } from "../project/types";
+import type { WorkspaceState } from "../project/types";
+import { normalizeSelectedTimeRange } from "./selectedTimeRange";
 
 export const SUPPORTED_PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5] as const;
 type SupportedPlaybackRate = (typeof SUPPORTED_PLAYBACK_RATES)[number];
@@ -11,7 +12,8 @@ const DEFAULT_WORKSPACE_BASE = {
   beatsPerBar: 4,
   bpm: 120,
   beatOffsetMs: 0,
-  playbackRate: 1
+  playbackRate: 1,
+  loopEnabled: false
 } as const;
 
 export function createDefaultWorkspaceState(durationMs: number): WorkspaceState {
@@ -26,6 +28,10 @@ export function normalizeWorkspaceState(
   durationMs: number
 ): WorkspaceState {
   const defaultWorkspace = createDefaultWorkspaceState(durationMs);
+  const selectedTimeRange = normalizeSelectedTimeRange(workspace.selectedTimeRange, durationMs);
+  const loopEnabled = selectedTimeRange
+    ? typeof workspace.loopEnabled === "boolean" && workspace.loopEnabled
+    : false;
 
   return {
     preset: isPreset(workspace.preset) ? workspace.preset : defaultWorkspace.preset,
@@ -37,7 +43,8 @@ export function normalizeWorkspaceState(
     playbackRate: isSupportedPlaybackRate(workspace.playbackRate)
       ? workspace.playbackRate
       : defaultWorkspace.playbackRate,
-    ...normalizeLoopRange(workspace.loopRange, durationMs),
+    selectedTimeRange,
+    loopEnabled,
     spectrogramViewport: normalizeSpectrogramViewport(
       workspace.spectrogramViewport,
       durationMs,
@@ -75,20 +82,6 @@ function isActiveDock(value: unknown): value is WorkspaceState["activeDock"] {
   return value === "analysis" || value === "stems" || value === "notes" || value === "compare" || value === "hidden";
 }
 
-function normalizeLoopRange(value: unknown, durationMs: number): Pick<WorkspaceState, "loopRange"> {
-  if (!isLoopRange(value) || !Number.isFinite(durationMs) || durationMs <= 0) {
-    return {};
-  }
-
-  const startMs = Math.min(durationMs, Math.max(0, Math.round(value.startMs)));
-  const endMs = Math.min(durationMs, Math.max(0, Math.round(value.endMs)));
-  if (endMs <= startMs) {
-    return {};
-  }
-
-  return { loopRange: { startMs, endMs } };
-}
-
 function normalizeSpectrogramViewport(
   value: unknown,
   durationMs: number,
@@ -99,15 +92,6 @@ function normalizeSpectrogramViewport(
   }
 
   return clampSpectrogramViewport(value, durationMs);
-}
-
-function isLoopRange(value: unknown): value is LoopRange {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    Number.isFinite((value as LoopRange).startMs) &&
-    Number.isFinite((value as LoopRange).endMs)
-  );
 }
 
 function isSpectrogramViewport(value: unknown): value is NonNullable<WorkspaceState["spectrogramViewport"]> {

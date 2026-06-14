@@ -38,7 +38,7 @@ export interface TimelineAnnotation {
   kind: "marker" | "loop" | "note" | "review-point";
 }
 
-export interface LoopRange {
+export interface SelectedTimeRange {
   startMs: number;
   endMs: number;
 }
@@ -56,7 +56,8 @@ export interface WorkspaceState {
   bpm: number;
   beatOffsetMs: number;
   playbackRate: number;
-  loopRange?: LoopRange;
+  selectedTimeRange?: SelectedTimeRange;
+  loopEnabled: boolean;
   spectrogramViewport?: WorkspaceSpectrogramViewport;
 }
 
