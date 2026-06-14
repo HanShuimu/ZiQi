@@ -31,6 +31,15 @@ describe("selectedRange helpers", () => {
 
   it("normalizes forward and reverse drag ranges", () => {
     expect(getRangeFromDrag({
+      anchorTimeMs: 3_000,
+      currentTimeMs: 8_000,
+      durationMs: 12_000
+    })).toEqual({
+      startMs: 3_000,
+      endMs: 8_000
+    });
+
+    expect(getRangeFromDrag({
       anchorTimeMs: 8_000,
       currentTimeMs: 3_000,
       durationMs: 12_000
@@ -44,6 +53,11 @@ describe("selectedRange helpers", () => {
     expect(isSelectionDragDistance({
       startClientX: 100,
       currentClientX: 104,
+      thresholdPx: 6
+    })).toBe(false);
+    expect(isSelectionDragDistance({
+      startClientX: 100,
+      currentClientX: 106,
       thresholdPx: 6
     })).toBe(false);
     expect(isSelectionDragDistance({
