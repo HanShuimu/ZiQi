@@ -1,6 +1,10 @@
 import type { CSSProperties } from "react";
 import type { SelectedTimeRange } from "../../core/project/types";
-import { timeToViewportPercent, type SpectrogramViewport } from "../../core/spectrogramViewport";
+import {
+  isTimeInsideViewport,
+  timeToViewportPercent,
+  type SpectrogramViewport
+} from "../../core/spectrogramViewport";
 import { createBarBeatTicks, createTimeRulerTicks } from "./timeRuler";
 
 interface SpectrogramTimeRulerProps {
@@ -23,6 +27,7 @@ export function SpectrogramTimeRuler({
   const timeTicks = createTimeRulerTicks({ viewport });
   const beatTicks = createBarBeatTicks({ viewport, bpm, beatsPerBar, beatOffsetMs });
   const rulerSelectionStyle = getVisibleSelectionStyle(selectedTimeRange, viewport);
+  const isPlayheadVisible = isTimeInsideViewport(currentTimeMs, viewport);
 
   return (
     <div className="spectrogram-time-ruler" aria-label="Spectrogram time ruler">
@@ -33,11 +38,13 @@ export function SpectrogramTimeRuler({
           style={rulerSelectionStyle}
         />
       ) : null}
-      <div
-        className="spectrogram-ruler-playhead"
-        data-testid="spectrogram-ruler-playhead"
-        style={{ left: `${timeToViewportPercent(currentTimeMs, viewport)}%` }}
-      />
+      {isPlayheadVisible ? (
+        <div
+          className="spectrogram-ruler-playhead"
+          data-testid="spectrogram-ruler-playhead"
+          style={{ left: `${timeToViewportPercent(currentTimeMs, viewport)}%` }}
+        />
+      ) : null}
       <div className="spectrogram-ruler-row">
         <div className="spectrogram-ruler-row-name">TIME</div>
         <div className="spectrogram-ruler-row-track">

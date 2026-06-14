@@ -859,6 +859,7 @@ describe("SpectrogramView", () => {
     );
 
     expect(screen.queryByTestId("spectrogram-cursor")).toBeNull();
+    expect(screen.queryByTestId("spectrogram-ruler-playhead")).toBeNull();
   });
 
   it("zooms horizontally with ctrl wheel around the mouse position", () => {
